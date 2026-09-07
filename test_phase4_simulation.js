@@ -113,11 +113,11 @@ if (!game.trailer) {
 // Test 1: Verify dune math and ramp elevation
 const hFlat = game.getDuneHeight(200);
 const hCrest = game.getDuneHeight(1140);
-const hRamp = game.getDuneHeight(4020);
+const hRamp = game.getDuneHeight(3960);
 const hScale = game.getDuneHeight(4150);
-console.log(`Dune heights: Flat Start (x=200): ${hFlat}, Crest (x=1140): ${hCrest.toFixed(1)}, Ramp (x=4020): ${hRamp.toFixed(1)}, Scale Platform (x=4150): ${hScale}`);
-if (hFlat !== 390 || hScale !== 376 || Math.round(hRamp) !== 383) {
-    console.error("FAIL: Ramp geometry incorrect!");
+console.log(`Dune heights: Flat Start (x=200): ${hFlat}, Crest (x=1140): ${hCrest.toFixed(1)}, High Ramp (x=3960): ${hRamp.toFixed(1)}, Scale Platform (x=4150): ${hScale}`);
+if (hFlat !== 390 || hScale !== 330 || Math.round(hRamp) !== 360) {
+    console.error("FAIL: Ramp geometry incorrect! Expected hScale=330, hRamp=360, got hScale=" + hScale + " hRamp=" + hRamp);
     process.exit(1);
 }
 
@@ -230,7 +230,7 @@ while (ticks < 1200 && game.state === 'PLAYING') {
     game.render();
 
     if (ticks % 100 === 0) {
-        console.log(`[Tick ${ticks}] Pos: ${game.player.x.toFixed(0)} | Speed: ${game.speedKmh.toFixed(0)} km/h | Scale Reading: "${game.scaleReading}" | Weighed: ${game.scaleWeighed} | Gate: ${game.gateAngle.toFixed(0)}°`);
+        console.log(`[Tick ${ticks}] Pos: ${game.player.x.toFixed(0)} | Speed: ${game.speedKmh.toFixed(0)} km/h | Scale Reading: "${game.scaleReading}" | Weighed: ${game.scaleWeighed} | AutoBraking: ${game.scaleAutoBraking}`);
     }
 }
 
@@ -238,7 +238,6 @@ console.log(`\nSimulation Ended at Tick ${ticks}`);
 console.log(`Final State: ${game.state}`);
 console.log(`Final Pos: ${game.player.x.toFixed(0)}`);
 console.log(`Scale Weighed: ${game.scaleWeighed}`);
-console.log(`Gate Angle: ${game.gateAngle.toFixed(0)}°`);
 console.log(`Cargo Stability: ${game.cargoStability.toFixed(1)}%`);
 console.log(`Scale Beep Sound: ${soundsPlayed.includes('scaleBeep')}`);
 console.log(`Score: ${game.score}`);

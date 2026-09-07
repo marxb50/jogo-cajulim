@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Turma do Cajulim - Escolha sua Plataforma</title>
+    <title>Turma do Cajulim - Portal Oficial</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -25,150 +25,114 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px 16px;
+            padding: 16px 12px;
+            overflow-x: hidden;
         }
 
         .portal-card {
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 3px solid #22c55e;
-            border-radius: 20px;
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 25px rgba(34, 197, 94, 0.25);
-            max-width: 680px;
+            border-radius: 24px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(34, 197, 94, 0.25);
+            max-width: 740px;
             width: 100%;
-            padding: 32px 24px;
+            padding: 26px 22px;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+            transition: all 0.3s ease;
         }
 
+        /* Logos e Cabeçalho */
         .logo-parnamirim {
-            height: 56px;
+            height: 50px;
             max-width: 90%;
             object-fit: contain;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
             filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
         }
 
         .cajulim-hero {
-            width: 130px;
+            width: 105px;
             height: auto;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
-            animation: bounce 2s infinite ease-in-out;
+            animation: bounce 2.2s infinite ease-in-out;
         }
 
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+            50% { transform: translateY(-7px); }
         }
 
         .game-title {
             font-family: 'Press Start 2P', monospace;
-            font-size: 24px;
+            font-size: 22px;
             color: #4ade80;
-            text-shadow: 2px 2px 0px #14532d, 0 0 18px rgba(74, 222, 128, 0.4);
+            text-shadow: 2px 2px 0px #14532d, 0 0 18px rgba(74, 222, 128, 0.45);
             margin-bottom: 6px;
             letter-spacing: 1px;
         }
 
         .game-subtitle {
-            font-size: 16px;
+            font-size: 15px;
             color: #fde047;
             font-weight: 700;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
 
         .prompt-text {
-            font-size: 15px;
+            font-size: 14px;
             color: #cbd5e1;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
+        /* Sistema de Telas / Visões */
+        .view-screen {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+            animation: viewFadeIn 0.22s ease-out forwards;
+        }
+
+        .view-screen.active {
+            display: flex;
+        }
+
+        @keyframes viewFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* -------------------------------------------------------------
+           TELA 1: ESCOLHA DA PLATAFORMA (CELULAR OU PC)
+           ------------------------------------------------------------- */
         .options-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 18px;
             width: 100%;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 540px) and (orientation: portrait) {
-            .options-grid {
-                grid-template-columns: 1fr;
-                gap: 14px;
-            }
-            .game-title {
-                font-size: 19px;
-            }
-            .logo-parnamirim {
-                height: 44px;
-            }
-        }
-
-        @media (max-height: 540px) and (orientation: landscape) {
-            body {
-                padding: 6px;
-            }
-            .portal-card {
-                padding: 10px 18px;
-                max-width: 96vw;
-                max-height: 98vh;
-            }
-            .logo-parnamirim {
-                height: 32px;
-                margin-bottom: 4px;
-            }
-            .cajulim-hero {
-                width: 60px;
-                margin-bottom: 4px;
-            }
-            .game-title {
-                font-size: 16px;
-                margin-bottom: 2px;
-            }
-            .game-subtitle {
-                font-size: 12px;
-                margin-bottom: 8px;
-            }
-            .prompt-text {
-                font-size: 12px;
-                margin-bottom: 8px;
-            }
-            .options-grid {
-                gap: 12px;
-                margin-bottom: 8px;
-            }
-            .platform-btn {
-                padding: 10px 14px;
-            }
-            .btn-icon {
-                font-size: 26px;
-                margin-bottom: 4px;
-            }
-            .btn-title {
-                font-size: 12px;
-                margin-bottom: 3px;
-            }
-            .btn-desc {
-                font-size: 11px;
-                line-height: 1.2;
-            }
-            .footer-note {
-                font-size: 10px;
-                margin-top: 4px;
-            }
+            margin-bottom: 16px;
         }
 
         .platform-btn {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 2px solid #334155;
-            border-radius: 16px;
+            border-radius: 18px;
             padding: 22px 16px;
             color: #ffffff;
             text-decoration: none;
@@ -185,17 +149,17 @@
 
         .platform-btn:hover, .platform-btn:active {
             transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
         }
 
         .platform-btn.btn-mobile:hover, .platform-btn.btn-mobile:active {
             border-color: #38bdf8;
-            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.35);
+            box-shadow: 0 10px 28px rgba(56, 189, 248, 0.4);
         }
 
         .platform-btn.btn-pc:hover, .platform-btn.btn-pc:active {
             border-color: #4ade80;
-            box-shadow: 0 10px 25px rgba(74, 222, 128, 0.35);
+            box-shadow: 0 10px 28px rgba(74, 222, 128, 0.4);
         }
 
         .btn-icon {
@@ -237,10 +201,384 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
 
+        /* -------------------------------------------------------------
+           TELA 2: MENU INTERMEDIÁRIO (INICIAR OU FASES)
+           ------------------------------------------------------------- */
+        .platform-badge-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-buttons-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            width: 100%;
+            margin-bottom: 18px;
+        }
+
+        .btn-action-card {
+            border-radius: 18px;
+            padding: 24px 16px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            border: 2px solid transparent;
+        }
+
+        .btn-action-card:hover, .btn-action-card:active {
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        /* Botão INICIAR (Verde vibrante arcade) */
+        .btn-action-iniciar {
+            background: linear-gradient(145deg, #15803d 0%, #064e3b 100%);
+            border-color: #4ade80;
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
+        }
+
+        .btn-action-iniciar:hover, .btn-action-iniciar:active {
+            box-shadow: 0 12px 32px rgba(74, 222, 128, 0.55);
+            border-color: #86efac;
+        }
+
+        .btn-action-iniciar .action-icon {
+            font-size: 44px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+        }
+
+        .btn-action-iniciar .action-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #064e3b, 0 0 12px rgba(134, 239, 172, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .btn-action-iniciar .action-desc {
+            font-size: 13px;
+            color: #bbf7d0;
+            line-height: 1.35;
+        }
+
+        /* Botão FASES (Azul ciano / Dourado arcade) */
+        .btn-action-fases {
+            background: linear-gradient(145deg, #0369a1 0%, #0c4a6e 100%);
+            border-color: #38bdf8;
+            box-shadow: 0 8px 24px rgba(56, 189, 248, 0.35);
+        }
+
+        .btn-action-fases:hover, .btn-action-fases:active {
+            box-shadow: 0 12px 32px rgba(56, 189, 248, 0.55);
+            border-color: #7dd3fc;
+        }
+
+        .btn-action-fases .action-icon {
+            font-size: 44px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+        }
+
+        .btn-action-fases .action-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #082f49, 0 0 12px rgba(125, 211, 252, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .btn-action-fases .action-desc {
+            font-size: 13px;
+            color: #bae6fd;
+            line-height: 1.35;
+        }
+
+        /* -------------------------------------------------------------
+           TELA 3: MENU DE FASES (1 A 6)
+           ------------------------------------------------------------- */
+        .phases-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 16px;
+            max-height: 58vh;
+            overflow-y: auto;
+            padding: 4px 4px 10px 4px;
+        }
+
+        .phases-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+        .phases-grid::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+        .phases-grid::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .phases-grid::-webkit-scrollbar-thumb:hover {
+            background: #22c55e;
+        }
+
+        .phase-card-btn {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid #334155;
+            border-radius: 14px;
+            padding: 10px 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            position: relative;
+        }
+
+        .phase-card-btn:hover, .phase-card-btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            border-color: #4ade80;
+        }
+
+        .phase-card-btn.p-phase1:hover { border-color: #38bdf8; }
+        .phase-card-btn.p-phase2:hover { border-color: #fbbf24; }
+        .phase-card-btn.p-phase3:hover { border-color: #34d399; }
+        .phase-card-btn.p-phase4:hover { border-color: #c084fc; }
+        .phase-card-btn.p-phase5:hover { border-color: #a3e635; }
+        .phase-card-btn.p-phase6:hover { border-color: #f43f5e; }
+
+        .phase-icon-box {
+            font-size: 26px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .phase-info {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .phase-badge-tag {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: #4ade80;
+            margin-bottom: 3px;
+        }
+
+        .phase-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+
+        .phase-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.25;
+        }
+
+        .phase-arrow {
+            font-size: 15px;
+            color: #64748b;
+            transition: transform 0.2s, color 0.2s;
+            margin-left: 4px;
+        }
+
+        .phase-card-btn:hover .phase-arrow {
+            color: #4ade80;
+            transform: translateX(3px);
+        }
+
+        /* -------------------------------------------------------------
+           BOTÕES DE VOLTAR E RODAPÉ
+           ------------------------------------------------------------- */
+        .btn-back {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1.5px solid #475569;
+            color: #cbd5e1;
+            padding: 9px 18px;
+            border-radius: 12px;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+
+        .btn-back:hover, .btn-back:active {
+            background: #334155;
+            color: #ffffff;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+
         .footer-note {
             font-size: 12px;
             color: #64748b;
-            margin-top: 10px;
+            margin-top: 14px;
+        }
+
+        /* -------------------------------------------------------------
+           RESPONSIVIDADE (MOBILE / LANDSCAPE)
+           ------------------------------------------------------------- */
+        @media (max-width: 580px) and (orientation: portrait) {
+            .portal-card {
+                padding: 20px 14px;
+                max-height: 96vh;
+                overflow-y: auto;
+            }
+            .options-grid, .action-buttons-container {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .phases-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                max-height: 48vh;
+            }
+            .game-title {
+                font-size: 18px;
+            }
+            .logo-parnamirim {
+                height: 42px;
+            }
+            .cajulim-hero {
+                width: 85px;
+            }
+            .btn-action-card {
+                padding: 16px 14px;
+            }
+            .btn-action-iniciar .action-icon, .btn-action-fases .action-icon {
+                font-size: 34px;
+                margin-bottom: 6px;
+            }
+            .btn-action-iniciar .action-title, .btn-action-fases .action-title {
+                font-size: 14px;
+                margin-bottom: 4px;
+            }
+        }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            body {
+                padding: 6px;
+            }
+            .portal-card {
+                padding: 10px 18px;
+                max-width: 96vw;
+                max-height: 98vh;
+                overflow-y: auto;
+            }
+            .logo-parnamirim {
+                height: 30px;
+                margin-bottom: 2px;
+            }
+            .cajulim-hero {
+                width: 48px;
+                margin-bottom: 2px;
+            }
+            .game-title {
+                font-size: 15px;
+                margin-bottom: 2px;
+            }
+            .game-subtitle {
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+            .prompt-text {
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+            .platform-badge-indicator {
+                padding: 3px 10px;
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+            .options-grid, .action-buttons-container {
+                gap: 10px;
+                margin-bottom: 5px;
+            }
+            .platform-btn, .btn-action-card {
+                padding: 8px 12px;
+            }
+            .btn-icon, .btn-action-iniciar .action-icon, .btn-action-fases .action-icon {
+                font-size: 24px;
+                margin-bottom: 2px;
+            }
+            .btn-title, .btn-action-iniciar .action-title, .btn-action-fases .action-title {
+                font-size: 12px;
+                margin-bottom: 2px;
+            }
+            .btn-desc, .btn-action-iniciar .action-desc, .btn-action-fases .action-desc {
+                font-size: 10px;
+                line-height: 1.2;
+            }
+            .phases-grid {
+                max-height: 50vh;
+                gap: 6px;
+                margin-bottom: 5px;
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            .phase-card-btn {
+                padding: 6px 8px;
+                gap: 6px;
+            }
+            .phase-icon-box {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+            .phase-badge-tag {
+                font-size: 8px;
+            }
+            .phase-name {
+                font-size: 11px;
+            }
+            .phase-sub {
+                display: none;
+            }
+            .btn-back {
+                padding: 5px 12px;
+                font-size: 11px;
+                margin-top: 2px;
+            }
+            .footer-note {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -257,41 +595,270 @@
         <h1 class="game-title">TURMA DO CAJULIM</h1>
         <p class="game-subtitle">A Grande Missão da Coleta Seletiva</p>
 
-        <p class="prompt-text">Escolha onde você vai jogar:</p>
+        <!-- =========================================================
+             TELA 1: ESCOLHA DA PLATAFORMA (CELULAR OU PC)
+             ========================================================= -->
+        <section class="view-screen active" id="viewPlatform">
+            <p class="prompt-text">Escolha onde você vai jogar:</p>
 
-        <!-- Grade de Escolha -->
-        <div class="options-grid">
-            <!-- Opção Celular -->
-            <a href="celular/" class="platform-btn btn-mobile" id="btnOptCelular">
-                <span id="badgeCelular" class="badge-recommended" style="display:none;">Recomendado</span>
-                <div class="btn-icon">📱</div>
-                <div class="btn-title">CELULAR</div>
-                <div class="btn-desc">Controles virtuais transparentes na tela (D-Pad e Botões A/B).</div>
-            </a>
+            <div class="options-grid">
+                <!-- Opção Celular -->
+                <div class="platform-btn btn-mobile" id="btnOptCelular" onclick="selectPlatform('celular')">
+                    <span id="badgeCelular" class="badge-recommended" style="display:none;">Recomendado</span>
+                    <div class="btn-icon">📱</div>
+                    <div class="btn-title">CELULAR</div>
+                    <div class="btn-desc">Controles virtuais transparentes na tela (D-Pad e Botões A/B).</div>
+                </div>
 
-            <!-- Opção PC -->
-            <a href="PC/" class="platform-btn btn-pc" id="btnOptPC">
-                <span id="badgePC" class="badge-recommended" style="display:none;">Recomendado</span>
-                <div class="btn-icon">💻</div>
-                <div class="btn-title">PC / NOTEBOOK</div>
-                <div class="btn-desc">Controles no teclado (Setas e Espaço) e modo Tela Cheia.</div>
-            </a>
-        </div>
+                <!-- Opção PC -->
+                <div class="platform-btn btn-pc" id="btnOptPC" onclick="selectPlatform('PC')">
+                    <span id="badgePC" class="badge-recommended" style="display:none;">Recomendado</span>
+                    <div class="btn-icon">💻</div>
+                    <div class="btn-title">PC / NOTEBOOK</div>
+                    <div class="btn-desc">Controles no teclado (Setas e Espaço) e modo Tela Cheia.</div>
+                </div>
+            </div>
+        </section>
 
+        <!-- =========================================================
+             TELA 2: MENU INTERMEDIÁRIO (INICIAR OU FASES)
+             ========================================================= -->
+        <section class="view-screen" id="viewAction">
+            <!-- Indicador de Plataforma Selecionada -->
+            <div class="platform-badge-indicator" id="platformBadgeIndicator">
+                <span id="platformBadgeIcon">📱</span>
+                <span id="platformBadgeText">MODO CELULAR</span>
+            </div>
+
+            <p class="prompt-text">Como deseja jogar?</p>
+
+            <div class="action-buttons-container">
+                <!-- Botão 1: INICIAR -->
+                <div class="btn-action-card btn-action-iniciar" id="btnStartGame" onclick="actionStartGame()">
+                    <div class="action-icon">🚀</div>
+                    <div class="action-title">INICIAR</div>
+                    <div class="action-desc">Começar o jogo do início com a história completa e Fase 1.</div>
+                </div>
+
+                <!-- Botão 2: FASES -->
+                <div class="btn-action-card btn-action-fases" id="btnChoosePhase" onclick="actionOpenPhases()">
+                    <div class="action-icon">🎮</div>
+                    <div class="action-title">FASES</div>
+                    <div class="action-desc">Abrir menu para escolher e jogar qualquer fase de 1 a 6.</div>
+                </div>
+            </div>
+
+            <!-- Botão Voltar -->
+            <button class="btn-back" onclick="switchView('viewPlatform')">
+                ⬅️ Escolher outra plataforma
+            </button>
+        </section>
+
+        <!-- =========================================================
+             TELA 3: MENU DE FASES (1 A 6)
+             ========================================================= -->
+        <section class="view-screen" id="viewPhases">
+            <!-- Indicador de Plataforma -->
+            <div class="platform-badge-indicator" id="phasesBadgeIndicator">
+                <span id="phasesBadgeIcon">🎮</span>
+                <span id="phasesBadgeText">SELEÇÃO DE FASES</span>
+            </div>
+
+            <p class="prompt-text">Escolha a fase que deseja jogar:</p>
+
+            <div class="phases-grid">
+                <!-- Fase 1 -->
+                <div class="phase-card-btn p-phase1" onclick="launchPhase(1)">
+                    <div class="phase-icon-box">🏖️</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#38bdf8;">FASE 1</span>
+                        <div class="phase-name">Coleta Seletiva</div>
+                        <div class="phase-sub">Praia de Cotovelo e lixeiras coloridas.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 2 -->
+                <div class="phase-card-btn p-phase2" onclick="launchPhase(2)">
+                    <div class="phase-icon-box">🚛</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#fbbf24;">FASE 2</span>
+                        <div class="phase-name">Caminhão ao Transbordo</div>
+                        <div class="phase-sub">Direção no trânsito e desvio de obstáculos.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 3 -->
+                <div class="phase-card-btn p-phase3" onclick="launchPhase(3)">
+                    <div class="phase-icon-box">🏗️</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#34d399;">FASE 3</span>
+                        <div class="phase-name">Estação de Transbordo</div>
+                        <div class="phase-sub">Manobra na doca e despejo na carreta.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 4 -->
+                <div class="phase-card-btn p-phase4" onclick="launchPhase(4)">
+                    <div class="phase-icon-box">🚚</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#c084fc;">FASE 4</span>
+                        <div class="phase-name">Carreta ao Aterro</div>
+                        <div class="phase-sub">Limite 60 km/h, semáforos e balança 45t.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 5 -->
+                <div class="phase-card-btn p-phase5" onclick="launchPhase(5)">
+                    <div class="phase-icon-box">🚜</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#a3e635;">FASE 5</span>
+                        <div class="phase-name">Aterro & Usina Verde</div>
+                        <div class="phase-sub">Trator compactador, biogás e laboratório.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 6 -->
+                <div class="phase-card-btn p-phase6" onclick="launchPhase(6)">
+                    <div class="phase-icon-box">👾</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#f43f5e;">FASE 6</span>
+                        <div class="phase-name">O Grande Chefão</div>
+                        <div class="phase-sub">Batalha épica contra o Barão do Entulho!</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+            </div>
+
+            <!-- Botão Voltar -->
+            <button class="btn-back" onclick="switchView('viewAction')">
+                ⬅️ Voltar ao Menu
+            </button>
+        </section>
+
+        <!-- Rodapé Institucional -->
         <p class="footer-note">Prefeitura de Parnamirim • Secretaria Municipal de Limpeza Urbana</p>
     </main>
 
     <script>
-        // Detecção do dispositivo para destacar a melhor opção
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
-        if (isMobile) {
+        // Estado da Plataforma Selecionada ('celular' ou 'PC')
+        let currentPlatform = 'PC';
+
+        // Detecção inicial de dispositivo
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        if (isMobileDevice) {
+            currentPlatform = 'celular';
             const b = document.getElementById('badgeCelular');
             if (b) b.style.display = 'block';
             document.getElementById('btnOptCelular').style.borderColor = '#38bdf8';
         } else {
+            currentPlatform = 'PC';
             const b = document.getElementById('badgePC');
             if (b) b.style.display = 'block';
             document.getElementById('btnOptPC').style.borderColor = '#4ade80';
+        }
+
+        // Sintetizador de Áudio Retro Arcade para cliques
+        function playBeep(freq = 440, type = 'square', duration = 0.08) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        // Navegação entre Telas
+        function switchView(viewId) {
+            playBeep(520, 'sine', 0.05);
+            document.querySelectorAll('.view-screen').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.classList.add('active');
+            }
+        }
+
+        // Passo 1: Usuário aperta CELULAR ou PC
+        function selectPlatform(platform) {
+            currentPlatform = platform;
+            playBeep(660, 'square', 0.09);
+
+            // Atualiza indicadores visuais da Tela 2 e Tela 3
+            const badgeIcon = document.getElementById('platformBadgeIcon');
+            const badgeText = document.getElementById('platformBadgeText');
+            const badgeInd = document.getElementById('platformBadgeIndicator');
+
+            const phasesBadgeIcon = document.getElementById('phasesBadgeIcon');
+            const phasesBadgeText = document.getElementById('phasesBadgeText');
+            const phasesBadgeInd = document.getElementById('phasesBadgeIndicator');
+
+            if (platform === 'celular') {
+                if (badgeIcon) badgeIcon.textContent = '📱';
+                if (badgeText) badgeText.textContent = 'MODO CELULAR SELECIONADO';
+                if (badgeInd) {
+                    badgeInd.style.borderColor = '#38bdf8';
+                    badgeInd.style.color = '#38bdf8';
+                }
+
+                if (phasesBadgeIcon) phasesBadgeIcon.textContent = '📱';
+                if (phasesBadgeText) phasesBadgeText.textContent = 'SELEÇÃO DE FASES (CELULAR)';
+                if (phasesBadgeInd) {
+                    phasesBadgeInd.style.borderColor = '#38bdf8';
+                    phasesBadgeInd.style.color = '#38bdf8';
+                }
+            } else {
+                if (badgeIcon) badgeIcon.textContent = '💻';
+                if (badgeText) badgeText.textContent = 'MODO PC / NOTEBOOK SELECIONADO';
+                if (badgeInd) {
+                    badgeInd.style.borderColor = '#4ade80';
+                    badgeInd.style.color = '#4ade80';
+                }
+
+                if (phasesBadgeIcon) phasesBadgeIcon.textContent = '💻';
+                if (phasesBadgeText) phasesBadgeText.textContent = 'SELEÇÃO DE FASES (PC)';
+                if (phasesBadgeInd) {
+                    phasesBadgeInd.style.borderColor = '#4ade80';
+                    phasesBadgeInd.style.color = '#4ade80';
+                }
+            }
+
+            // Abre a tela intermediária com INICIAR e FASES
+            switchView('viewAction');
+        }
+
+        // Passo 2A: Botão INICIAR -> Começa o jogo normalmente
+        function actionStartGame() {
+            playBeep(880, 'triangle', 0.12);
+            setTimeout(() => {
+                window.location.href = currentPlatform + '/index.html';
+            }, 120);
+        }
+
+        // Passo 2B: Botão FASES -> Abre menu com Fases 1 a 6
+        function actionOpenPhases() {
+            playBeep(740, 'square', 0.08);
+            switchView('viewPhases');
+        }
+
+        // Passo 3: Escolhe qualquer fase de 1 a 6
+        function launchPhase(phaseNumber) {
+            playBeep(920, 'sine', 0.12);
+            setTimeout(() => {
+                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber;
+            }, 120);
         }
     </script>
 </body>
