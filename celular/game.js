@@ -1888,10 +1888,17 @@ class Game {
             const launchLift = excess * Math.max(0.0002, curvature) * 3500;
             trailer.bounceVy -= launchLift * dt;
 
-            // Stability drain when exceeding 60 km/h
+            // Perda de estabilidade e PERDA REAL DE PESO da carga em alta velocidade!
             const drain = (excess * 2.8 + Math.abs(trailer.bounceY) * 3.0) * dt;
             this.cargoStability = Math.max(10, this.cargoStability - drain);
-            this.cargoWeight = Math.max(25000, this.cargoWeight - Math.round(drain * 40));
+            
+            // Perda de peso real: somente ocorre quando ultrapassa o limite de 60 km/h!
+            if (isExcessSpeed) {
+                const weightLoss = Math.round((excess * 42 + Math.abs(trailer.bounceVy) * 12) * dt);
+                if (weightLoss > 0) {
+                    this.cargoWeight = Math.max(12000, (this.cargoWeight || 30000) - weightLoss);
+                }
+            }
 
             // Sound & warnings
             this.rattleTimer -= dt;
@@ -1905,12 +1912,22 @@ class Game {
             // Spawn lost trash tumbling out
             if (Math.random() < 0.35) {
                 this.spawnTrashDrop(trailer.x + 30, trailer.y + 10);
+                if (excess > 0 && Math.random() < 0.18) {
+                    const dropAmount = Math.max(15, Math.round(excess * 5));
+                    this.addFloatingText(trailer.x + 30, trailer.y - 30, `-${dropAmount} kg LIXO CAIU! ⚠`, '#ef4444');
+                }
             }
 
             this.excessSpeedWarnTimer -= dt;
             if (this.excessSpeedWarnTimer <= 0) {
-                this.addFloatingText(p.x + 40, p.y - 45, '⚠ LIMITE 60 KM/H! REDUZA!', '#ef4444');
-                this.showTip('⚠ Atenção: Não ultrapasse 60 km/h para não danificar a carga pesada!', 2.0);
+                const lostSoFar = 30000 - this.cargoWeight;
+                if (lostSoFar > 0) {
+                    this.addFloatingText(p.x + 40, p.y - 45, `⚠ LIMITE 60 KM/H! PERDEU ${lostSoFar.toLocaleString('pt-BR')} kg!`, '#ef4444');
+                    this.showTip(`⚠ Cuidado! Acima de 60 km/h o lixo cai da carreta! Perda atual: ${lostSoFar.toLocaleString('pt-BR')} kg`, 2.0);
+                } else {
+                    this.addFloatingText(p.x + 40, p.y - 45, '⚠ LIMITE 60 KM/H! REDUZA!', '#ef4444');
+                    this.showTip('⚠ Atenção: Não ultrapasse 60 km/h para não perder lixo na rodovia!', 2.0);
+                }
                 this.excessSpeedWarnTimer = 1.3;
             }
         } else {
@@ -1965,8 +1982,10 @@ class Game {
         // Check educational signposts
         this.checkSignposts();
 
-        // 4. Balança Rodoviária ANTT: Rampa Alta, Painel Eletrônico com Peso Real e Fim de Fase na Balança
-        const realTotalWeight = 15000 + this.cargoWeight; // 15t Tara + 30t Carga = 45.000 kg
+        // 4. Balança Rodoviária ANTT: Rampa Alta, Painel Eletrônico Contabilizando o Peso Real e Fim de Fase
+        const currentCargo = this.cargoWeight || 30000;
+        const realTotalWeight = 15000 + currentCargo; // 15t Tara + Carga Real Restante
+        const lostCargo = Math.max(0, 30000 - currentCargo);
 
         if (p.x >= 3860 && p.x < 4050) {
             this.showTip('↗️ Subindo a Rampa Alta da Balança Rodoviária! Reduza a velocidade!', 0.3);
@@ -1983,7 +2002,7 @@ class Game {
 
             if (!this.scaleWeighed) {
                 this.scaleTimer += dt;
-                // Animação dinâmica dos dígitos de pesagem subindo no painel até o peso real do caminhão
+                // Animação dinâmica dos dígitos de pesagem subindo no painel até o peso real contabilizado
                 const progress = Math.min(1.0, this.scaleTimer / 1.5);
                 this.scaleWeightDisplay = Math.round(progress * realTotalWeight);
                 this.scaleReading = `PESANDO: ${this.scaleWeightDisplay.toLocaleString('pt-BR')} kg`;
@@ -1992,19 +2011,32 @@ class Game {
                 if (this.scaleTimer >= 1.6) {
                     this.scaleWeighed = true;
                     this.scaleWeightDisplay = realTotalWeight;
-                    this.scaleReading = `PESO DO CAMINHÃO: ${realTotalWeight.toLocaleString('pt-BR')} kg (OK!)`;
                     if (window.soundManager && window.soundManager.playScaleBeep) {
                         window.soundManager.playScaleBeep();
                     }
                     if (window.soundManager && window.soundManager.playHorn) {
                         window.soundManager.playHorn();
                     }
-                    this.addFloatingText(p.x + 50, p.y - 45, `PESO REAL: ${realTotalWeight.toLocaleString('pt-BR')} kg OK! ⚖️`, '#22c55e');
-                    this.score += 1000;
-                    this.showTip(`🟢 PESO REGISTRADO: ${realTotalWeight.toLocaleString('pt-BR')} kg! Balança regularizada!`, 3.5);
+
+                    if (lostCargo <= 50) {
+                        this.scaleReading = `PESO DO CAMINHÃO: 45.000 kg (100% OK 🟢)`;
+                        this.addFloatingText(p.x + 50, p.y - 45, `PESO REAL: 45.000 kg (100% CARGA PRESERVADA!) 🏆`, '#22c55e');
+                        this.score += 1500;
+                        this.showTip(`🟢 PESAGEM PERFEITA: 45.000 kg! Toda a carga de 30 toneladas entregue intacta! Bônus Máximo!`, 3.5);
+                    } else {
+                        this.scaleReading = `PESO: ${realTotalWeight.toLocaleString('pt-BR')} kg (-${lostCargo.toLocaleString('pt-BR')} kg)`;
+                        this.addFloatingText(p.x + 50, p.y - 45, `PESO REAL: ${realTotalWeight.toLocaleString('pt-BR')} kg (PERDEU ${lostCargo.toLocaleString('pt-BR')} kg) ⚠`, '#f59e0b');
+                        const scoreDelivered = Math.round(1000 * (currentCargo / 30000));
+                        this.score += scoreDelivered;
+                        this.showTip(`⚠ PESAGEM REGISTRADA: ${realTotalWeight.toLocaleString('pt-BR')} kg! Foram perdidos ${lostCargo.toLocaleString('pt-BR')} kg de carga na rodovia por alta velocidade!`, 3.5);
+                    }
                 }
             } else {
-                this.scaleReading = `PESO DO CAMINHÃO: ${realTotalWeight.toLocaleString('pt-BR')} kg (APROVADO 🟢)`;
+                if (lostCargo <= 50) {
+                    this.scaleReading = `PESO DO CAMINHÃO: 45.000 kg (100% OK 🟢)`;
+                } else {
+                    this.scaleReading = `PESO: ${realTotalWeight.toLocaleString('pt-BR')} kg (-${lostCargo.toLocaleString('pt-BR')} kg)`;
+                }
             }
         }
 
@@ -4478,7 +4510,15 @@ class Game {
         ctx.font = 'bold 6.5px "Press Start 2P", monospace';
         if (this.scaleWeighed) {
             ctx.fillStyle = '#86efac';
-            ctx.fillText('✔ CONFORME: 45.000 kg • FASE CONCLUÍDA!', panelX + panelW / 2, panelY + 74);
+            const lost = Math.max(0, 30000 - (this.cargoWeight || 30000));
+            const pbt = 15000 + (this.cargoWeight || 30000);
+            if (lost <= 50) {
+                ctx.fillStyle = '#86efac';
+                ctx.fillText('✔ CARGA 100%: 45.000 kg • CONCLUÍDA!', panelX + panelW / 2, panelY + 74);
+            } else {
+                ctx.fillStyle = '#fde047';
+                ctx.fillText(`⚠ PESO: ${pbt.toLocaleString('pt-BR')}kg (-${lost.toLocaleString('pt-BR')}kg NA ESTRADA)`, panelX + panelW / 2, panelY + 74);
+            }
         } else if (this.scaleAutoBraking) {
             ctx.fillStyle = '#fde047';
             ctx.fillText('🛑 FREIO AUTOMÁTICO • PESANDO...', panelX + panelW / 2, panelY + 74);
@@ -6937,13 +6977,15 @@ class Game {
             else ctx.fillStyle = '#facc15';
             ctx.fillText(`VEL: ${spd}km/h`, 118, 28);
 
-            // Stability bar
+            // Stability bar & Live Cargo Weight
             const stab = Math.round(this.cargoStability || 100);
+            const curWeight = (15000 + (this.cargoWeight || 30000));
+            const lostW = Math.max(0, 30000 - (this.cargoWeight || 30000));
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`ESTAB:`, 235, 28);
-            const barX = 295;
+            ctx.fillText(`ESTAB:`, 220, 28);
+            const barX = 275;
             const barY = 16;
-            const barW = 85;
+            const barW = 65;
             const barH = 14;
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(barX, barY, barW, barH);
@@ -6952,9 +6994,14 @@ class Game {
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1;
             ctx.strokeRect(barX, barY, barW, barH);
-            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`${stab}%`, barX + barW + 6, 27);
+            ctx.fillText(`${stab}%`, barX + barW + 4, 27);
+
+            // Peso Atual do Caminhão em tempo real
+            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            ctx.fillStyle = lostW > 50 ? '#facc15' : '#86efac';
+            ctx.fillText(`PESO: ${curWeight.toLocaleString('pt-BR')}kg`, 380, 28);
             ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
         } else if (this.currentPhase === 5) {
             if (this.phase5State === 'COMPACTING' || this.phase5State === 'COMPACTING_WAIT_ADVANCE' || this.phase5State === 'SOIL_COVER') {
@@ -7318,7 +7365,7 @@ class Game {
         if (this.cutscene.type === 'INTRO') {
             if (this.cutscene.step === 0) {
                 audioFile = 'assets/audio/cutscene_intro_step0.mp3';
-                spokenText = 'A Prefeitura de Parnamirim apresenta: A Turma do Cajulim na Grande Missão da Coleta Seletiva! Pai do Cajulim: Bom dia, meu filho! Hoje é um grande dia! O caminhão da coleta já está pronto e a nossa cidade conta com a gente para manter tudo limpo, bonito e sustentável. Vamos juntos nessa grande missão!';
+                spokenText = 'A Prefeitura de Parnamirim apresenta: A Turma do Cajulim na Grande Missão da Coleta Seletiva! Ao lado do seu pai no caminhão da coleta municipal, nosso herói Cajulim se prepara para uma grande jornada para manter a nossa cidade sempre limpa, bonita e sustentável!';
             } else {
                 audioFile = 'assets/audio/cutscene_intro_step1.mp3';
                 spokenText = 'A Grande Jornada da Coleta: Nossa aventura começa recolhendo o lixo na praia de Cotovelo, segue de caminhão até a estação de transbordo, cruza as dunas na carreta pesada até a balança rodoviária, e chega ao moderno aterro sanitário para transformar resíduos em energia limpa! Mas fique atento: um grande vilão poluidor está à espreita!';
@@ -7352,7 +7399,7 @@ class Game {
     getCutsceneFullText() {
         if (this.cutscene.type === 'INTRO') {
             if (this.cutscene.step === 0) {
-                return 'A PREFEITURA DE PARNAMIRIM APRESENTA: A TURMA DO CAJULIM NA GRANDE MISSAO DA COLETA SELETIVA! PAI DO CAJULIM: "BOM DIA, MEU FILHO! HOJE E UM GRANDE DIA! O CAMINHAO DA COLETA JA ESTA PRONTO E A NOSSA CIDADE CONTA COM A GENTE PARA MANTER TUDO LIMPO, BONITO E SUSTENTAVEL. VAMOS JUNTOS NESSA GRANDE MISSAO!"';
+                return 'A PREFEITURA DE PARNAMIRIM APRESENTA: A TURMA DO CAJULIM NA GRANDE MISSAO DA COLETA SELETIVA! AO LADO DO SEU PAI NO CAMINHAO DA COLETA MUNICIPAL, NOSSO HEROI CAJULIM SE PREPARA PARA UMA GRANDE JORNADA PARA MANTER A NOSSA CIDADE SEMPRE LIMPA, BONITA E SUSTENTAVEL!';
             } else {
                 return 'A GRANDE JORNADA DA COLETA SELETIVA: NOSSA AVENTURA RECOLHE O LIXO NA PRAIA, LEVA AO TRANSBORDO, CRUZA AS DUNAS NA SUPER CARRETA ATE A BALANCA E TRANSFORMA RESIDUOS EM ENERGIA LIMPA NO ATERRO SANITARIO! MAS FIQUE ATENTO: UM GRANDE VILAO POLUIDOR ESTA A ESPREITA!';
             }
@@ -8999,8 +9046,15 @@ class Game {
             phaseTitle = 'TRANSBORDO: 30T NA CARRETA';
             phaseDetail = '4 Caminhões Basculados | Lona 100% Selada';
         } else if (this.currentPhase === 4) {
-            phaseTitle = 'TRAVESSIA DAS DUNAS AO ATERRO';
-            phaseDetail = 'Carga Estável (30.000 kg) | Balança Rodoviária Ok';
+            const finalCargo = this.cargoWeight || 30000;
+            const finalPBT = 15000 + finalCargo;
+            const finalLost = Math.max(0, 30000 - finalCargo);
+            phaseTitle = 'BALANÇA ANTT: PESO CONTABILIZADO';
+            if (finalLost <= 50) {
+                phaseDetail = 'Peso na Balança: 45.000 kg | Carga 100% Preservada (30.000 kg)';
+            } else {
+                phaseDetail = `Peso na Balança: ${finalPBT.toLocaleString('pt-BR')} kg | Perdeu na Estrada: -${finalLost.toLocaleString('pt-BR')} kg`;
+            }
         } else if (this.currentPhase === 5) {
             phaseTitle = 'ATERRO SANITARIO & USINA VERDE';
             phaseDetail = '10.0 MW de Biogás | ETE com Água pH 7.0';
