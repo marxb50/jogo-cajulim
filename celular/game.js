@@ -1984,7 +1984,7 @@ class Game {
 
         // 4. Balança Rodoviária ANTT: Rampa Alta, Painel Eletrônico Contabilizando o Peso Real e Fim de Fase
         const currentCargo = this.cargoWeight || 30000;
-        const realTotalWeight = 15000 + currentCargo; // 15t Tara + Carga Real Restante
+        const realTotalWeight = currentCargo; // Peso da carreta: no máximo 30.000 kg (30t)
         const lostCargo = Math.max(0, 30000 - currentCargo);
 
         if (p.x >= 3860 && p.x < 4050) {
@@ -2019,10 +2019,10 @@ class Game {
                     }
 
                     if (lostCargo <= 50) {
-                        this.scaleReading = `PESO DO CAMINHÃO: 45.000 kg (100% OK 🟢)`;
-                        this.addFloatingText(p.x + 50, p.y - 45, `PESO REAL: 45.000 kg (100% CARGA PRESERVADA!) 🏆`, '#22c55e');
+                        this.scaleReading = `PESO DA CARRETA: 30.000 kg (100% OK 🟢)`;
+                        this.addFloatingText(p.x + 50, p.y - 45, `PESO REAL: 30.000 kg (100% CARGA PRESERVADA!) 🏆`, '#22c55e');
                         this.score += 1500;
-                        this.showTip(`🟢 PESAGEM PERFEITA: 45.000 kg! Toda a carga de 30 toneladas entregue intacta! Bônus Máximo!`, 3.5);
+                        this.showTip(`🟢 PESAGEM PERFEITA: 30.000 kg! Toda a carga de 30 toneladas entregue intacta! Bônus Máximo!`, 3.5);
                     } else {
                         this.scaleReading = `PESO: ${realTotalWeight.toLocaleString('pt-BR')} kg (-${lostCargo.toLocaleString('pt-BR')} kg)`;
                         this.addFloatingText(p.x + 50, p.y - 45, `PESO REAL: ${realTotalWeight.toLocaleString('pt-BR')} kg (PERDEU ${lostCargo.toLocaleString('pt-BR')} kg) ⚠`, '#f59e0b');
@@ -2033,7 +2033,7 @@ class Game {
                 }
             } else {
                 if (lostCargo <= 50) {
-                    this.scaleReading = `PESO DO CAMINHÃO: 45.000 kg (100% OK 🟢)`;
+                    this.scaleReading = `PESO DA CARRETA: 30.000 kg (100% OK 🟢)`;
                 } else {
                     this.scaleReading = `PESO: ${realTotalWeight.toLocaleString('pt-BR')} kg (-${lostCargo.toLocaleString('pt-BR')} kg)`;
                 }
@@ -4511,10 +4511,10 @@ class Game {
         if (this.scaleWeighed) {
             ctx.fillStyle = '#86efac';
             const lost = Math.max(0, 30000 - (this.cargoWeight || 30000));
-            const pbt = 15000 + (this.cargoWeight || 30000);
+            const pbt = this.cargoWeight || 30000;
             if (lost <= 50) {
                 ctx.fillStyle = '#86efac';
-                ctx.fillText('✔ CARGA 100%: 45.000 kg • CONCLUÍDA!', panelX + panelW / 2, panelY + 74);
+                ctx.fillText('✔ CARGA 100%: 30.000 kg • CONCLUÍDA!', panelX + panelW / 2, panelY + 74);
             } else {
                 ctx.fillStyle = '#fde047';
                 ctx.fillText(`⚠ PESO: ${pbt.toLocaleString('pt-BR')}kg (-${lost.toLocaleString('pt-BR')}kg NA ESTRADA)`, panelX + panelW / 2, panelY + 74);
@@ -4863,7 +4863,7 @@ class Game {
 
             ctx.font = 'bold 16px "Press Start 2P", monospace';
             ctx.fillStyle = this.scaleWeighed ? '#4ade80' : '#facc15';
-            const wtStr = this.scaleWeightDisplay > 0 ? `${this.scaleWeightDisplay.toLocaleString('pt-BR')} kg` : '45.000 kg';
+            const wtStr = this.scaleWeightDisplay > 0 ? `${this.scaleWeightDisplay.toLocaleString('pt-BR')} kg` : '30.000 kg';
             ctx.fillText(wtStr, boxX + 74, boxY + 46);
 
             ctx.font = 'bold 7px "Press Start 2P", monospace';
@@ -6979,7 +6979,7 @@ class Game {
 
             // Stability bar & Live Cargo Weight
             const stab = Math.round(this.cargoStability || 100);
-            const curWeight = (15000 + (this.cargoWeight || 30000));
+            const curWeight = (this.cargoWeight || 30000);
             const lostW = Math.max(0, 30000 - (this.cargoWeight || 30000));
             ctx.fillStyle = '#ffffff';
             ctx.fillText(`ESTAB:`, 220, 28);
@@ -9047,11 +9047,11 @@ class Game {
             phaseDetail = '4 Caminhões Basculados | Lona 100% Selada';
         } else if (this.currentPhase === 4) {
             const finalCargo = this.cargoWeight || 30000;
-            const finalPBT = 15000 + finalCargo;
+            const finalPBT = finalCargo;
             const finalLost = Math.max(0, 30000 - finalCargo);
             phaseTitle = 'BALANÇA ANTT: PESO CONTABILIZADO';
             if (finalLost <= 50) {
-                phaseDetail = 'Peso na Balança: 45.000 kg | Carga 100% Preservada (30.000 kg)';
+                phaseDetail = 'Peso na Balança: 30.000 kg | Carga 100% Preservada (30.000 kg)';
             } else {
                 phaseDetail = `Peso na Balança: ${finalPBT.toLocaleString('pt-BR')} kg | Perdeu na Estrada: -${finalLost.toLocaleString('pt-BR')} kg`;
             }
