@@ -32,6 +32,7 @@ global.document = {
                     scale: () => {},
                     rotate: () => {},
                     rect: () => {},
+                    roundRect: () => {},
                     clip: () => {},
                     setTransform: () => {},
                     measureText: (txt) => ({ width: (txt || '').length * 8 }),
@@ -109,13 +110,14 @@ if (!game.trailer) {
     process.exit(1);
 }
 
-// Test 1: Verify dune math
+// Test 1: Verify dune math and ramp elevation
 const hFlat = game.getDuneHeight(200);
 const hCrest = game.getDuneHeight(1140);
-const hWeigh = game.getDuneHeight(4150);
-console.log(`Dune heights: Flat Start (x=200): ${hFlat}, Crest (x=1140): ${hCrest.toFixed(1)}, Weigh Station (x=4150): ${hWeigh}`);
-if (hFlat !== 390 || hWeigh !== 390) {
-    console.error("FAIL: Flat sections should be at y = 390!");
+const hRamp = game.getDuneHeight(4020);
+const hScale = game.getDuneHeight(4150);
+console.log(`Dune heights: Flat Start (x=200): ${hFlat}, Crest (x=1140): ${hCrest.toFixed(1)}, Ramp (x=4020): ${hRamp.toFixed(1)}, Scale Platform (x=4150): ${hScale}`);
+if (hFlat !== 390 || hScale !== 376 || Math.round(hRamp) !== 383) {
+    console.error("FAIL: Ramp geometry incorrect!");
     process.exit(1);
 }
 

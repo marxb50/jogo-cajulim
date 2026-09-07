@@ -986,6 +986,21 @@ class Game {
 
     getDuneHeight(x) {
         if (x <= 400) return 390;
+        if (x >= 3970 && x < 4070) {
+            // Rampa subindo na balança
+            const t = (x - 3970) / 100;
+            return 390 - t * 14;
+        }
+        if (x >= 4070 && x <= 4280) {
+            // Plataforma elevada da balança rodoviária
+            return 376;
+        }
+        if (x > 4280 && x <= 4340) {
+            // Rampa de descida após o portão
+            const t = (x - 4280) / 60;
+            return 376 + t * 14;
+        }
+        if (x > 4340) return 390;
         if (x >= 3920) return 390;
         const taperIn = Math.min(1, Math.max(0, (x - 400) / 280));
         const taperOut = Math.min(1, Math.max(0, (3920 - x) / 280));
@@ -1080,6 +1095,18 @@ class Game {
             { id: 409, x: 1860, y: this.getDuneHeight(1860) - 36, type: 'wrench', points: 200, name: 'Cinta de Amarração (+15% Estabilidade)' },
             { id: 410, x: 3480, y: this.getDuneHeight(3480) - 36, type: 'wrench', points: 200, name: 'Cinta de Amarração (+15% Estabilidade)' }
         ];
+
+        // Semáforos de Trânsito ao longo da Rodovia das Dunas (Fase 4)
+        this.trafficLights = [
+            { x: 1050, y: this.getDuneHeight(1050) - 96, w: 48, h: 96, state: 'RED', timer: 3.5, waited: false, passed: false },
+            { x: 2150, y: this.getDuneHeight(2150) - 96, w: 48, h: 96, state: 'RED', timer: 3.5, waited: false, passed: false },
+            { x: 3150, y: this.getDuneHeight(3150) - 96, w: 48, h: 96, state: 'RED', timer: 3.0, waited: false, passed: false }
+        ];
+
+        // Estado da Balança ANTT e Rampa
+        this.scaleAutoBraking = false;
+        this.scaleWeightDisplay = 0;
+        this.scaleFinishedTimer = 0;
 
         // Educational road signs along the coastal highway
         this.decorations = [
@@ -1690,10 +1717,82 @@ class Game {
         this.particles.push(p);
     }
 
+    updatePhase4TrafficLights(dt) {
+        if (!this.trafficLights) return;
+        const p = this.player;
+        if (p.isDead) return;
+
+        for (const tl of this.trafficLights) {
+            const truckFront = p.x + p.w;
+            const dist = tl.x - truckFront;
+
+            // Approaching traffic light zone
+            if (dist > -40 && dist < 240) {
+                if (tl.state === 'RED') {
+                    if (this.speedKmh < 10) {
+                        // Truck is stopped or stopping to wait for green!
+                        tl.timer -= dt;
+                        const remaining = Math.max(0, Math.ceil(tl.timer));
+                        this.showTip(`🛑 Sinal Vermelho! Carreta aguardando verde... (${remaining}s)`, 0.3);
+                        
+                        if (tl.timer <= 0.8 && tl.state === 'RED') {
+                            tl.state = 'YELLOW';
+                        }
+                        if (tl.timer <= 0) {
+                            tl.state = 'GREEN';
+                            tl.waited = true;
+                            if (window.soundManager) window.soundManager.playCollect('star');
+                            this.score += 200;
+                            this.addFloatingText(tl.x, tl.y - 15, '+200 SINAL VERDE! 🟢', '#22c55e');
+                            this.showTip('🟢 Sinal Verde! Carreta pode acelerar com segurança!', 3.0);
+                        }
+                    } else {
+                        this.showTip('🛑 PERIGO! Pare a carreta! Avançar no vermelho é FATAL!', 0.3);
+                    }
+                } else if (tl.state === 'YELLOW') {
+                    tl.timer -= dt;
+                    if (tl.timer <= 0) {
+                        tl.state = 'GREEN';
+                        tl.waited = true;
+                        if (window.soundManager) window.soundManager.playCollect('star');
+                        this.score += 200;
+                        this.addFloatingText(tl.x, tl.y - 15, '+200 SINAL VERDE! 🟢', '#22c55e');
+                        this.showTip('🟢 Sinal Verde! Carreta pode acelerar com segurança!', 3.0);
+                    }
+                }
+            }
+
+            // Infraction: driving past while RED -> FATAL ACCIDENT!
+            if (p.x + p.w > tl.x - 10 && !tl.passed) {
+                if (tl.state === 'RED') {
+                    tl.passed = true;
+                    if (window.soundManager) window.soundManager.playHurt();
+                    this.score = Math.max(0, this.score - 200);
+                    this.spawnSparkles(tl.x, tl.y + 20, 40);
+                    this.addFloatingText(p.x, p.y - 50, '☠️ PASSOU NO VERMELHO! FATAL! ☠️', '#ef4444');
+                    this.killPlayer('🚨 Acidente Fatal! A carreta avançou o sinal vermelho!');
+                    tl.state = 'GREEN';
+                    tl.timer = 0;
+                    tl.waited = true;
+                    return;
+                } else {
+                    tl.passed = true;
+                    if (!tl.waited) {
+                        this.score += 50;
+                        this.addFloatingText(tl.x, tl.y - 15, '+50 Cruzou no Verde! 🟢', '#22c55e');
+                    }
+                }
+            }
+        }
+    }
+
     updatePhase4(dt) {
         const p = this.player;
         const trailer = this.trailer;
         if (!trailer) return;
+
+        // 0. Update traffic lights
+        this.updatePhase4TrafficLights(dt);
 
         // 1. Controls & Engine Power
         const cabSlope = this.getDuneAngle(p.x);
@@ -1707,17 +1806,17 @@ class Game {
         this.freioMotorActive = !!this.keys.down;
 
         let accelKmh = 0;
-        if (this.keys.right) {
+        if (this.keys.right && !this.scaleAutoBraking) {
             if (this.tracaoReduzidaActive) {
-                // High torque crawling power, tops out around 55 km/h
-                accelKmh = this.speedKmh < 55 ? 65 : 10;
+                // High torque crawling power, tops out around 50 km/h
+                accelKmh = this.speedKmh < 50 ? 65 : 8;
             } else {
-                // Normal high-gear acceleration
-                accelKmh = this.speedKmh < 95 ? 38 : 5;
+                // Normal acceleration
+                accelKmh = this.speedKmh < 80 ? 38 : 5;
             }
         } else if (this.keys.left) {
             // Service foot brakes
-            accelKmh = -60;
+            accelKmh = -65;
         }
 
         // Freio Motor Retarder deceleration
@@ -1736,8 +1835,6 @@ class Game {
         }
 
         // Gravity effect along dune slope:
-        // When going downhill (cabSlope > 0), truck speeds up.
-        // When climbing uphill (cabSlope < 0), truck slows down significantly due to 30 tons.
         const slopeForce = -Math.sin(cabSlope) * 32;
 
         // Sand rolling resistance
@@ -1746,7 +1843,7 @@ class Game {
         // Update Speed
         this.speedKmh += (accelKmh + slopeForce - rollingFriction) * dt;
         if (this.speedKmh < 0) this.speedKmh = 0;
-        if (this.speedKmh > 105) this.speedKmh = 105;
+        if (this.speedKmh > 95) this.speedKmh = 95;
 
         // Convert speed to px/sec
         p.vx = (this.speedKmh * 1000 / 3600) * 8.5;
@@ -1757,18 +1854,18 @@ class Game {
         trailer.x = p.x - 185;
         trailer.y = this.getDuneHeight(trailer.x) - 58;
 
-        // 2. Dune Curvature & Cargo Stability Physics
+        // 2. Dune Curvature & Cargo Stability Physics (STRICT 60 KM/H LIMIT)
         const curvature = this.getDuneCurvature(trailer.x);
         const isBouncing = trailer.bounceY < -2.5;
-        const isExcessSpeed = this.speedKmh > 78;
+        const isExcessSpeed = this.speedKmh > 60; // NÃO PODE PASSAR DE 60 KM/H!
 
-        if ((curvature > 0.0003 && isExcessSpeed) || isBouncing || this.speedKmh > 80) {
-            const excessSpeed = Math.max(0, this.speedKmh - 75);
-            const launchLift = excessSpeed * Math.max(0.0002, curvature) * 3200;
+        if (isExcessSpeed || (curvature > 0.0003 && this.speedKmh > 55) || isBouncing) {
+            const excess = Math.max(0, this.speedKmh - 60);
+            const launchLift = excess * Math.max(0.0002, curvature) * 3500;
             trailer.bounceVy -= launchLift * dt;
 
-            // Stability drain
-            const drain = (excessSpeed * 2.2 + Math.abs(trailer.bounceY) * 2.5) * dt;
+            // Stability drain when exceeding 60 km/h
+            const drain = (excess * 2.8 + Math.abs(trailer.bounceY) * 3.0) * dt;
             this.cargoStability = Math.max(10, this.cargoStability - drain);
             this.cargoWeight = Math.max(25000, this.cargoWeight - Math.round(drain * 40));
 
@@ -1782,14 +1879,15 @@ class Game {
             }
 
             // Spawn lost trash tumbling out
-            if (Math.random() < 0.4) {
+            if (Math.random() < 0.35) {
                 this.spawnTrashDrop(trailer.x + 30, trailer.y + 10);
             }
 
             this.excessSpeedWarnTimer -= dt;
             if (this.excessSpeedWarnTimer <= 0) {
-                this.addFloatingText(trailer.x + 60, trailer.y - 25, '⚠ BALANÇO EXCESSIVO! REDUZA!', '#ef4444');
-                this.excessSpeedWarnTimer = 1.4;
+                this.addFloatingText(p.x + 40, p.y - 45, '⚠ LIMITE 60 KM/H! REDUZA!', '#ef4444');
+                this.showTip('⚠ Atenção: Não ultrapasse 60 km/h para não danificar a carga pesada!', 2.0);
+                this.excessSpeedWarnTimer = 1.3;
             }
         } else {
             this.rattleTimer = 0;
@@ -1806,7 +1904,7 @@ class Game {
         }
 
         // Steep climb struggle tip
-        if (cabSlope < -0.12 && this.speedKmh < 24 && !this.tracaoReduzidaActive) {
+        if (cabSlope < -0.12 && this.speedKmh < 22 && !this.tracaoReduzidaActive) {
             this.stallTipTimer -= dt;
             if (this.stallTipTimer <= 0) {
                 this.showTip('Subida íngreme! Segure [W ou ESPACO] para acionar a Tração 6x4!', 2.5);
@@ -1843,38 +1941,58 @@ class Game {
         // Check educational signposts
         this.checkSignposts();
 
-        // 4. ANTT Weigh Station & Aterro Gate (x: 4050..4400)
-        if (p.x >= 4070 && p.x <= 4240) {
-            if (this.scaleWeighed) {
-                this.scaleReading = `${(this.cargoWeight / 1000).toFixed(1)}t OK! LIBERADO`;
-            } else if (this.speedKmh > 24) {
-                this.scaleReading = 'EXCESSO VELOCIDADE! PARE!';
-                this.speedWarnTimer -= dt;
-                if (this.speedWarnTimer <= 0) {
-                    this.addFloatingText(4150, 240, 'REDUZA PARA PESAGEM (MÁX 20 km/h)!', '#ef4444');
-                    this.speedWarnTimer = 2.0;
+        // 4. ANTT Weigh Station: Rampa, Balança com Freio Automático e Peso Real (x: 3970..4350)
+        const realTotalWeight = 15000 + this.cargoWeight; // 15t Tara + 30t Carga = ~45.000 kg
+
+        if (p.x >= 3960 && p.x < 4070) {
+            this.showTip('↗️ Subindo a Rampa da Balança Rodoviária! Reduza a velocidade!', 0.3);
+        }
+
+        if (p.x >= 4070 && p.x <= 4250) {
+            // O caminhão freia automaticamente na balança
+            this.scaleAutoBraking = true;
+            if (this.speedKmh > 0) {
+                this.speedKmh = Math.max(0, this.speedKmh - 38 * dt);
+                if (this.speedKmh < 1.0) this.speedKmh = 0;
+                if (Math.random() < 0.25) this.spawnAirPuff(p.x + 36, p.y + 10);
+            }
+
+            if (!this.scaleWeighed) {
+                this.scaleTimer += dt;
+                // Animação dos dígitos de pesagem subindo até o peso real
+                const progress = Math.min(1.0, this.scaleTimer / 1.5);
+                this.scaleWeightDisplay = Math.round(progress * realTotalWeight);
+                this.scaleReading = `PESANDO EIXOS: ${this.scaleWeightDisplay.toLocaleString('pt-BR')} kg`;
+                this.showTip(`🛑 Freio Automático acionado na Balança! Pesando eixos... (${this.scaleWeightDisplay} kg)`, 0.3);
+
+                if (this.scaleTimer >= 1.6) {
+                    this.scaleWeighed = true;
+                    this.scaleWeightDisplay = realTotalWeight;
+                    this.scaleReading = `PESO REAL: ${realTotalWeight.toLocaleString('pt-BR')} kg (OK!)`;
+                    if (window.soundManager && window.soundManager.playScaleBeep) {
+                        window.soundManager.playScaleBeep();
+                    }
+                    if (window.soundManager && window.soundManager.playHorn) {
+                        window.soundManager.playHorn();
+                    }
+                    this.addFloatingText(p.x + 50, p.y - 45, `PESO REAL: ${realTotalWeight.toLocaleString('pt-BR')} kg OK! ⚖️`, '#22c55e');
+                    this.score += 1000;
+                    this.showTip(`🟢 PESO REAL: ${realTotalWeight.toLocaleString('pt-BR')} kg! Carga Aprovada pela ANTT!`, 3.5);
                 }
             } else {
-                this.scaleTimer += dt;
-                if (this.scaleTimer < 1.0) {
-                    this.scaleReading = 'PESANDO EIXOS (ANTT)...';
-                } else {
-                    this.scaleReading = `${(this.cargoWeight / 1000).toFixed(1)}t OK! LIBERADO`;
-                    if (!this.scaleWeighed) {
-                        this.scaleWeighed = true;
-                        if (window.soundManager && window.soundManager.playScaleBeep) {
-                            window.soundManager.playScaleBeep();
-                        }
-                        this.addFloatingText(p.x + 50, p.y - 40, 'PESAGEM APROVADA: 30t OK!', '#22c55e');
-                        this.score += 1000;
-                    }
-                }
+                this.scaleReading = `PESO REAL: ${realTotalWeight.toLocaleString('pt-BR')} kg (APROVADO 🟢)`;
             }
         }
 
-        // Barrier gate opens if weighed
+        // Portão abre suavemente se pesado
         if (this.scaleWeighed) {
-            this.gateAngle = Math.min(78, this.gateAngle + 50 * dt);
+            this.gateAngle = Math.min(78, this.gateAngle + 45 * dt);
+            this.scaleFinishedTimer = (this.scaleFinishedTimer || 0) + dt;
+
+            // Após pesar e abrir o portão, passa automaticamente para a próxima fase!
+            if (this.scaleFinishedTimer >= 2.4) {
+                this.levelClear();
+            }
         }
 
         // Closed barrier stops unweighed vehicle
@@ -1884,7 +2002,7 @@ class Game {
             this.addFloatingText(4260, 260, 'PORTÃO FECHADO! REALIZE A PESAGEM!', '#ef4444');
         }
 
-        // Level Clear condition
+        // Level Clear condition if advancing through
         if (this.scaleWeighed && p.x >= 4350) {
             this.levelClear();
         }
@@ -4095,6 +4213,7 @@ class Game {
         ctx.setLineDash([]);
 
         // 2. Roadside Signs and Collectibles
+        this.renderPhase4TrafficLights(ctx);
         this.renderPhase4Signs(ctx);
         this.renderPhase4Items(ctx);
 
@@ -4148,75 +4267,150 @@ class Game {
     }
 
     renderWeighStation(ctx) {
-        // Ground Weigh Scale Deck at x: 4070..4240, y = 388..412
+        // 1. Rampa de Subida na Balança (x: 3970 a 4070, sobe de y=390 para y=376)
+        ctx.save();
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.moveTo(3970, 390);
+        ctx.lineTo(4070, 376);
+        ctx.lineTo(4070, 412);
+        ctx.lineTo(3970, 412);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(3970, 390);
+        ctx.lineTo(4070, 376);
+        ctx.stroke();
+
+        // Faixas zebradas amarelas e pretas na borda da rampa
+        for (let rx = 3980; rx < 4065; rx += 16) {
+            const ry = 390 - ((rx - 3970) / 100) * 14;
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(rx, ry, 8, 6);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(rx + 8, ry, 8, 6);
+        }
+
+        // Setas neon piscantes na rampa indicando subida para a balança
+        const chevronBounce = (Math.floor(Date.now() / 180) % 3) * 18;
+        ctx.font = 'bold 14px "Press Start 2P", monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 10;
+        ctx.fillText('>>> ↗️', 3985 + chevronBounce, 365);
+        ctx.shadowBlur = 0;
+
+        // Placa indicativa antes da rampa
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(3930, 290, 70, 36);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(3930, 290, 70, 36);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 8px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('RAMPA', 3965, 304);
+        ctx.fillText('BALANÇA', 3965, 318);
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(3963, 326, 4, 64);
+        ctx.restore();
+
+        // 2. Plataforma Elevada da Balança Rodoviária (x: 4070..4260, y = 376)
         const scaleX = 4070;
-        const scaleW = 170;
-        const scaleY = 388;
-        const scaleH = 24;
+        const scaleW = 190;
+        const scaleY = 376;
+        const scaleH = 34;
 
         ctx.fillStyle = '#334155';
         ctx.fillRect(scaleX, scaleY, scaleW, scaleH);
         ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.strokeRect(scaleX, scaleY, scaleW, scaleH);
 
-        // Ground Scale Plate Lines
-        ctx.strokeStyle = '#475569';
-        for (let gx = scaleX + 25; gx < scaleX + scaleW; gx += 30) {
+        // Ground Scale Plate Lines & Células de Carga
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        for (let gx = scaleX + 25; gx < scaleX + scaleW; gx += 28) {
             ctx.beginPath();
             ctx.moveTo(gx, scaleY + 2);
             ctx.lineTo(gx, scaleY + scaleH - 2);
             ctx.stroke();
         }
 
-        // Yellow and Black Hazard Striping on borders
+        // Borda Zebrada de Segurança
         const stripeW = 10;
         ctx.save();
         ctx.beginPath();
-        ctx.rect(scaleX, scaleY + scaleH - 6, scaleW, 6);
+        ctx.rect(scaleX, scaleY + scaleH - 8, scaleW, 8);
         ctx.clip();
         for (let sx = scaleX - 10; sx < scaleX + scaleW + 20; sx += stripeW * 2) {
             ctx.fillStyle = '#facc15';
-            ctx.fillRect(sx, scaleY + scaleH - 6, stripeW, 6);
+            ctx.fillRect(sx, scaleY + scaleH - 8, stripeW, 8);
             ctx.fillStyle = '#0f172a';
-            ctx.fillRect(sx + stripeW, scaleY + scaleH - 6, stripeW, 6);
+            ctx.fillRect(sx + stripeW, scaleY + scaleH - 8, stripeW, 8);
         }
         ctx.restore();
 
-        // Canopy and Archway (assets/scenery/aterro_gate.png)
+        // 3. Pórtico e Estrutura do Portão
         const gateImg = this.assets['sc_aterro_gate'];
         if (gateImg) {
-            ctx.drawImage(gateImg, 3990, 160, 420, 232);
+            ctx.drawImage(gateImg, 3990, 140, 420, 240);
         } else {
-            // Structural fallback
             ctx.fillStyle = '#1e293b';
-            ctx.fillRect(4010, 160, 20, 230);
-            ctx.fillRect(4370, 160, 20, 230);
-            ctx.fillRect(4010, 160, 380, 30);
+            ctx.fillRect(4010, 140, 20, 240);
+            ctx.fillRect(4370, 140, 20, 240);
+            ctx.fillRect(4010, 140, 380, 30);
         }
 
-        // Digital LED Signboard over the scale lane
-        const ledX = 4050;
-        const ledY = 170;
-        const ledW = 260;
-        const ledH = 46;
+        // 4. Painel Digital LED Gigante da Balança ANTT (Mostrando o Peso Real!)
+        const ledX = 4020;
+        const ledY = 150;
+        const ledW = 320;
+        const ledH = 54;
 
         ctx.fillStyle = '#020617';
         ctx.fillRect(ledX, ledY, ledW, ledH);
-        ctx.strokeStyle = this.scaleWeighed ? '#22c55e' : (this.scaleReading.includes('EXCESSO') ? '#ef4444' : '#0284c7');
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = this.scaleWeighed ? '#22c55e' : (this.scaleAutoBraking ? '#facc15' : '#0284c7');
+        ctx.lineWidth = 3;
+        ctx.shadowColor = ctx.strokeStyle;
+        ctx.shadowBlur = 12;
         ctx.strokeRect(ledX, ledY, ledW, ledH);
+        ctx.shadowBlur = 0;
 
-        ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
+        // Cabeçalho do Display LED
+        ctx.font = 'bold 7px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
-        ctx.fillStyle = this.scaleWeighed ? '#4ade80' : (this.scaleReading.includes('EXCESSO') ? '#ef4444' : '#38bdf8');
-        ctx.fillText(this.scaleReading, ledX + ledW / 2, ledY + 28);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('BALANÇA RODOVIÁRIA ANTT • PESAGEM OFICIAL', ledX + ledW / 2, ledY + 14);
 
-        // Animated Lift Barrier Gate (Pivot at x=4272, y=362)
+        // Número Real do Peso em Destaque LED
+        ctx.font = 'bold 11px "Press Start 2P", monospace';
+        ctx.fillStyle = this.scaleWeighed ? '#4ade80' : (this.scaleAutoBraking ? '#fde047' : '#38bdf8');
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 8;
+        ctx.fillText(this.scaleReading || 'AGUARDANDO CARRETA...', ledX + ledW / 2, ledY + 32);
+
+        // Sub-informação de conformidade
+        ctx.font = 'bold 7px "Press Start 2P", monospace';
+        if (this.scaleWeighed) {
+            ctx.fillStyle = '#86efac';
+            ctx.fillText('✔ CARGA: 30.000kg | TARA: 15.000kg • CONFORME', ledX + ledW / 2, ledY + 46);
+        } else if (this.scaleAutoBraking) {
+            ctx.fillStyle = '#fde047';
+            ctx.fillText('🛑 FREIO AUTOMÁTICO • PESANDO VEÍCULO...', ledX + ledW / 2, ledY + 46);
+        } else {
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('SUBINDO NA RAMPA • REDUZA A VELOCIDADE', ledX + ledW / 2, ledY + 46);
+        }
+        ctx.shadowBlur = 0;
+
+        // 5. Portão com Cancela Automática (Pivot em x=4272, y=362)
         const pivotX = 4272;
         const pivotY = 362;
 
-        // Stanchion
         ctx.fillStyle = '#475569';
         ctx.fillRect(pivotX - 6, pivotY - 14, 12, 40);
         ctx.strokeStyle = '#94a3b8';
@@ -4227,24 +4421,20 @@ class Game {
         ctx.translate(pivotX, pivotY);
         ctx.rotate(-this.gateAngle * Math.PI / 180);
 
-        // Barrier boom
         const boomLen = 110;
         const boomH = 10;
         ctx.fillStyle = '#ef4444';
         ctx.fillRect(0, -boomH / 2, boomLen, boomH);
 
-        // White warning diagonal stripes
         ctx.fillStyle = '#ffffff';
         for (let bx = 12; bx < boomLen; bx += 24) {
             ctx.fillRect(bx, -boomH / 2, 12, boomH);
         }
 
-        // Warning Light on top of the barrier
         ctx.fillStyle = this.scaleWeighed ? '#22c55e' : '#ef4444';
         ctx.beginPath();
         ctx.arc(boomLen - 4, 0, 5, 0, Math.PI * 2);
         ctx.fill();
-
         ctx.restore();
     }
 
@@ -4410,59 +4600,231 @@ class Game {
         }
     }
 
+    renderPhase4TrafficLights(ctx) {
+        if (!this.trafficLights) return;
+
+        for (const tl of this.trafficLights) {
+            if (tl.x + tl.w < this.camera.x - 50 || tl.x > this.camera.x + VIRTUAL_WIDTH + 50) continue;
+
+            const groundY = this.getDuneHeight(tl.x);
+
+            // 1. White stop bar 'PARE' on the highway asphalt
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(tl.x - 22, groundY - 10, 6, 40);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('PARE', tl.x - 19, groundY + 12);
+
+            // 2. Traffic light pole & housing
+            const key = 'tl_' + tl.state.toLowerCase();
+            const img = this.assets[key] || this.assets['tl_red'];
+            if (img) {
+                ctx.drawImage(img, tl.x, tl.y, tl.w, tl.h);
+            }
+
+            // 3. Glowing aura in twilight
+            ctx.save();
+            if (tl.state === 'RED') {
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.45)';
+                ctx.beginPath();
+                ctx.arc(tl.x + 24, tl.y + 15, 16, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (tl.state === 'YELLOW') {
+                ctx.fillStyle = 'rgba(234, 179, 8, 0.45)';
+                ctx.beginPath();
+                ctx.arc(tl.x + 24, tl.y + 29, 16, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (tl.state === 'GREEN') {
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.45)';
+                ctx.beginPath();
+                ctx.arc(tl.x + 24, tl.y + 43, 16, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // 4. Seta indicadora animada apontando para o semáforo
+            ctx.save();
+            const arrowX = tl.x + tl.w / 2;
+            const bounce = Math.sin(Date.now() / 150) * 8;
+            const arrowTipY = tl.y - 12 + bounce;
+            const arrowTopY = arrowTipY - 26;
+
+            let arrowColor = '#ef4444';
+            let strokeColor = '#ffffff';
+            let badgeText = 'PARE';
+            let badgeBg = '#dc2626';
+
+            if (tl.state === 'YELLOW') {
+                arrowColor = '#facc15';
+                strokeColor = '#000000';
+                badgeText = 'ATENÇÃO';
+                badgeBg = '#ca8a04';
+            } else if (tl.state === 'GREEN') {
+                arrowColor = '#22c55e';
+                strokeColor = '#ffffff';
+                badgeText = 'SIGA';
+                badgeBg = '#16a34a';
+            }
+
+            ctx.shadowColor = arrowColor;
+            ctx.shadowBlur = 14;
+
+            ctx.fillStyle = arrowColor;
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2.5;
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX - 7, arrowTopY);
+            ctx.lineTo(arrowX + 7, arrowTopY);
+            ctx.lineTo(arrowX + 7, arrowTipY - 14);
+            ctx.lineTo(arrowX + 18, arrowTipY - 14);
+            ctx.lineTo(arrowX, arrowTipY);
+            ctx.lineTo(arrowX - 18, arrowTipY - 14);
+            ctx.lineTo(arrowX - 7, arrowTipY - 14);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+            ctx.font = 'bold 11px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const textWidth = ctx.measureText(badgeText).width + 14;
+            const badgeY = arrowTopY - 14;
+
+            ctx.fillStyle = badgeBg;
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(arrowX - textWidth / 2, badgeY - 10, textWidth, 20, 5); else ctx.rect(arrowX - textWidth / 2, badgeY - 10, textWidth, 20);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(badgeText, arrowX, badgeY + 1);
+            ctx.restore();
+        }
+    }
+
     renderPhase4Telemetry(ctx) {
         // Draw in screen space
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        const boxX = VIRTUAL_WIDTH - 258;
-        const boxY = 74;
-        const boxW = 246;
-        const boxH = 74;
-
-        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
-        ctx.fillRect(boxX, boxY, boxW, boxH);
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(boxX, boxY, boxW, boxH);
-
-        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-        ctx.textAlign = 'left';
-
-        // Title
-        ctx.fillStyle = '#86efac';
-        ctx.fillText('PAINEL CARRETA 30t', boxX + 10, boxY + 16);
-
-        // Tração Mode
-        if (this.tracaoReduzidaActive) {
-            ctx.fillStyle = '#facc15';
-            ctx.fillText('TRAÇÃO: 6x4 REDUZIDA ⚡', boxX + 10, boxY + 34);
-        } else {
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('TRAÇÃO: DIRETA (NORMAL)', boxX + 10, boxY + 34);
-        }
-
-        // Freio Motor
-        if (this.freioMotorActive) {
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillText('FREIO MOTOR: ATIVO 💨', boxX + 10, boxY + 50);
-        } else {
-            ctx.fillStyle = '#94a3b8';
-            ctx.fillText('FREIO MOTOR: DESLIGADO', boxX + 10, boxY + 50);
-        }
-
-        // Advisor Tip
         const spd = Math.round(this.speedKmh || 0);
-        if (spd > 75) {
-            ctx.fillStyle = '#ef4444';
-            ctx.fillText('⚠ REDUZA! BALANÇO!', boxX + 10, boxY + 66);
-        } else if (spd >= 40 && spd <= 75) {
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('✔ VELOCIDADE IDEAL', boxX + 10, boxY + 66);
+        const isOver60 = spd > 60;
+        const flashWarn = isOver60 && (Math.floor(Date.now() / 200) % 2 === 0);
+
+        // VELOCÍMETRO NO CENTRO DA TELA
+        const boxW = 280;
+        const boxH = 72;
+        const boxX = Math.round((VIRTUAL_WIDTH - boxW) / 2); // EXATAMENTE NO CENTRO!
+        const boxY = 46;
+
+        // Fundo do velocímetro com borda de aviso se passar de 60 km/h
+        ctx.fillStyle = flashWarn ? 'rgba(153, 27, 27, 0.92)' : 'rgba(2, 6, 23, 0.88)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(boxX, boxY, boxW, boxH, 12); else ctx.rect(boxX, boxY, boxW, boxH);
+        ctx.fill();
+
+        ctx.strokeStyle = isOver60 ? (flashWarn ? '#ffffff' : '#ef4444') : (spd >= 50 ? '#facc15' : '#22c55e');
+        ctx.lineWidth = isOver60 ? 3 : 2;
+        ctx.shadowColor = ctx.strokeStyle;
+        ctx.shadowBlur = isOver60 ? 16 : 8;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Lado Esquerdo: Placa Circular Oficial de Limite 60
+        const signX = boxX + 38;
+        const signY = boxY + boxH / 2;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(signX, signY, 24, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 15px "Fredoka", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('60', signX, signY - 2);
+        ctx.font = 'bold 8px "Fredoka", sans-serif';
+        ctx.fillText('MÁX', signX, signY + 11);
+
+        // Centro: Dígitos do Velocímetro
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 24px "Press Start 2P", monospace';
+        ctx.fillStyle = isOver60 ? '#ffffff' : (spd >= 50 ? '#fef08a' : '#4ade80');
+        const spdStr = String(spd).padStart(2, '0');
+        ctx.fillText(spdStr, boxX + 78, boxY + 38);
+
+        ctx.font = 'bold 11px "Press Start 2P", monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('KM/H', boxX + 146, boxY + 38);
+
+        // Barra Gráfica de Velocidade (0 a 80 km/h, marcação vermelha a partir de 60 km/h)
+        const barX = boxX + 78;
+        const barY = boxY + 46;
+        const barW = 186;
+        const barH = 8;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+
+        // Safe zone fill (0 to 60)
+        const speedFillW = Math.min(barW, Math.max(0, (spd / 80) * barW));
+        const limit60X = barX + (60 / 80) * barW; // 75% da barra
+
+        const barGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+        barGrad.addColorStop(0, '#22c55e');
+        barGrad.addColorStop(0.70, '#facc15');
+        barGrad.addColorStop(0.75, '#ef4444');
+        barGrad.addColorStop(1.0, '#dc2626');
+
+        ctx.fillStyle = barGrad;
+        ctx.fillRect(barX, barY, speedFillW, barH);
+
+        // Linha vermelha no limite 60
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(limit60X, barY - 3);
+        ctx.lineTo(limit60X, barY + barH + 3);
+        ctx.stroke();
+
+        // Texto Inferior de Orientação
+        ctx.font = 'bold 8px "Press Start 2P", monospace';
+        if (isOver60) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('⚠ NÃO PASSAR DE 60 KM/H!', boxX + 78, boxY + 65);
         } else {
-            ctx.fillStyle = '#fde047';
-            ctx.fillText('CRUZEIRO SEGURO', boxX + 10, boxY + 66);
+            ctx.fillStyle = '#86efac';
+            ctx.fillText('LIMITE: MÁX 60 KM/H', boxX + 78, boxY + 65);
         }
+
+        // Telemetria Secundária Compacta (Tração e Freio no topo direito)
+        const miniX = VIRTUAL_WIDTH - 190;
+        const miniY = 48;
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.75)';
+        ctx.fillRect(miniX, miniY, 178, 38);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(miniX, miniY, 178, 38);
+
+        ctx.font = 'bold 7px "Press Start 2P", monospace';
+        ctx.fillStyle = this.tracaoReduzidaActive ? '#facc15' : '#64748b';
+        ctx.fillText(this.tracaoReduzidaActive ? '⚡ 6x4 ATIVADA' : '○ 6x4 DIRETA', miniX + 8, miniY + 15);
+
+        ctx.fillStyle = this.freioMotorActive ? '#38bdf8' : '#64748b';
+        ctx.fillText(this.freioMotorActive ? '💨 FREIO MOTOR' : '○ FREIO DESL', miniX + 8, miniY + 30);
 
         ctx.restore();
     }
@@ -6268,7 +6630,7 @@ class Game {
 
             ctx.fillStyle = badgeBg;
             ctx.beginPath();
-            ctx.roundRect(arrowX - textWidth / 2, badgeY - 10, textWidth, 20, 5);
+            if (ctx.roundRect) ctx.roundRect(arrowX - textWidth / 2, badgeY - 10, textWidth, 20, 5); else ctx.rect(arrowX - textWidth / 2, badgeY - 10, textWidth, 20);
             ctx.fill();
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
