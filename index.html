@@ -853,11 +853,11 @@
             switchView('viewPhases');
         }
 
-        // Passo 3: Escolhe qualquer fase de 1 a 6
+        // Passo 3: Escolhe qualquer fase de 1 a 6 (Entra direto na fase sem cutscenes)
         function launchPhase(phaseNumber) {
             playBeep(920, 'sine', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber;
+                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1';
             }, 120);
         }
     </script>

@@ -82,7 +82,8 @@ global.window = {
         playTractorBlade: () => {},
         playTurbineWhine: () => {},
         playAeratorSplash: () => {},
-        playPowerGridBeep: () => {}
+        playPowerGridBeep: () => {},
+        playThunder: () => {}
     }
 };
 
@@ -109,7 +110,7 @@ game.startGame();
 let ticks = 0;
 const dt = 1 / 60;
 
-while (ticks < 1500 && game.state === 'PLAYING') {
+while (ticks < 3000 && game.state === 'PLAYING') {
     ticks++;
     game.keys.right = true;
 
@@ -121,9 +122,14 @@ while (ticks < 1500 && game.state === 'PLAYING') {
         (px >= 2590 && px <= 2625) ||
         (px >= 2730 && px <= 2770) ||
         (px >= 2880 && px <= 2920) ||
-        (px >= 3320 && px <= 3340) ||
-        (px >= 3430 && px <= 3450) ||
-        (px >= 3540 && px <= 3560)) {
+        (px >= 4150 && px <= 4180) ||
+        (px >= 4310 && px <= 4350) ||
+        (px >= 5200 && px <= 5230) ||
+        (px >= 5350 && px <= 5390) ||
+        (px >= 5520 && px <= 5545) ||
+        (px >= 5630 && px <= 5655) ||
+        (px >= 5740 && px <= 5765) ||
+        (px >= 5850 && px <= 5880)) {
         needJump = true;
     }
 

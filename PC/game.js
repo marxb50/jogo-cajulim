@@ -85,7 +85,7 @@ class Game {
             isDead: false, skidTimer: 0
         };
 
-        this.levelWidth = 4300;
+        this.levelWidth = 6450;
         this.levelHeight = 540;
         this.platforms = [];
         this.items = [];
@@ -191,7 +191,11 @@ class Game {
             'cs_barao_sweep': 'assets/cutscenes/cs_barao_sweep.jpg',
             'cs_cajulim_celebration': 'assets/cutscenes/cs_cajulim_celebration.jpg',
             'cs_intro_father': 'assets/cutscenes/cs_intro_father.jpg',
-            'cs_intro_mission': 'assets/cutscenes/cs_intro_mission.jpg'
+            'cs_intro_mission': 'assets/cutscenes/cs_intro_mission.jpg',
+            'cs_phase1_clear': 'assets/cutscenes/cs_phase1_clear.jpg',
+            'cs_phase2_clear': 'assets/cutscenes/cs_phase2_clear.jpg',
+            'cs_phase3_clear': 'assets/cutscenes/cs_phase3_clear.jpg',
+            'cs_phase4_clear': 'assets/cutscenes/cs_phase4_clear.jpg'
         };
 
         const keys = Object.keys(imageList);
@@ -219,6 +223,11 @@ class Game {
             const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
             const getParam = (key) => searchParams.get(key) || hashParams.get(key);
             const targetPhase = getParam('fase') || getParam('phase');
+
+            if (targetPhase) {
+                this.cutscene.active = false;
+                this.state = 'PLAYING';
+            }
 
             if (targetPhase === '1') {
                 this.switchPhase(1);
@@ -749,14 +758,16 @@ class Game {
 
     initPhase1() {
         const GROUND_Y = 460;
-        this.levelWidth = 4300;
+        this.levelWidth = 6450;
 
         // Ground segments with PITS:
         const groundSegments = [
             { x1: 0, x2: 760 },
             { x1: 920, x2: 1640 },
             { x1: 1920, x2: 2640 },
-            { x1: 3000, x2: 4300 }
+            { x1: 3000, x2: 4200 },
+            { x1: 4450, x2: 5250 },
+            { x1: 5450, x2: 6450 }
         ];
         groundSegments.forEach(seg => {
             this.platforms.push({ x: seg.x1, y: GROUND_Y, w: seg.x2 - seg.x1, h: 80, type: 'ground' });
@@ -766,6 +777,8 @@ class Game {
         this.platforms.push({ x: 1710, y: 380, w: 140, h: 32, type: 'floating' });
         this.platforms.push({ x: 2690, y: 380, w: 120, h: 32, type: 'floating' });
         this.platforms.push({ x: 2850, y: 380, w: 120, h: 32, type: 'floating' });
+        this.platforms.push({ x: 4280, y: 380, w: 140, h: 32, type: 'floating' });
+        this.platforms.push({ x: 5310, y: 380, w: 140, h: 32, type: 'floating' });
 
         // Elevated Platforms & Hills
         this.platforms.push({ x: 440, y: 350, w: 144, h: 32, type: 'floating' });
@@ -774,11 +787,14 @@ class Game {
         this.platforms.push({ x: 1380, y: 260, w: 120, h: 32, type: 'floating' });
         this.platforms.push({ x: 2150, y: 360, w: 160, h: 32, type: 'floating' });
         this.platforms.push({ x: 2360, y: 280, w: 160, h: 32, type: 'floating' });
+        this.platforms.push({ x: 4600, y: 360, w: 160, h: 32, type: 'floating' });
+        this.platforms.push({ x: 4820, y: 290, w: 160, h: 32, type: 'floating' });
+        this.platforms.push({ x: 5040, y: 350, w: 140, h: 32, type: 'floating' });
 
         // Steps before truck
-        this.platforms.push({ x: 3350, y: 410, w: 96, h: 32, type: 'floating' });
-        this.platforms.push({ x: 3460, y: 360, w: 96, h: 32, type: 'floating' });
-        this.platforms.push({ x: 3570, y: 310, w: 96, h: 32, type: 'floating' });
+        this.platforms.push({ x: 5550, y: 410, w: 96, h: 32, type: 'floating' });
+        this.platforms.push({ x: 5660, y: 360, w: 96, h: 32, type: 'floating' });
+        this.platforms.push({ x: 5770, y: 310, w: 96, h: 32, type: 'floating' });
 
         // Interactive blocks (centered textures)
         this.blocks = [
@@ -789,10 +805,14 @@ class Game {
             { x: 1040, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'pet_bottle' },
             { x: 1088, y: 310, w: 48, h: 48, type: 'brick', hit: false },
             { x: 2040, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'paper_box' },
-            { x: 2280, y: 220, w: 48, h: 48, type: 'recycle', hit: false, content: 'glass_bottle' }
+            { x: 2280, y: 220, w: 48, h: 48, type: 'recycle', hit: false, content: 'glass_bottle' },
+            { x: 4520, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'soda_can' },
+            { x: 4568, y: 310, w: 48, h: 48, type: 'brick', hit: false },
+            { x: 4720, y: 220, w: 48, h: 48, type: 'question', hit: false, content: 'star' },
+            { x: 5100, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'pet_bottle' }
         ];
 
-        // 9 Garbage Bags (6 required)
+        // Garbage Bags
         this.items.push(
             { id: 1, x: 300, y: GROUND_Y - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto' },
             { id: 2, x: 620, y: GROUND_Y - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto' },
@@ -802,7 +822,12 @@ class Game {
             { id: 6, x: 3150, y: GROUND_Y - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto' },
             { id: 7, x: 1260, y: 320 - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto (Bônus)' },
             { id: 8, x: 1760, y: 380 - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto (Bônus)' },
-            { id: 9, x: 3590, y: 310 - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto (Bônus)' }
+            { id: 9, x: 3590, y: 310 - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto (Bônus)' },
+            { id: 19, x: 4500, y: GROUND_Y - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto' },
+            { id: 20, x: 4880, y: 290 - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto (Bônus)' },
+            { id: 21, x: 5180, y: GROUND_Y - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto' },
+            { id: 22, x: 5600, y: GROUND_Y - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto' },
+            { id: 23, x: 5790, y: 310 - 44, type: 'trash_bag', points: 200, name: 'Saco de Lixo Preto (Bônus)' }
         );
 
         // Recyclables
@@ -815,7 +840,11 @@ class Game {
             { id: 15, x: 3120, y: GROUND_Y - 36, type: 'paper_box', points: 100, name: 'Caixa (Papelão/Azul)' },
             { id: 16, x: 1540, y: GROUND_Y - 42, type: 'glass_bottle', points: 100, name: 'Garrafa (Vidro/Verde)' },
             { id: 17, x: 2750, y: 320, type: 'star', points: 300, name: 'Bandeira de Parnamirim' },
-            { id: 18, x: 2900, y: 270, type: 'star', points: 300, name: 'Bandeira de Parnamirim' }
+            { id: 18, x: 2900, y: 270, type: 'star', points: 300, name: 'Bandeira de Parnamirim' },
+            { id: 24, x: 4650, y: 360 - 38, type: 'soda_can', points: 100, name: 'Latinha (Metal/Amarelo)' },
+            { id: 25, x: 5040, y: 350 - 42, type: 'pet_bottle', points: 100, name: 'Garrafa PET (Plástico/Vermelho)' },
+            { id: 26, x: 5480, y: GROUND_Y - 36, type: 'paper_box', points: 100, name: 'Caixa (Papelão/Azul)' },
+            { id: 27, x: 5660, y: 360 - 42, type: 'glass_bottle', points: 100, name: 'Garrafa (Vidro/Verde)' }
         );
 
         // Scenery
@@ -827,6 +856,10 @@ class Game {
             { x: 2050, y: GROUND_Y - 240, w: 180, h: 250, type: 'tree' },
             { x: 2520, y: GROUND_Y - 240, w: 180, h: 250, type: 'tree' },
             { x: 3200, y: GROUND_Y - 240, w: 180, h: 250, type: 'tree' },
+            { x: 4100, y: GROUND_Y - 240, w: 180, h: 250, type: 'tree' },
+            { x: 4700, y: GROUND_Y - 240, w: 180, h: 250, type: 'tree' },
+            { x: 5200, y: GROUND_Y - 240, w: 180, h: 250, type: 'tree' },
+            { x: 5800, y: GROUND_Y - 240, w: 180, h: 250, type: 'tree' },
             { x: 50, y: GROUND_Y - 48, w: 64, h: 48, type: 'bush' },
             { x: 230, y: GROUND_Y - 56, w: 72, h: 56, type: 'bush_flowers' },
             { x: 420, y: GROUND_Y - 48, w: 60, h: 48, type: 'bush' },
@@ -834,14 +867,26 @@ class Game {
             { x: 1350, y: GROUND_Y - 56, w: 72, h: 56, type: 'bush_flowers' },
             { x: 2250, y: GROUND_Y - 48, w: 64, h: 48, type: 'bush' },
             { x: 3050, y: GROUND_Y - 56, w: 72, h: 56, type: 'bush_flowers' },
+            { x: 4500, y: GROUND_Y - 48, w: 64, h: 48, type: 'bush' },
+            { x: 5000, y: GROUND_Y - 56, w: 72, h: 56, type: 'bush_flowers' },
+            { x: 5500, y: GROUND_Y - 48, w: 64, h: 48, type: 'bush' },
             { x: 80, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'Bem-vindo ao Bairro! Recolha o lixo e entregue no caminhão!' },
             { x: 700, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'ATENÇÃO: Buraco à frente! Pule com ESPACO!' },
             { x: 1880, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'Dica da Cajulina: O plástico descartado corretamente vira novos produtos!' },
-            { x: 2950, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'Quase lá! O Caminhão da Coleta Seletiva está logo à frente!' }
+            { x: 2950, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'Cuidado: Passagem sobre os buracos à frente!' },
+            { x: 4150, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'ATENÇÃO: Buraco com plataforma à frente! Pule com precisão!' },
+            { x: 4780, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'O tempo fechou! Tempestade com chuva e trovões à frente!' },
+            { x: 5400, y: GROUND_Y - 70, w: 56, h: 70, type: 'sign', text: 'Sob a chuva! O caminhão da coleta seletiva está logo adiante!' }
         ];
 
-        // Green truck goal
-        this.truck = { x: 3740, y: GROUND_Y - 170, w: 360, h: 180 };
+        // Green truck goal (placed at x: 5900)
+        this.truck = { x: 5900, y: GROUND_Y - 170, w: 360, h: 180 };
+
+        // Weather state
+        this.isRaining = false;
+        this.rainParticles = [];
+        this.thunderTimer = 2.0;
+        this.lightningFlash = 0;
 
         this.player.x = 80;
         this.player.y = 350;
@@ -855,8 +900,8 @@ class Game {
         this.trashCollected = 0;
         this.totalTrash = 6;
         this.recyclablesCollected = 0;
-        this.totalRecyclables = 9;
-        this.timeLeft = 300;
+        this.totalRecyclables = 13;
+        this.timeLeft = 360;
         this.timerAccumulator = 0;
     }
 
@@ -1378,6 +1423,7 @@ class Game {
             }
             if (this.currentPhase === 1) {
                 this.updatePlayer(dt);
+                this.updatePhase1Weather(dt);
                 this.updateBlocks(dt);
                 this.updateItems(dt);
                 this.checkSignposts();
@@ -1846,15 +1892,16 @@ class Game {
         let accelKmh = 0;
         if (this.keys.right && !this.scaleAutoBraking) {
             if (this.tracaoReduzidaActive) {
-                // High torque crawling power, tops out around 50 km/h
-                accelKmh = this.speedKmh < 50 ? 65 : 8;
+                accelKmh = this.speedKmh < 45 ? 60 : 10;
             } else {
-                // Normal acceleration
-                accelKmh = this.speedKmh < 80 ? 38 : 5;
+                accelKmh = this.speedKmh < 65 ? 45 : 10;
             }
         } else if (this.keys.left) {
             // Service foot brakes
             accelKmh = -65;
+        } else {
+            // Natural deceleration when releasing accelerator (collector truck style: stops when you release accelerator!)
+            accelKmh = -45;
         }
 
         // Freio Motor Retarder deceleration
@@ -1872,16 +1919,10 @@ class Game {
             this.retarderTimer = 0;
         }
 
-        // Gravity effect along dune slope:
-        const slopeForce = -Math.sin(cabSlope) * 32;
-
-        // Sand rolling resistance
-        const rollingFriction = 8;
-
-        // Update Speed
-        this.speedKmh += (accelKmh + slopeForce - rollingFriction) * dt;
+        // Update Speed smoothly
+        this.speedKmh += accelKmh * dt;
         if (this.speedKmh < 0) this.speedKmh = 0;
-        if (this.speedKmh > 95) this.speedKmh = 95;
+        if (this.speedKmh > 75) this.speedKmh = 75;
 
         // Convert speed to px/sec
         p.vx = (this.speedKmh * 1000 / 3600) * 8.5;
@@ -1892,61 +1933,9 @@ class Game {
         trailer.x = p.x - 185;
         trailer.y = this.getDuneHeight(trailer.x) - 58;
 
-        // 2. Dune Curvature & Cargo Stability Physics (STRICT 60 KM/H LIMIT)
-        const curvature = this.getDuneCurvature(trailer.x);
-        const isBouncing = trailer.bounceY < -2.5;
-        const isExcessSpeed = this.speedKmh > 60; // NÃO PODE PASSAR DE 60 KM/H!
-
-        if (isExcessSpeed || (curvature > 0.0003 && this.speedKmh > 55) || isBouncing) {
-            const excess = Math.max(0, this.speedKmh - 60);
-            const launchLift = excess * Math.max(0.0002, curvature) * 3500;
-            trailer.bounceVy -= launchLift * dt;
-
-            // Perda de estabilidade e PERDA REAL DE PESO da carga em alta velocidade!
-            const drain = (excess * 2.8 + Math.abs(trailer.bounceY) * 3.0) * dt;
-            this.cargoStability = Math.max(10, this.cargoStability - drain);
-            
-            // Perda de peso real: somente ocorre quando ultrapassa o limite de 60 km/h!
-            if (isExcessSpeed) {
-                const weightLoss = Math.round((excess * 42 + Math.abs(trailer.bounceVy) * 12) * dt);
-                if (weightLoss > 0) {
-                    this.cargoWeight = Math.max(12000, (this.cargoWeight || 30000) - weightLoss);
-                }
-            }
-
-            // Sound & warnings
-            this.rattleTimer -= dt;
-            if (this.rattleTimer <= 0) {
-                if (window.soundManager && window.soundManager.playCargoRattle) {
-                    window.soundManager.playCargoRattle();
-                }
-                this.rattleTimer = 0.3;
-            }
-
-            // Spawn lost trash tumbling out
-            if (Math.random() < 0.35) {
-                this.spawnTrashDrop(trailer.x + 30, trailer.y + 10);
-                if (excess > 0 && Math.random() < 0.18) {
-                    const dropAmount = Math.max(15, Math.round(excess * 5));
-                    this.addFloatingText(trailer.x + 30, trailer.y - 30, `-${dropAmount} kg LIXO CAIU! ⚠`, '#ef4444');
-                }
-            }
-
-            this.excessSpeedWarnTimer -= dt;
-            if (this.excessSpeedWarnTimer <= 0) {
-                const lostSoFar = 30000 - this.cargoWeight;
-                if (lostSoFar > 0) {
-                    this.addFloatingText(p.x + 40, p.y - 45, `⚠ LIMITE 60 KM/H! PERDEU ${lostSoFar.toLocaleString('pt-BR')} kg!`, '#ef4444');
-                    this.showTip(`⚠ Cuidado! Acima de 60 km/h o lixo cai da carreta! Perda atual: ${lostSoFar.toLocaleString('pt-BR')} kg`, 2.0);
-                } else {
-                    this.addFloatingText(p.x + 40, p.y - 45, '⚠ LIMITE 60 KM/H! REDUZA!', '#ef4444');
-                    this.showTip('⚠ Atenção: Não ultrapasse 60 km/h para não perder lixo na rodovia!', 2.0);
-                }
-                this.excessSpeedWarnTimer = 1.3;
-            }
-        } else {
-            this.rattleTimer = 0;
-        }
+        // Full weight preserved: 30.000 kg intact with protective tarp!
+        this.cargoWeight = 30000;
+        this.cargoStability = 100;
 
         // Trailer spring-damper bounce simulation
         const springK = 85;
@@ -3054,6 +3043,81 @@ class Game {
         }
     }
 
+    updatePhase1Weather(dt) {
+        if (this.currentPhase !== 1) return;
+        const GROUND_Y = 460;
+
+        // Triggers rain and thunder when reaching 75% of the level (x >= 4800)
+        if (this.player && this.player.x >= 4800) {
+            if (!this.isRaining) {
+                this.isRaining = true;
+                this.showTip('⛈ O tempo fechou! Tempestade com chuva e trovões na reta final!', 4.0);
+                if (window.soundManager && window.soundManager.playThunder) {
+                    window.soundManager.playThunder();
+                }
+                this.lightningFlash = 0.55;
+            }
+        }
+
+        if (this.lightningFlash > 0) {
+            this.lightningFlash = Math.max(0, this.lightningFlash - dt);
+        }
+
+        if (this.isRaining) {
+            this.thunderTimer = (this.thunderTimer || 3.0) - dt;
+            if (this.thunderTimer <= 0) {
+                this.thunderTimer = 4.0 + Math.random() * 5.0;
+                this.lightningFlash = 0.45;
+                if (window.soundManager && window.soundManager.playThunder) {
+                    window.soundManager.playThunder();
+                }
+            }
+
+            if (!this.rainParticles) this.rainParticles = [];
+            // Spawn rain particles matching camera viewport
+            for (let i = 0; i < 8; i++) {
+                this.rainParticles.push({
+                    x: this.camera.x - 60 + Math.random() * (VIRTUAL_WIDTH + 140),
+                    y: -20 + Math.random() * 40,
+                    vx: -115 - Math.random() * 40,
+                    vy: 750 + Math.random() * 220,
+                    len: 16 + Math.random() * 8
+                });
+            }
+
+            for (let i = this.rainParticles.length - 1; i >= 0; i--) {
+                const rp = this.rainParticles[i];
+                rp.x += rp.vx * dt;
+                rp.y += rp.vy * dt;
+                if (rp.y >= GROUND_Y) {
+                    if (Math.random() < 0.25) this.spawnDust(rp.x, GROUND_Y - 2, 1);
+                    this.rainParticles.splice(i, 1);
+                } else if (rp.y > VIRTUAL_HEIGHT + 20) {
+                    this.rainParticles.splice(i, 1);
+                }
+            }
+        }
+    }
+
+    renderRain(ctx) {
+        if (!this.rainParticles || this.rainParticles.length === 0) return;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.65)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < this.rainParticles.length; i++) {
+            const rp = this.rainParticles[i];
+            const sx = rp.x - this.camera.x;
+            const sy = rp.y;
+            if (sx >= -20 && sx <= VIRTUAL_WIDTH + 20 && sy >= -20 && sy <= VIRTUAL_HEIGHT + 20) {
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(sx - 3, sy + rp.len);
+            }
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
     updatePlayer(dt) {
         const p = this.player;
         if (p.isDead) return;
@@ -3481,89 +3545,41 @@ class Game {
             this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 1 COMPLETA!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
-            if (modal) {
-                document.getElementById('victoryTitle').textContent = '🌟 FASE 1 COMPLETA! 🌟';
-                document.getElementById('victoryDesc').textContent = 'Parabéns! Cajulim recolheu o lixo espalhado no bairro e entregou tudo com segurança no Caminhão da Coleta Seletiva!';
-                document.getElementById('finalScore').textContent = this.score;
-                document.getElementById('finalStat1Label').textContent = 'Sacos de Lixo';
-                document.getElementById('finalTrash').textContent = `${this.trashCollected}/${this.totalTrash}`;
-                document.getElementById('finalStat2Label').textContent = 'Recicláveis';
-                document.getElementById('finalRecyclables').textContent = `${this.recyclablesCollected}/${this.totalRecyclables}`;
-                document.getElementById('finalTime').textContent = `${300 - this.timeLeft}s`;
-                document.getElementById('victoryNextTeaser').innerHTML = '<strong>🚚 Próxima Parada: Fase 2</strong><br>O caminhão de lixo vai transportar os resíduos até a estação de transbordo da cidade!';
-                const btnNext = document.getElementById('btnNextPhase');
-                if (btnNext) {
-                    btnNext.style.display = 'inline-block';
-                    btnNext.textContent = 'AVANCAR PARA FASE 2: O TRANSBORDO 🚚 ▶';
-                }
-                modal.classList.remove('hidden');
-            }
+            if (modal) modal.classList.add('hidden');
+
+            setTimeout(() => {
+                this.startCutscene('PHASE1_CLEAR');
+            }, 500);
         } else if (this.currentPhase === 2) {
             if (this.transbordoFacility) this.spawnSparkles(this.transbordoFacility.x + 150, this.transbordoFacility.y + 100, 60);
             this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 2 COMPLETA! TRANSBORDO ALCANÇADO!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
-            if (modal) {
-                document.getElementById('victoryTitle').textContent = '🚚 FASE 2 COMPLETA! 🚚';
-                document.getElementById('victoryDesc').textContent = 'Sensacional! O caminhão da coleta seletiva percorreu a rodovia com sucesso e chegou à Estação de Transbordo!';
-                document.getElementById('finalScore').textContent = this.score;
-                document.getElementById('finalStat1Label').textContent = 'Biodiesel';
-                document.getElementById('finalTrash').textContent = `${this.biodieselCollected}/${this.totalBiodiesel}`;
-                document.getElementById('finalStat2Label').textContent = 'Reparos';
-                document.getElementById('finalRecyclables').textContent = `${this.wrenchesCollected}/${this.totalWrenches}`;
-                document.getElementById('finalTime').textContent = `${300 - this.timeLeft}s`;
-                document.getElementById('victoryNextTeaser').innerHTML = '<strong>📦 Próxima Etapa: Fase 3</strong><br>Na estação de transbordo, o caminhão coletor joga o lixo na grande carreta de transporte!';
-                const btnNext = document.getElementById('btnNextPhase');
-                if (btnNext) {
-                    btnNext.style.display = 'inline-block';
-                    btnNext.textContent = 'AVANCAR PARA FASE 3: JOGA NA CARRETA 🚜 ▶';
-                }
-                modal.classList.remove('hidden');
-            }
+            if (modal) modal.classList.add('hidden');
+
+            setTimeout(() => {
+                this.startCutscene('PHASE2_CLEAR');
+            }, 500);
         } else if (this.currentPhase === 3) {
             this.spawnSparkles(700, 360, 60);
             this.addFloatingText(480, 220, 'FASE 3 COMPLETA! TRANSBORDO REALIZADO!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
-            if (modal) {
-                document.getElementById('victoryTitle').textContent = '🚜 FASE 3 COMPLETA! 🚜';
-                document.getElementById('victoryDesc').textContent = 'Sensacional! O caminhão da coleta seletiva descarregou todo o lixo na grande Carreta de Transbordo de 30 toneladas com máxima eficiência!';
-                document.getElementById('finalScore').textContent = this.score;
-                document.getElementById('finalStat1Label').textContent = 'Carga Total';
-                document.getElementById('finalTrash').textContent = '30 / 30 t';
-                document.getElementById('finalStat2Label').textContent = 'Frota Descarregada';
-                document.getElementById('finalRecyclables').textContent = '4/4 Caminhões (100%)';
-                document.getElementById('finalTime').textContent = `${300 - this.timeLeft}s`;
-                document.getElementById('victoryNextTeaser').innerHTML = '<strong>🚛 Próxima Etapa: Fase 4</strong><br>A grande carreta pesada de 30 toneladas pega a rodovia com destino ao Aterro Sanitário!';
-                const btnNext = document.getElementById('btnNextPhase');
-                if (btnNext) {
-                    btnNext.style.display = 'inline-block';
-                    btnNext.textContent = 'AVANCAR PARA FASE 4: CARRETA AO ATERRO 🚛 ▶';
-                }
-                modal.classList.remove('hidden');
-            }
+            if (modal) modal.classList.add('hidden');
+
+            setTimeout(() => {
+                this.startCutscene('PHASE3_CLEAR');
+            }, 500);
         } else if (this.currentPhase === 4) {
             this.spawnSparkles(4200, 320, 70);
-            this.addFloatingText(this.player.x, this.player.y - 40, 'FASE 4 COMPLETA! BALANÇA E PORTÃO LIBERADOS!', '#00ff88');
+            this.addFloatingText(this.player.x, this.player.y - 40, 'FASE 4 COMPLETA! PESAGEM APROVADA!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
-            if (modal) {
-                document.getElementById('victoryTitle').textContent = '🚛 FASE 4 COMPLETA! 🚛';
-                document.getElementById('victoryDesc').textContent = 'Excelente viagem! Você cruzou a rodovia das dunas com maestria, manteve o lixo seguro na carreta pesada e passou com louvor na pesagem da ANTT!';
-                document.getElementById('finalScore').textContent = this.score;
-                document.getElementById('finalStat1Label').textContent = 'Estabilidade';
-                document.getElementById('finalTrash').textContent = `${Math.round(this.cargoStability)}%`;
-                document.getElementById('finalStat2Label').textContent = 'Peso Balança';
-                document.getElementById('finalRecyclables').textContent = `${(this.cargoWeight / 1000).toFixed(1)}t / 30t`;
-                document.getElementById('finalTime').textContent = `${300 - this.timeLeft}s`;
-                document.getElementById('victoryNextTeaser').innerHTML = '<strong>🚜 Próxima Etapa: Fase 5</strong><br>Entrada no Aterro Sanitário: Compactação de resíduos, captação de biogás e lagoas de tratamento de chorume!';
-                const btnNext = document.getElementById('btnNextPhase');
-                if (btnNext) {
-                    btnNext.style.display = 'inline-block';
-                    btnNext.textContent = 'AVANCAR PARA FASE 5: ATERRO & USINA VERDE 🌱⚡ ▶';
-                }
-                modal.classList.remove('hidden');
-            }
+            if (modal) modal.classList.add('hidden');
+
+            setTimeout(() => {
+                this.startCutscene('PHASE4_CLEAR');
+            }, 500);
         } else if (this.currentPhase === 5) {
             this.spawnSparkles(this.player.x, this.player.y - 40, 80);
             this.addFloatingText(this.player.x, this.player.y - 50, 'FASE 5 COMPLETA! USINA VERDE CERTIFICADA!', '#00ff88');
@@ -3778,6 +3794,17 @@ class Game {
         this.renderFloatingTexts(ctx);
 
         ctx.restore();
+
+        if (this.currentPhase === 1 && this.isRaining) {
+            this.renderRain(ctx);
+        }
+
+        if (this.lightningFlash > 0) {
+            ctx.save();
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.85, this.lightningFlash * 2.0)})`;
+            ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            ctx.restore();
+        }
 
         if (this.state !== 'CUTSCENE' && this.state !== 'TITLE') {
             this.renderHUD(ctx);
@@ -6449,9 +6476,15 @@ class Game {
     renderBackground(ctx) {
         if (this.currentPhase === 1) {
             const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
-            skyGrad.addColorStop(0, '#52a2ff');
-            skyGrad.addColorStop(0.65, '#a1e6ff');
-            skyGrad.addColorStop(1, '#e3f7ff');
+            if (this.isRaining) {
+                skyGrad.addColorStop(0, '#1e293b');
+                skyGrad.addColorStop(0.65, '#334155');
+                skyGrad.addColorStop(1, '#475569');
+            } else {
+                skyGrad.addColorStop(0, '#52a2ff');
+                skyGrad.addColorStop(0.65, '#a1e6ff');
+                skyGrad.addColorStop(1, '#e3f7ff');
+            }
             ctx.fillStyle = skyGrad;
             ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
@@ -7409,13 +7442,20 @@ class Game {
         let spokenText = '';
 
         if (this.cutscene.type === 'INTRO') {
-            if (this.cutscene.step === 0) {
-                audioFile = 'assets/audio/cutscene_intro_step0.mp3';
-                spokenText = 'A Prefeitura de Parnamirim apresenta: A Turma do Cajulim na Grande Missão da Coleta Seletiva! Ao lado do seu pai no caminhão da coleta municipal, nosso herói Cajulim se prepara para uma grande jornada para manter a nossa cidade sempre limpa, bonita e sustentável!';
-            } else {
-                audioFile = 'assets/audio/cutscene_intro_step1.mp3';
-                spokenText = 'A Grande Jornada da Coleta: Nossa aventura começa recolhendo o lixo na praia de Cotovelo, segue de caminhão até a estação de transbordo, cruza as dunas na carreta pesada até a balança rodoviária, e chega ao moderno aterro sanitário para transformar resíduos em energia limpa! Mas fique atento: um grande vilão poluidor está à espreita!';
-            }
+            audioFile = 'assets/audio/cutscene_intro_step0.mp3';
+            spokenText = 'A Prefeitura de Parnamirim apresenta: A Turma do Cajulim na Grande Missão da Coleta Seletiva! Ao lado do seu pai no caminhão da coleta municipal, nosso herói Cajulim se prepara para uma grande jornada para manter a nossa cidade sempre limpa, bonita e sustentável!';
+        } else if (this.cutscene.type === 'PHASE1_CLEAR') {
+            audioFile = 'assets/audio/cutscene_phase1_clear.mp3';
+            spokenText = 'Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!';
+        } else if (this.cutscene.type === 'PHASE2_CLEAR') {
+            audioFile = 'assets/audio/cutscene_phase2_clear.mp3';
+            spokenText = 'Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbordo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!';
+        } else if (this.cutscene.type === 'PHASE3_CLEAR') {
+            audioFile = 'assets/audio/cutscene_phase3_clear.mp3';
+            spokenText = 'Manobra perfeita! A carreta foi totalmente carregada com 30 toneladas de resíduos e coberta com a lona protetora na doca do transbordo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!';
+        } else if (this.cutscene.type === 'PHASE4_CLEAR') {
+            audioFile = 'assets/audio/cutscene_phase4_clear.mp3';
+            spokenText = 'Pesagem concluída com sucesso! A carreta de 30.000 quilos passou pela balança rodoviária oficial e entrou no moderno aterro sanitário de Parnamirim! Carga conferida e aprovada para o tratamento e reciclagem energética!';
         } else if (this.cutscene.type === 'PHASE5_TO_6') {
             if (this.cutscene.step === 0) {
                 audioFile = 'assets/audio/cutscene_phase5_step0.mp3';
@@ -7444,11 +7484,15 @@ class Game {
 
     getCutsceneFullText() {
         if (this.cutscene.type === 'INTRO') {
-            if (this.cutscene.step === 0) {
-                return 'A PREFEITURA DE PARNAMIRIM APRESENTA: A TURMA DO CAJULIM NA GRANDE MISSAO DA COLETA SELETIVA! AO LADO DO SEU PAI NO CAMINHAO DA COLETA MUNICIPAL, NOSSO HEROI CAJULIM SE PREPARA PARA UMA GRANDE JORNADA PARA MANTER A NOSSA CIDADE SEMPRE LIMPA, BONITA E SUSTENTAVEL!';
-            } else {
-                return 'A GRANDE JORNADA DA COLETA SELETIVA: NOSSA AVENTURA RECOLHE O LIXO NA PRAIA, LEVA AO TRANSBORDO, CRUZA AS DUNAS NA SUPER CARRETA ATE A BALANCA E TRANSFORMA RESIDUOS EM ENERGIA LIMPA NO ATERRO SANITARIO! MAS FIQUE ATENTO: UM GRANDE VILAO POLUIDOR ESTA A ESPREITA!';
-            }
+            return 'A PREFEITURA DE PARNAMIRIM APRESENTA: A TURMA DO CAJULIM NA GRANDE MISSAO DA COLETA SELETIVA! AO LADO DO SEU PAI NO CAMINHAO DA COLETA MUNICIPAL, NOSSO HEROI CAJULIM SE PREPARA PARA UMA GRANDE JORNADA PARA MANTER A NOSSA CIDADE SEMPRE LIMPA, BONITA E SUSTENTAVEL!';
+        } else if (this.cutscene.type === 'PHASE1_CLEAR') {
+            return 'PARABENS! VOCE COMPLETOU A COLETA RESIDENCIAL EM PARNAMIRIM! TODOS OS SACOS DE LIXO E MATERIAIS RECICLAVEIS FORAM RECOLHIDOS DAS RUAS COM SUCESSO. A CIDADE ESTA LIMPA E O CAMINHAO MUNICIPAL ESTA PRONTO PARA A PROXIMA ETAPA!';
+        } else if (this.cutscene.type === 'PHASE2_CLEAR') {
+            return 'EXCELENTE VIAGEM! O CAMINHAO CHEGOU EM SEGURANCA A ESTACAO DE TRANSBORDO DE PARNAMIRIM! TODA A CARGA DE RESIDUOS DA CIDADE FOI TRANSPORTADA SEM DEIXAR NADA PELO CAMINHO. AGORA E HORA DE PREPARAR A CARRETA PESADA!';
+        } else if (this.cutscene.type === 'PHASE3_CLEAR') {
+            return 'MANOBRA PERFEITA! A CARRETA FOI TOTALMENTE CARREGADA COM 30 TONELADAS DE RESIDUOS E COBERTA COM A LONA PROTETORA NA DOCA DO TRANSBORDO! O PROCESSO DE TRANSFERENCIA FOI UM SUCESSO TOTAL E O TRANSPORTE RODOVIARIO VAI COMECAR!';
+        } else if (this.cutscene.type === 'PHASE4_CLEAR') {
+            return 'PESAGEM CONCLUIDA COM SUCESSO! A CARRETA DE 30.000 KG PASSOU PELA BALANCA RODOVIARIA OFICIAL E ENTROU NO ATERRO SANITARIO DE PARNAMIRIM! CARGA 100% CONFERIDA E APROVADA PARA O TRATAMENTO E RECICLAGEM ENERGETICA!';
         } else if (this.cutscene.type === 'PHASE5_TO_6') {
             if (this.cutscene.step === 0) {
                 return 'CIDADE LIMPA, SERVICO CUMPRIDO! O ATERRO SANITARIO E A USINA VERDE FUNCIONAM COM PERFEICAO. O CHORUME ESTA 100% PURIFICADO E A ENERGIA LIMPA ILUMINA MILHARES DE LARES... TUDO PARECIA EM PERFEITA HARMONIA, MAS...';
@@ -7525,20 +7569,40 @@ class Game {
         this.cutscene.autoAdvanceTimer = 0;
 
         if (this.cutscene.type === 'INTRO') {
-            if (this.cutscene.step === 0) {
-                this.cutscene.step = 1;
-                this.cutscene.textProgress = 0;
-                this.cutscene.autoAdvanceTimer = 0;
-                if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
-                this.triggerCutsceneNarration();
-            } else {
-                if (window.soundManager && window.soundManager.stopNarration) {
-                    window.soundManager.stopNarration();
-                }
-                this.cutscene.active = false;
-                this.switchPhase(1);
-                this.startGame();
+            if (window.soundManager && window.soundManager.stopNarration) {
+                window.soundManager.stopNarration();
             }
+            this.cutscene.active = false;
+            this.switchPhase(1);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE1_CLEAR') {
+            if (window.soundManager && window.soundManager.stopNarration) {
+                window.soundManager.stopNarration();
+            }
+            this.cutscene.active = false;
+            this.switchPhase(2);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE2_CLEAR') {
+            if (window.soundManager && window.soundManager.stopNarration) {
+                window.soundManager.stopNarration();
+            }
+            this.cutscene.active = false;
+            this.switchPhase(3);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE3_CLEAR') {
+            if (window.soundManager && window.soundManager.stopNarration) {
+                window.soundManager.stopNarration();
+            }
+            this.cutscene.active = false;
+            this.switchPhase(4);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE4_CLEAR') {
+            if (window.soundManager && window.soundManager.stopNarration) {
+                window.soundManager.stopNarration();
+            }
+            this.cutscene.active = false;
+            this.switchPhase(5);
+            this.startGame();
         } else if (this.cutscene.type === 'PHASE5_TO_6') {
             if (this.cutscene.step === 0) {
                 this.cutscene.step = 1;
@@ -7592,6 +7656,22 @@ class Game {
             this.cutscene.active = false;
             this.switchPhase(1);
             this.startGame();
+        } else if (this.cutscene.type === 'PHASE1_CLEAR') {
+            this.cutscene.active = false;
+            this.switchPhase(2);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE2_CLEAR') {
+            this.cutscene.active = false;
+            this.switchPhase(3);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE3_CLEAR') {
+            this.cutscene.active = false;
+            this.switchPhase(4);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE4_CLEAR') {
+            this.cutscene.active = false;
+            this.switchPhase(5);
+            this.startGame();
         } else if (this.cutscene.type === 'PHASE5_TO_6') {
             this.cutscene.active = false;
             this.switchPhase(6);
@@ -7618,6 +7698,14 @@ class Game {
 
         if (this.cutscene.type === 'INTRO') {
             this.renderCutsceneIntro(ctx);
+        } else if (this.cutscene.type === 'PHASE1_CLEAR') {
+            this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'ETAPA 1 CONCLUÍDA • COLETA SELETIVA DE PARNAMIRIM');
+        } else if (this.cutscene.type === 'PHASE2_CLEAR') {
+            this.renderCutscenePhaseClear(ctx, 'cs_phase2_clear', 'ETAPA 2 CONCLUÍDA • CHEGADA AO TRANSBORDO');
+        } else if (this.cutscene.type === 'PHASE3_CLEAR') {
+            this.renderCutscenePhaseClear(ctx, 'cs_phase3_clear', 'ETAPA 3 CONCLUÍDA • CARGA DA CARRETA DE 30 TONELADAS');
+        } else if (this.cutscene.type === 'PHASE4_CLEAR') {
+            this.renderCutscenePhaseClear(ctx, 'cs_phase4_clear', 'ETAPA 4 CONCLUÍDA • BALANÇA OFICIAL DO ATERRO (30.000 KG)');
         } else if (this.cutscene.type === 'PHASE5_TO_6') {
             this.renderCutscenePhase5To6(ctx);
         } else {
@@ -7644,11 +7732,44 @@ class Game {
     }
 
     renderCutsceneIntro(ctx) {
-        if (this.cutscene.step === 0) {
-            this.renderCutsceneIntroFather(ctx);
+        this.renderCutsceneIntroFather(ctx);
+    }
+
+    renderCutscenePhaseClear(ctx, assetKey, title) {
+        const t = this.cutscene.animTime;
+        const img = this.assets[assetKey];
+
+        if (img && img.complete && img.naturalWidth > 0) {
+            ctx.save();
+            const zoom = 1.03 + 0.015 * Math.sin(t * 0.22);
+            const panX = Math.sin(t * 0.18) * 12;
+            const panY = Math.cos(t * 0.14) * 6;
+            ctx.translate(VIRTUAL_WIDTH / 2 + panX, 210 + panY);
+            ctx.scale(zoom, zoom);
+            ctx.drawImage(img, -VIRTUAL_WIDTH / 2, -210, VIRTUAL_WIDTH, 540);
+            ctx.restore();
+
+            // Festive celebratory sparkles & confetti
+            for (let i = 0; i < 6; i++) {
+                const spX = 120 + (i * 140) + Math.sin(t * 2.5 + i) * 20;
+                const spY = 380 - ((t * 30 + i * 45) % 80);
+                const spAlpha = Math.max(0, 1 - ((t * 30 + i * 45) % 80) / 80);
+                const colors = ['#facc15', '#4ade80', '#38bdf8', '#f43f5e', '#a855f7', '#fbbf24'];
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.globalAlpha = spAlpha * 0.85;
+                ctx.beginPath();
+                ctx.arc(spX, spY, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
         } else {
-            this.renderCutsceneIntroMission(ctx);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, VIRTUAL_WIDTH, 540);
         }
+
+        const fullText = this.getCutsceneFullText();
+        const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
+        this.renderCutsceneDialogBox(ctx, title, currentText, 'AUTOMÁTICO ⏱ [ESPAÇO P/ AVANÇAR]', 'green');
     }
 
     renderCutsceneIntroFather(ctx) {
