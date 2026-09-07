@@ -295,16 +295,22 @@ class Game {
                         this.compactionProgress = 100;
                         this.biogasPowerMW = 10.0;
                         this.player.x = 3600;
+                        this.player.y = 344;
                         this.player.w = 48;
                         this.player.h = 76;
+                        this.player.facing = 1;
+                        this.player.invulnerableTimer = 0;
                         this.camera.x = 3360;
                     } else if (this.phase5State === 'LAB_ANALYSIS') {
                         this.compactionProgress = 100;
                         this.biogasPowerMW = 10.0;
                         this.chorumeTreated = 100;
                         this.player.x = 4980;
+                        this.player.y = 344;
                         this.player.w = 48;
                         this.player.h = 76;
+                        this.player.facing = 1;
+                        this.player.invulnerableTimer = 0;
                         this.camera.x = 4240;
                     } else if (this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
                         this.compactionProgress = 100;
@@ -312,8 +318,11 @@ class Game {
                         this.chorumeTreated = 100;
                         this.labSampleTested = true;
                         this.player.x = 5080;
+                        this.player.y = 344;
                         this.player.w = 48;
                         this.player.h = 76;
+                        this.player.facing = 1;
+                        this.player.invulnerableTimer = 0;
                         this.camera.x = 4240;
                     }
                 }
@@ -716,6 +725,7 @@ class Game {
         this.truck = null;
         this.transbordoFacility = null;
         this.lives = this.currentPhase === 6 ? 5 : 3;
+        this.player.invulnerableTimer = 0;
 
         if (this.currentPhase === 1) {
             this.initPhase1();
@@ -1161,6 +1171,7 @@ class Game {
         this.player.grounded = true;
         this.player.animState = 'tractor';
         this.player.isDead = false;
+        this.player.invulnerableTimer = 0;
 
         // Phase 5 State Machine:
         // 'COMPACTING' (Trator Aterrando) -> 'COMPACTING_WAIT_ADVANCE' -> 'BIOGAS_GENERATION' (Pressão) -> 'BIOGAS_WAIT_ADVANCE' -> 'CAJULIM_LAGOONS' (Cajulim) -> 'CAJULIM_WAIT_ADVANCE' -> 'COMPLETE'
@@ -1362,6 +1373,9 @@ class Game {
         this.pollGamepad();
         if (this.state === 'PLAYING') {
             this.updateTimer(dt);
+            if (this.player && this.player.invulnerableTimer > 0) {
+                this.player.invulnerableTimer = Math.max(0, this.player.invulnerableTimer - dt);
+            }
             if (this.currentPhase === 1) {
                 this.updatePlayer(dt);
                 this.updateBlocks(dt);
@@ -2342,13 +2356,17 @@ class Game {
                     if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
                     this.addFloatingText(3600, 310, 'ASSUMINDO O CAJULIM NAS LAGOAS!', '#22c55e');
                     this.showTip('Etapa 3: Cajulim na Estação! Pule [ESPACO / K / JOYSTICK] nas bóias p/ ligar os aeradores e vá ao laboratório!', 6.0);
-                    // Spawn Cajulim as platformer hero
+                    // Spawn Cajulim as platformer hero with camera immediately snapped to Sector 3 catwalk
+                    this.camera.x = 3360;
+                    this.camera.y = 0;
                     p.x = 3450;
-                    p.y = 350;
+                    p.y = 344;
                     p.w = 48;
                     p.h = 76;
                     p.vx = 0;
                     p.vy = 0;
+                    p.facing = 1;
+                    p.invulnerableTimer = 0;
                     p.grounded = true;
                     p.animState = 'idle';
                 }
@@ -2359,6 +2377,13 @@ class Game {
         // 3. STAGE: CAJULIM IN THE LAGOONS & ETE LAB ('CHORUME_TREATMENT', 'LAB_ANALYSIS', 'CAJULIM_WAIT_ADVANCE')
         // =========================================================================
         else if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS' || this.phase5State === 'LAB_ANALYSIS' || this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
+            p.invulnerableTimer = 0;
+            p.facing = (p.facing === -1) ? -1 : 1;
+            if (isNaN(p.x)) p.x = 3450;
+            if (isNaN(p.y)) p.y = 344;
+            if (isNaN(p.vx)) p.vx = 0;
+            if (isNaN(p.vy)) p.vy = 0;
+
             let moveDir = 0;
             if (this.keys.left) moveDir -= 1;
             if (this.keys.right) moveDir += 1;
@@ -2408,6 +2433,7 @@ class Game {
             // Lagoon boardwalk bounds (x: 3400 to 5120)
             if (p.x < 3400) { p.x = 3400; p.vx = 0; }
             if (p.x > 5120) { p.x = 5120; p.vx = 0; }
+            if (p.y < 100) { p.y = 100; p.vy = 0; }
 
             // Check aerators interaction
             if (this.aerators) {
@@ -4968,8 +4994,8 @@ class Game {
         this.renderPhase5Sector3(ctx);
         this.renderPhase5Particles(ctx);
 
-        // Render real animated Cajulim hero during Lagoon & Lab stages!
-        if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS' || this.phase5State === 'LAB_ANALYSIS' || this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
+        // Render real animated Cajulim hero during all Lagoon & Lab stages!
+        if (this.phase5State !== 'COMPACTING' && this.phase5State !== 'COMPACTING_WAIT_ADVANCE' && this.phase5State !== 'BIOGAS_GENERATION' && this.phase5State !== 'BIOGAS_WAIT_ADVANCE' && this.phase5State !== 'SOIL_COVER') {
             this.renderPlayer(ctx);
         }
     }
@@ -6841,19 +6867,26 @@ class Game {
 
     renderPlayer(ctx) {
         const p = this.player;
-        if (p.invulnerableTimer > 0 && Math.floor(p.invulnerableTimer * 10) % 2 === 0) return;
+        // Phase 5 has no damage hazards: never hide or blink Cajulim in Phase 5!
+        if (this.currentPhase !== 5 && p.invulnerableTimer > 0 && Math.floor(p.invulnerableTimer * 10) % 2 === 0) return;
 
         ctx.save();
-        // CRITICAL FIX 1: Cajulim planted 2px into grass blades, clean trimmed feet touching ground
-        ctx.translate(Math.floor(p.x + p.w / 2), Math.floor(p.y + p.h + 2));
-        ctx.scale(p.facing, 1);
+        const px = isNaN(p.x) ? 3450 : p.x;
+        const py = isNaN(p.y) ? 344 : p.y;
+        const pw = p.w || 48;
+        const ph = p.h || 76;
+        const facing = (p.facing === -1) ? -1 : 1;
+
+        // Cajulim planted with feet touching ground / catwalk
+        ctx.translate(Math.floor(px + pw / 2), Math.floor(py + ph + 2));
+        ctx.scale(facing, 1);
 
         let key = 'p_idle_0';
-        if (p.animState === 'walk') key = `p_walk_${p.animFrame % 8}`;
-        else if (p.animState === 'jump') key = `p_jump_${Math.min(3, p.animFrame)}`;
-        else if (p.animState === 'collect') key = p.animFrame === 0 ? 'p_collect_0' : 'p_collect_1';
+        if (p.animState === 'walk') key = `p_walk_${Math.abs(p.animFrame || 0) % 8}`;
+        else if (p.animState === 'jump') key = `p_jump_${Math.min(3, Math.max(0, p.animFrame || 0))}`;
+        else if (p.animState === 'collect') key = (p.animFrame || 0) === 0 ? 'p_collect_0' : 'p_collect_1';
         else if (p.animState === 'win') key = 'p_win';
-        else key = `p_idle_${p.animFrame % 4}`;
+        else key = `p_idle_${Math.abs(p.animFrame || 0) % 4}`;
 
         const img = this.assets[key] || this.assets['p_idle_0'] || this.assets['p_walk_0'];
         const drawW = 56;
@@ -6863,8 +6896,21 @@ class Game {
             ctx.drawImage(img, -drawW / 2, -drawH, drawW, drawH);
         } else {
             ctx.fillStyle = '#ff8800';
-            ctx.fillRect(-p.w / 2, -p.h, p.w, p.h);
+            ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
         }
+
+        // In Phase 5 Lagoons: high-visibility retro indicator tag above Cajulim
+        if (this.currentPhase === 5) {
+            const bounce = Math.sin((this.gameTime || 0) * 8) * 3;
+            ctx.save();
+            ctx.scale(facing, 1); // Unflip text so it's always readable left-to-right
+            ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fef08a';
+            ctx.fillText('▼ CAJULIM', 0, -drawH - 6 + bounce);
+            ctx.restore();
+        }
+
         ctx.restore();
     }
 
