@@ -95,6 +95,9 @@ global.Image = class {
     constructor() {
         this.width = 64;
         this.height = 64;
+        this.naturalWidth = 64;
+        this.naturalHeight = 64;
+        this.complete = true;
         setTimeout(() => { if (this.onload) this.onload(); }, 5);
     }
 };

@@ -198,13 +198,14 @@ class Game {
             'cs_phase4_clear': 'assets/cutscenes/cs_phase4_clear.jpg'
         };
 
+        this.imageList = imageList;
         const keys = Object.keys(imageList);
         this.totalAssets = keys.length;
         keys.forEach(key => {
             const img = new Image();
-            img.src = imageList[key] + '?v=4.0';
+            this.assets[key] = img;
+            img.src = imageList[key] + '?v=4.2';
             img.onload = () => {
-                this.assets[key] = img;
                 this.loadedCount++;
                 if (this.loadedCount >= this.totalAssets) this.onAllAssetsLoaded();
             };
@@ -7416,7 +7417,7 @@ class Game {
     startCutscene(type) {
         this.state = 'CUTSCENE';
         this.cutscene.active = true;
-        this.cutscene.type = type; // 'INTRO', 'PHASE5_TO_6' or 'GRAND_ENDING'
+        this.cutscene.type = type; // 'INTRO', 'PHASE1_CLEAR', 'PHASE2_CLEAR', 'PHASE3_CLEAR', 'PHASE4_CLEAR', 'PHASE5_TO_6' or 'GRAND_ENDING'
         this.cutscene.step = 0;
         this.cutscene.timer = 0;
         this.cutscene.textProgress = 0;
@@ -7425,6 +7426,7 @@ class Game {
         this.cutscene.shakeTimer = 0;
         this.cutscene.animTime = 0;
         this.cutscene.cloudX = 0;
+        this.cutscene.waitingForImage = false;
 
         const modal = typeof document !== 'undefined' ? document.getElementById('victoryModal') : null;
         if (modal) modal.classList.add('hidden');
@@ -7433,7 +7435,87 @@ class Game {
             window.soundManager.playFanfare();
         }
 
-        this.triggerCutsceneNarration();
+        // Check if cutscene image is ready. If not, hold audio so it NEVER starts with audio over a black screen!
+        if (this.isCutsceneAssetReady()) {
+            this.triggerCutsceneNarration();
+        } else {
+            this.waitForCutsceneAsset(() => {
+                this.triggerCutsceneNarration();
+            });
+        }
+    }
+
+    getCutsceneRequiredAsset() {
+        if (this.cutscene.type === 'INTRO') return 'cs_intro_father';
+        if (this.cutscene.type === 'PHASE1_CLEAR') return 'cs_phase1_clear';
+        if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_phase2_clear';
+        if (this.cutscene.type === 'PHASE3_CLEAR') return 'cs_phase3_clear';
+        if (this.cutscene.type === 'PHASE4_CLEAR') return 'cs_phase4_clear';
+        if (this.cutscene.type === 'PHASE5_TO_6') {
+            return this.cutscene.step === 0 ? 'cs_landfill_aerial' : 'cs_villain_mecha';
+        }
+        if (this.cutscene.type === 'GRAND_ENDING') {
+            if (this.cutscene.step === 0) return 'cs_barao_sweep';
+            if (this.cutscene.step === 1) return 'cs_cajulim_celebration';
+            return 'p_portrait';
+        }
+        return null;
+    }
+
+    isCutsceneAssetReady() {
+        const key = this.getCutsceneRequiredAsset();
+        if (!key) return true;
+        const img = this.assets[key];
+        if (!img) return false;
+        if (img.complete !== undefined) {
+            return !!(img.complete && (img.naturalWidth === undefined || img.naturalWidth > 0));
+        }
+        return true;
+    }
+
+    waitForCutsceneAsset(onReadyCallback) {
+        this.cutscene.waitingForImage = true;
+        const key = this.getCutsceneRequiredAsset();
+        if (!key) {
+            this.cutscene.waitingForImage = false;
+            if (onReadyCallback) onReadyCallback();
+            return;
+        }
+
+        let img = this.assets[key];
+        if (!img) {
+            img = new Image();
+            img.src = (this.imageList && this.imageList[key]) || `assets/cutscenes/${key}.jpg`;
+            this.assets[key] = img;
+        }
+
+        let triggered = false;
+        const triggerReady = () => {
+            if (triggered) return;
+            triggered = true;
+            if (this.state === 'CUTSCENE') {
+                this.cutscene.waitingForImage = false;
+                this.cutscene.animTime = 0;
+                this.cutscene.textProgress = 0;
+                if (onReadyCallback) onReadyCallback();
+            }
+        };
+
+        if (img.complete && img.naturalWidth > 0) {
+            triggerReady();
+            return;
+        }
+
+        if (img.addEventListener) {
+            img.addEventListener('load', triggerReady, { once: true });
+            img.addEventListener('error', triggerReady, { once: true });
+        } else {
+            const prevOnload = img.onload;
+            img.onload = () => { if (prevOnload) prevOnload(); triggerReady(); };
+            const prevOnerror = img.onerror;
+            img.onerror = () => { if (prevOnerror) prevOnerror(); triggerReady(); };
+        }
+        setTimeout(triggerReady, 1000);
     }
 
     triggerCutsceneNarration() {
@@ -7477,8 +7559,10 @@ class Game {
             }
         }
 
+        const isBoss = (this.cutscene.type === 'PHASE5_TO_6' && this.cutscene.step === 1);
+        const voiceHint = isBoss ? 'antonio' : 'thalita';
         if (window.soundManager && window.soundManager.playNarration) {
-            window.soundManager.playNarration(audioFile, spokenText);
+            window.soundManager.playNarration(audioFile, spokenText, voiceHint);
         }
     }
 
@@ -7512,6 +7596,11 @@ class Game {
     }
 
     updateCutscene(dt) {
+        if (this.cutscene.waitingForImage) {
+            this.cutscene.textProgress = 0;
+            return;
+        }
+
         this.cutscene.timer += dt;
         this.cutscene.animTime += dt;
         this.cutscene.cloudX = (this.cutscene.cloudX + dt * 25) % (VIRTUAL_WIDTH + 300);
@@ -7605,6 +7694,9 @@ class Game {
             this.startGame();
         } else if (this.cutscene.type === 'PHASE5_TO_6') {
             if (this.cutscene.step === 0) {
+                if (window.soundManager && window.soundManager.stopNarration) {
+                    window.soundManager.stopNarration();
+                }
                 this.cutscene.step = 1;
                 this.cutscene.textProgress = 0;
                 this.cutscene.flashTimer = 0.45;
@@ -7617,7 +7709,13 @@ class Game {
                         }
                     }, 400);
                 }
-                this.triggerCutsceneNarration();
+                if (this.isCutsceneAssetReady()) {
+                    this.triggerCutsceneNarration();
+                } else {
+                    this.waitForCutsceneAsset(() => {
+                        this.triggerCutsceneNarration();
+                    });
+                }
             } else {
                 if (window.soundManager && window.soundManager.stopNarration) {
                     window.soundManager.stopNarration();
@@ -7628,11 +7726,23 @@ class Game {
             }
         } else if (this.cutscene.type === 'GRAND_ENDING') {
             if (this.cutscene.step === 0) {
+                if (window.soundManager && window.soundManager.stopNarration) {
+                    window.soundManager.stopNarration();
+                }
                 this.cutscene.step = 1;
                 this.cutscene.textProgress = 0;
                 if (window.soundManager && window.soundManager.playFanfare) window.soundManager.playFanfare();
-                this.triggerCutsceneNarration();
+                if (this.isCutsceneAssetReady()) {
+                    this.triggerCutsceneNarration();
+                } else {
+                    this.waitForCutsceneAsset(() => {
+                        this.triggerCutsceneNarration();
+                    });
+                }
             } else if (this.cutscene.step === 1) {
+                if (window.soundManager && window.soundManager.stopNarration) {
+                    window.soundManager.stopNarration();
+                }
                 this.cutscene.step = 2;
                 this.cutscene.textProgress = 0;
                 if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
@@ -7690,6 +7800,35 @@ class Game {
     }
 
     renderCutscene(ctx) {
+        if (this.cutscene.waitingForImage) {
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
+            bgGrad.addColorStop(0, '#064e3b');
+            bgGrad.addColorStop(0.5, '#022c22');
+            bgGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+            const logo = this.assets['ui_parnamirim_logo'];
+            if (logo && logo.complete && logo.naturalWidth > 0) {
+                ctx.drawImage(logo, VIRTUAL_WIDTH / 2 - 130, 80, 260, 49);
+            }
+
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(40, 40, VIRTUAL_WIDTH - 80, VIRTUAL_HEIGHT - 80);
+
+            const dots = '.'.repeat((Math.floor(performance.now() / 300) % 4));
+            ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
+            ctx.fillStyle = '#fef08a';
+            ctx.textAlign = 'center';
+            ctx.fillText(`PREPARANDO CENA${dots} 🎬`, VIRTUAL_WIDTH / 2, 290);
+
+            ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
+            ctx.fillStyle = '#86efac';
+            ctx.fillText('TURMA DO CAJULIM • PREFEITURA DE PARNAMIRIM', VIRTUAL_WIDTH / 2, 330);
+            return;
+        }
+
         ctx.save();
         if (this.cutscene.shakeTimer > 0) {
             const shake = this.cutscene.shakeTimer * 12;
@@ -7763,8 +7902,15 @@ class Game {
                 ctx.globalAlpha = 1.0;
             }
         } else {
-            ctx.fillStyle = '#0f172a';
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, 540);
+            bgGrad.addColorStop(0, '#064e3b');
+            bgGrad.addColorStop(0.5, '#042f2e');
+            bgGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, VIRTUAL_WIDTH, 540);
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(10, 10, VIRTUAL_WIDTH - 20, 520);
         }
 
         const fullText = this.getCutsceneFullText();
@@ -7810,8 +7956,15 @@ class Game {
                 ctx.fill();
             }
         } else {
-            ctx.fillStyle = '#0f172a';
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, 540);
+            bgGrad.addColorStop(0, '#064e3b');
+            bgGrad.addColorStop(0.5, '#042f2e');
+            bgGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, VIRTUAL_WIDTH, 540);
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(10, 10, VIRTUAL_WIDTH - 20, 520);
         }
 
         // Dialog Box with automated indicator
@@ -7853,8 +8006,15 @@ class Game {
                 ctx.shadowBlur = 0;
             }
         } else {
-            ctx.fillStyle = '#0f172a';
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, 540);
+            bgGrad.addColorStop(0, '#064e3b');
+            bgGrad.addColorStop(0.5, '#042f2e');
+            bgGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, VIRTUAL_WIDTH, 540);
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(10, 10, VIRTUAL_WIDTH - 20, 520);
         }
 
         // Dialog Box with automated indicator

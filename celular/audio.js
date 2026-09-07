@@ -629,7 +629,7 @@ class SoundManager {
         });
     }
 
-    playNarration(audioPath, fallbackText) {
+    playNarration(audioPath, fallbackText, voiceHint = 'thalita') {
         this.stopNarration();
         if (this.muted) return null;
         this.resume();
@@ -643,7 +643,7 @@ class SoundManager {
                 if (playPromise !== undefined) {
                     playPromise.catch((err) => {
                         console.warn('HTML5 Audio playback prevented, using speech synthesis fallback', err);
-                        this.playSpeechFallback(fallbackText);
+                        this.playSpeechFallback(fallbackText, voiceHint);
                     });
                 }
                 return audio;
@@ -652,27 +652,39 @@ class SoundManager {
             console.warn('Error creating audio for narration', e);
         }
 
-        this.playSpeechFallback(fallbackText);
+        this.playSpeechFallback(fallbackText, voiceHint);
         return null;
     }
 
-    playSpeechFallback(text) {
+    playSpeechFallback(text, voiceHint = 'thalita') {
         if (this.muted || typeof window === 'undefined' || !window.speechSynthesis) return;
         try {
             window.speechSynthesis.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'pt-BR';
             const voices = window.speechSynthesis.getVoices();
-            const antonioVoice = voices.find(v => 
-                v.name.includes('Antonio') || 
-                v.name.includes('Antônio') || 
-                (v.lang === 'pt-BR' && (v.name.includes('Male') || v.name.includes('Natural'))) ||
-                v.lang === 'pt-BR' ||
-                v.lang.startsWith('pt')
-            );
-            if (antonioVoice) utter.voice = antonioVoice;
-            utter.rate = 1.0;
-            utter.pitch = 0.95;
+            if (voiceHint === 'antonio') {
+                const antonioVoice = voices.find(v => 
+                    v.name.includes('Antonio') || 
+                    v.name.includes('Antônio') || 
+                    (v.lang === 'pt-BR' && (v.name.includes('Male') || v.name.includes('Natural'))) ||
+                    v.lang === 'pt-BR' ||
+                    v.lang.startsWith('pt')
+                );
+                if (antonioVoice) utter.voice = antonioVoice;
+                utter.rate = 1.0;
+                utter.pitch = 0.95;
+            } else {
+                const thalitaVoice = voices.find(v => 
+                    v.name.includes('Thalita') || 
+                    (v.lang === 'pt-BR' && (v.name.includes('Female') || v.name.includes('Francisca') || v.name.includes('Natural'))) ||
+                    v.lang === 'pt-BR' ||
+                    v.lang.startsWith('pt')
+                );
+                if (thalitaVoice) utter.voice = thalitaVoice;
+                utter.rate = 1.02;
+                utter.pitch = 1.02;
+            }
             window.speechSynthesis.speak(utter);
         } catch (e) {
             console.warn('SpeechSynthesis error', e);
