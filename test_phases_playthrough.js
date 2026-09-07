@@ -156,16 +156,41 @@ game.switchPhase(2);
 console.log(`Phase 2 Initial State: ${game.state}, Player w: ${game.player.w}, h: ${game.player.h}, Anim: ${game.player.animState}`);
 
 ticks = 0;
-while (ticks < 1500 && game.state === 'PLAYING') {
+while (ticks < 2500 && game.state === 'PLAYING') {
     ticks++;
-    game.keys.right = true;
+    const px = game.player.x;
+
+    // Check if approaching a red traffic light - driver must brake early and wait for green!
+    let approachingRed = false;
+    if (game.trafficLights) {
+        for (const tl of game.trafficLights) {
+            const dist = tl.x - (px + game.player.w);
+            if (dist > 0 && dist < 260 && (tl.state === 'RED' || tl.state === 'YELLOW')) {
+                approachingRed = true;
+                break;
+            }
+        }
+    }
+
+    if (approachingRed) {
+        game.keys.right = false;
+        if (game.player.vx > 10) {
+            game.keys.left = true; // brake to a complete stop before the stop line!
+        } else {
+            game.keys.left = false; // truck parked waiting for green
+            game.player.vx = 0;
+        }
+    } else {
+        game.keys.right = true;
+        game.keys.left = false;
+    }
+
 
     // Truck Road Gaps to jump:
     // Gap 1: 980..1160 (jump around 940)
     // Overpass 1: 1300..1560 (jump onto overpass around 1250)
     // Gap 2: 2100..2320 (jump around 2060)
     // Gap 3: 3100..3300 (jump around 3050)
-    const px = game.player.x;
     let needJump = false;
     if ((px >= 930 && px <= 970) ||
         (px >= 1230 && px <= 1280) ||

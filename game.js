@@ -3036,13 +3036,13 @@ class Game {
             const dist = tl.x - truckFront;
 
             // Approaching traffic light zone
-            if (dist > -40 && dist < 170) {
+            if (dist > -40 && dist < 220) {
                 if (tl.state === 'RED') {
                     if (Math.abs(p.vx) < 90) {
                         // Truck is stopped or stopping to wait for green!
                         tl.timer -= dt;
                         const remaining = Math.max(0, Math.ceil(tl.timer));
-                        this.showTip(`🛑 Sinal Vermelho! Pai Cajulão aguardando o verde... (${remaining}s)`, 0.3);
+                        this.showTip(`🛑 Sinal Vermelho! Aguarde o verde... (${remaining}s)`, 0.3);
                         
                         if (tl.timer <= 0.8 && tl.state === 'RED') {
                             tl.state = 'YELLOW';
@@ -3053,10 +3053,10 @@ class Game {
                             if (window.soundManager) window.soundManager.playCollect('star');
                             this.score += 200;
                             this.addFloatingText(tl.x, tl.y - 15, '+200 SINAL VERDE! 🟢', '#22c55e');
-                            this.showTip('🟢 Sinal Verde! Pai Cajulão pode acelerar com segurança!', 3.0);
+                            this.showTip('🟢 Sinal Verde! Pode acelerar com segurança!', 3.0);
                         }
                     } else {
-                        this.showTip('🛑 Atenção! Sinal Vermelho à frente! Pare o caminhão!', 0.3);
+                        this.showTip('🛑 PERIGO! Pare o caminhão! Avançar no vermelho é FATAL!', 0.3);
                     }
                 } else if (tl.state === 'YELLOW') {
                     tl.timer -= dt;
@@ -3066,22 +3066,27 @@ class Game {
                         if (window.soundManager) window.soundManager.playCollect('star');
                         this.score += 200;
                         this.addFloatingText(tl.x, tl.y - 15, '+200 SINAL VERDE! 🟢', '#22c55e');
-                        this.showTip('🟢 Sinal Verde! Pai Cajulão pode acelerar com segurança!', 3.0);
+                        this.showTip('🟢 Sinal Verde! Pode acelerar com segurança!', 3.0);
                     }
                 }
             }
 
-            // Infraction: driving past while RED
-            if (p.x > tl.x + 10 && !tl.passed) {
-                tl.passed = true;
+            // Infraction: driving past while RED -> FATAL DEATH!
+            if (p.x + p.w > tl.x - 10 && !tl.passed) {
                 if (tl.state === 'RED') {
+                    tl.passed = true;
                     if (window.soundManager) window.soundManager.playHurt();
-                    this.score = Math.max(0, this.score - 150);
-                    p.invulnerableTimer = 1.5;
-                    this.addFloatingText(p.x, p.y - 40, '⚠️ AVANÇOU SINAL VERMELHO! -150', '#ef4444');
-                    this.showTip('⚠️ Infração de trânsito! Respeite o sinal vermelho!', 3.0);
-                    this.spawnSparkles(tl.x, tl.y + 20, 25);
+                    this.score = Math.max(0, this.score - 200);
+                    this.spawnSparkles(tl.x, tl.y + 20, 40);
+                    this.addFloatingText(p.x, p.y - 50, '☠️ PASSOU NO VERMELHO! FATAL! ☠️', '#ef4444');
+                    this.killPlayer('🚨 Acidente Fatal! Você avançou o sinal vermelho!');
+                    // Turn to green so upon respawning before the light player can advance safely
+                    tl.state = 'GREEN';
+                    tl.timer = 0;
+                    tl.waited = true;
+                    return;
                 } else {
+                    tl.passed = true;
                     if (!tl.waited) {
                         this.score += 50;
                         this.addFloatingText(tl.x, tl.y - 15, '+50 Cruzou no Verde! 🟢', '#22c55e');
@@ -6206,6 +6211,71 @@ class Game {
                 ctx.arc(tl.x + 24, tl.y + 43, 16, 0, Math.PI * 2);
                 ctx.fill();
             }
+            ctx.restore();
+
+            // 4. Seta indicadora animada apontando para o semáforo
+            ctx.save();
+            const arrowX = tl.x + tl.w / 2;
+            const bounce = Math.sin(Date.now() / 150) * 8;
+            const arrowTipY = tl.y - 12 + bounce;
+            const arrowTopY = arrowTipY - 26;
+
+            let arrowColor = '#ef4444';
+            let strokeColor = '#ffffff';
+            let badgeText = 'PARE';
+            let badgeBg = '#dc2626';
+
+            if (tl.state === 'YELLOW') {
+                arrowColor = '#facc15';
+                strokeColor = '#000000';
+                badgeText = 'ATENÇÃO';
+                badgeBg = '#ca8a04';
+            } else if (tl.state === 'GREEN') {
+                arrowColor = '#22c55e';
+                strokeColor = '#ffffff';
+                badgeText = 'SIGA';
+                badgeBg = '#16a34a';
+            }
+
+            // Brilho neon da seta
+            ctx.shadowColor = arrowColor;
+            ctx.shadowBlur = 14;
+
+            // Seta para baixo estilizada
+            ctx.fillStyle = arrowColor;
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2.5;
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX - 7, arrowTopY);
+            ctx.lineTo(arrowX + 7, arrowTopY);
+            ctx.lineTo(arrowX + 7, arrowTipY - 14);
+            ctx.lineTo(arrowX + 18, arrowTipY - 14);
+            ctx.lineTo(arrowX, arrowTipY);
+            ctx.lineTo(arrowX - 18, arrowTipY - 14);
+            ctx.lineTo(arrowX - 7, arrowTipY - 14);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Plaquinha retro com o texto da ação
+            ctx.shadowBlur = 0;
+            ctx.font = 'bold 11px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const textWidth = ctx.measureText(badgeText).width + 14;
+            const badgeY = arrowTopY - 14;
+
+            ctx.fillStyle = badgeBg;
+            ctx.beginPath();
+            ctx.roundRect(arrowX - textWidth / 2, badgeY - 10, textWidth, 20, 5);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(badgeText, arrowX, badgeY + 1);
             ctx.restore();
         }
     }
