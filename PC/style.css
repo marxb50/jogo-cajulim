@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@500;700&display=swap');
+
+:root {
+    --primary: #15803d;
+    --primary-light: #22c55e;
+    --primary-dark: #166534;
+    --accent: #f59e0b;
+    --bg-dark: #0f172a;
+    --text-light: #f8fafc;
+    --border-color: #334155;
+    --gold: #fbbf24;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+html, body {
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+body {
+    background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+    color: var(--text-light);
+    font-family: 'Fredoka', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 16px 24px 16px;
+}
+
+/* Header */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.header-logo {
+    height: 52px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+}
+
+.game-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 22px;
+    color: #4ade80;
+    text-shadow: 2px 2px 0px #14532d, 0 0 16px rgba(74, 222, 128, 0.4);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.game-subtitle {
+    font-size: 15px;
+    color: #fde047;
+    font-weight: 700;
+}
+
+/* Arcade Cabinet Frame */
+.arcade-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    flex-direction: column;
+    background: #020617;
+    border: 3px solid #22c55e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(34, 197, 94, 0.25);
+}
+
+.canvas-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* Controls Bar */
+.controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: #090d16;
+    border-top: 2px solid #1e293b;
+    font-size: 13px;
+    color: #94a3b8;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.controls-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.control-key {
+    display: inline-block;
+    padding: 2px 7px;
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: #f8fafc;
+    box-shadow: 0 2px 0 #0f172a;
+}
+
+.controls-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-arcade {
+    background: linear-gradient(180deg, #1e293b, #0f172a);
+    border: 1px solid #475569;
+    color: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-arcade:hover {
+    background: #334155;
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+/* Fullscreen Mode */
+:fullscreen .arcade-wrapper,
+:-webkit-full-screen .arcade-wrapper {
+    max-width: 100vw;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+    justify-content: center;
+}
+
+:fullscreen .canvas-container,
+:-webkit-full-screen .canvas-container {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: auto;
+}
+
+:fullscreen canvas,
+:-webkit-full-screen canvas {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+}
+
+:fullscreen .controls-bar,
+:-webkit-full-screen .controls-bar {
+    display: none;
+}

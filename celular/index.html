@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Turma do Cajulim - Edição Celular</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <script>
+        // Anti-scroll / anti-zoom guard for mobile touch
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.closest('#touchControlsLayer') || e.target.closest('#gameCanvas')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</head>
+<body>
+
+    <main class="mobile-wrapper" id="mobileWrapper">
+        <!-- Barra Superior Flutuante Minimalista (Apenas Botões) -->
+        <header class="mobile-top-bar">
+            <div></div>
+            <div class="mobile-actions">
+                <button class="top-circle-btn" id="btnMobileSound" title="Ativar/Desativar Som">🔊</button>
+                <button class="top-circle-btn" id="btnMobileFullscreen" title="Tela Cheia">⛶</button>
+            </div>
+        </header>
+
+        <!-- Canvas do Jogo 16:9 Adaptado -->
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="960" height="540"></canvas>
+        </div>
+
+        <!-- Controles Virtuais Semi-Transparentes na Tela -->
+        <div class="touch-controls-layer" id="touchControlsLayer">
+            <!-- Lado Esquerdo: Direcionais D-Pad -->
+            <div class="dpad-zone" id="dpadZone">
+                <div class="dpad-grid">
+                    <button class="dpad-btn btn-up" id="btnTouchUp" aria-label="Cima">▲</button>
+                    <button class="dpad-btn btn-left" id="btnTouchLeft" aria-label="Esquerda">◀</button>
+                    <div class="dpad-center"></div>
+                    <button class="dpad-btn btn-right" id="btnTouchRight" aria-label="Direita">▶</button>
+                    <button class="dpad-btn btn-down" id="btnTouchDown" aria-label="Baixo / Freio">▼</button>
+                </div>
+            </div>
+
+            <!-- Lado Direito: Botões de Ação A e B -->
+            <div class="actions-zone" id="actionsZone">
+                <button class="action-btn btn-b" id="btnTouchB" aria-label="Botão B: Ação / Freio / Turbo">
+                    <span class="btn-main">B</span>
+                    <span class="btn-sub">AÇÃO</span>
+                </button>
+                <button class="action-btn btn-a" id="btnTouchA" aria-label="Botão A: Pulo / Avançar">
+                    <span class="btn-main">A</span>
+                    <span class="btn-sub">PULO</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts do Jogo -->
+    <script src="audio.js?v=2.0"></script>
+    <script src="game.js?v=2.0"></script>
+</body>
+</html>

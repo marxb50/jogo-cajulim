@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Turma do Cajulim - Jogo de Plataforma 2D</title>
+    <link rel="stylesheet" href="style.css?v=8.0">
+    <script>
+        // Anti-scroll guard: Immediately intercepts Space and Arrow keys before any rendering
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.key === ' ' || e.keyCode === 32) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        window.addEventListener('keyup', function(e) {
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.key === ' ' || e.keyCode === 32) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</head>
+<body>
+
+    <!-- Game Title Header with Institutional Logo -->
+    <header class="header-container" style="display:flex; align-items:center; justify-content:center; gap:22px; flex-wrap:wrap;">
+        <img src="assets/ui/parnamirim_logo.png" alt="Prefeitura de Parnamirim - Secretaria de Limpeza Urbana" style="height:52px; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.6));">
+        <div>
+            <h1 class="game-title">TURMA DO CAJULIM</h1>
+            <p class="game-subtitle">A Grande Missão da Coleta Seletiva - Jogo de Plataforma 2D</p>
+        </div>
+    </header>
+
+    <!-- 5-Stage Selective Collection Roadmap -->
+    <nav class="stages-nav">
+        <div class="stage-pill active" id="pillStage1" onclick="if(window.game) window.game.switchPhase(1)" style="cursor:pointer;" title="Jogar Fase 1">1. Pega o Lixo ★</div>
+        <div class="stage-pill" id="pillStage2" onclick="if(window.game) window.game.switchPhase(2)" style="cursor:pointer;" title="Jogar Fase 2">2. Caminhão ao Transbordo 🚚</div>
+        <div class="stage-pill" id="pillStage3" onclick="if(window.game) window.game.switchPhase(3)" style="cursor:pointer;" title="Jogar Fase 3">3. Joga na Carreta 🚜</div>
+        <div class="stage-pill" id="pillStage4" onclick="if(window.game) window.game.switchPhase(4)" style="cursor:pointer;" title="Jogar Fase 4">4. Carreta ao Aterro 🚛</div>
+        <div class="stage-pill" id="pillStage5" onclick="if(window.game) window.game.switchPhase(5)" style="cursor:pointer;" title="Jogar Fase 5">5. Aterro & Usina Verde 🌱⚡</div>
+        <div class="stage-pill" id="pillStage6" onclick="if(window.game) window.game.switchPhase(6)" style="cursor:pointer;" title="Jogar Fase 6: O Grande Chefão Final">6. O Chefão 👾</div>
+        <button class="stage-pill btn-top-fullscreen" id="btnTopFullscreen" onclick="if(window.game) window.game.toggleFullscreen();" title="Ativar/Desativar Tela Cheia (Tecla F ou 2x Clique no Jogo)">⛶ TELA CHEIA (F)</button>
+    </nav>
+
+    <!-- Arcade Game Container -->
+    <main class="arcade-wrapper" id="arcadeContainer">
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+            <!-- Touch Controls for Mobile / Tablet -->
+            <div class="touch-controls">
+                <div class="touch-dpad">
+                    <button class="touch-btn" id="btnLeft" aria-label="Mover para a Esquerda">◀</button>
+                    <button class="touch-btn" id="btnRight" aria-label="Mover para a Direita">▶</button>
+                </div>
+                <div class="touch-action">
+                    <button class="touch-btn btn-jump" id="btnJump" aria-label="Pular">PULO</button>
+                </div>
+            </div>
+
+            <!-- Victory Modal -->
+            <div id="victoryModal" class="modal hidden">
+                <div class="modal-content">
+                    <h2 class="modal-title" id="victoryTitle">🌟 FASE 1 COMPLETA! 🌟</h2>
+                    <p class="modal-desc" id="victoryDesc">Parabéns! Cajulim recolheu o lixo espalhado no bairro e entregou tudo com segurança no Caminhão da Coleta Seletiva!</p>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-label">Pontuação</div>
+                            <div class="stat-val" id="finalScore">000000</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label" id="finalStat1Label">Sacos de Lixo</div>
+                            <div class="stat-val" id="finalTrash">6/6</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label" id="finalStat2Label">Recicláveis</div>
+                            <div class="stat-val" id="finalRecyclables">0/9</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Tempo Total</div>
+                            <div class="stat-val" id="finalTime">45s</div>
+                        </div>
+                    </div>
+                    <div id="victoryNextTeaser" style="background: #1e3a29; border: 1px dashed #22c55e; border-radius: 8px; padding: 12px; margin-bottom: 18px; font-size: 13px; color: #a7f3d0;">
+                        <strong>🚚 Próxima Parada: Fase 2</strong><br>
+                        O caminhão de lixo vai transportar os resíduos até a estação de transbordo da cidade!
+                    </div>
+                    <button class="btn-primary" id="btnNextPhase" onclick="game.nextPhase()" style="margin-bottom:8px; font-size:13px;">AVANÇAR PARA FASE 2: O TRANSBORDO 🚚 ▶</button>
+                    <button class="btn-primary" style="background: #334155; color: #e2e8f0;" onclick="game.restartLevel()">JOGAR NOVAMENTE</button>
+                </div>
+            </div>
+
+            <!-- Game Over Modal -->
+            <div id="gameOverModal" class="modal hidden">
+                <div class="modal-content" style="border-color: #ef4444;">
+                    <h2 class="modal-title" id="gameOverTitle" style="color: #ef4444;">💀 FIM DE JOGO!</h2>
+                    <p class="modal-desc" id="gameOverDesc">Você perdeu todas as vidas nos fossos e obstáculos da rua. A cidade ainda precisa de você para a Coleta Seletiva!</p>
+                    <button class="btn-primary" style="background: #ef4444; color: white;" onclick="game.restartLevel()">TENTAR DE NOVO</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <footer class="controls-bar">
+            <div class="controls-hint">
+                <strong>Controles:</strong> 
+                <span class="control-key">←</span> <span class="control-key">→</span> ou <span class="control-key">A</span> <span class="control-key">D</span> Mover | 
+                <span class="control-key">ESPAÇO</span> ou <span class="control-key">W</span> Ação/Pulo | 
+                <span class="control-key">↓</span> ou <span class="control-key">S</span> Freio
+            </div>
+            <div class="controls-actions">
+                <button class="btn-fullscreen" id="btnBottomFullscreen" onclick="if(window.game) window.game.toggleFullscreen()" title="Modo Tela Cheia (Tecla F ou 2x Clique no Jogo)">⛶ Tela Cheia (F)</button>
+                <span class="control-key" title="Ativar/Desativar Som">M</span> Som | <span class="control-key" title="Reiniciar Fase">R</span>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Educational & Story Section -->
+    <section class="educational-section">
+        <div class="edu-card">
+            <div class="edu-header">
+                <img src="assets/player/cajulim_portrait.png" alt="Cajulim" class="edu-icon">
+                <div>
+                    <h3 class="edu-title">CAJULIM</h3>
+                    <span class="edu-subtitle">O Super-Herói da Coleta</span>
+                </div>
+            </div>
+            <p class="edu-text">
+                Cajulim é o gari e reciclador consciente que protege nossa cidade. Ele conhece o valor de cada material descartado e sabe que o lixo bem destinado gera emprego, renda e preservação ambiental!
+            </p>
+        </div>
+
+        <div class="edu-card">
+            <div class="edu-header">
+                <img src="assets/items/biodiesel.png" alt="Biodiesel" class="edu-icon">
+                <div>
+                    <h3 class="edu-title">LOGÍSTICA & TRANSPORTE</h3>
+                    <span class="edu-subtitle">Rodovia e Estação de Transbordo</span>
+                </div>
+            </div>
+            <p class="edu-text">
+                Os caminhões coletores urbanos descarregam no transbordo para encher grandes carretas de 30 toneladas. Cada carreta retira até 4 caminhões das rodovias, economizando combustível e reduzindo emissões!
+            </p>
+        </div>
+
+        <div class="edu-card">
+            <div class="edu-header">
+                <img src="assets/items/star.png" alt="Bandeira de Parnamirim" class="edu-icon">
+                <div>
+                    <h3 class="edu-title">A JORNADA COMPLETA</h3>
+                    <span class="edu-subtitle">As 5 Etapas do Livro</span>
+                </div>
+            </div>
+            <p class="edu-text">
+                <strong>1.</strong> Pega o lixo no bairro<br>
+                <strong>2.</strong> Caminhão leva até o transbordo<br>
+                <strong>3.</strong> Caminhão joga na carreta industrial<br>
+                <strong>4.</strong> Carreta transporta ao aterro<br>
+                <strong>5.</strong> Disposição correta, biogás e usina verde!<br>
+                <strong>6.</strong> O Grande Chefão Barão do Entulho e seu Mecha-Trator 👾
+            </p>
+        </div>
+    </section>
+
+    <!-- Game Scripts -->
+    <script src="audio.js?v=10.0"></script>
+    <script src="game.js?v=10.0"></script>
+</body>
+</html>

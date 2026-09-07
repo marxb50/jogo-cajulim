@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Turma do Cajulim - Escolha sua Plataforma</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            color: #f8fafc;
+            font-family: 'Fredoka', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 16px;
+        }
+
+        .portal-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 3px solid #22c55e;
+            border-radius: 20px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 25px rgba(34, 197, 94, 0.25);
+            max-width: 680px;
+            width: 100%;
+            padding: 32px 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .logo-parnamirim {
+            height: 56px;
+            max-width: 90%;
+            object-fit: contain;
+            margin-bottom: 18px;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+        }
+
+        .cajulim-hero {
+            width: 130px;
+            height: auto;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .game-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 24px;
+            color: #4ade80;
+            text-shadow: 2px 2px 0px #14532d, 0 0 18px rgba(74, 222, 128, 0.4);
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .game-subtitle {
+            font-size: 16px;
+            color: #fde047;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .prompt-text {
+            font-size: 15px;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 540px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+            .game-title {
+                font-size: 19px;
+            }
+            .logo-parnamirim {
+                height: 44px;
+            }
+        }
+
+        .platform-btn {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 22px 16px;
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+        }
+
+        .platform-btn:hover, .platform-btn:active {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+        }
+
+        .platform-btn.btn-mobile:hover, .platform-btn.btn-mobile:active {
+            border-color: #38bdf8;
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.35);
+        }
+
+        .platform-btn.btn-pc:hover, .platform-btn.btn-pc:active {
+            border-color: #4ade80;
+            box-shadow: 0 10px 25px rgba(74, 222, 128, 0.35);
+        }
+
+        .btn-icon {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .btn-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .btn-mobile .btn-title {
+            color: #38bdf8;
+        }
+
+        .btn-pc .btn-title {
+            color: #4ade80;
+        }
+
+        .btn-desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.35;
+        }
+
+        .badge-recommended {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #f59e0b;
+            color: #0f172a;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+
+        .footer-note {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="portal-card">
+        <!-- Logo Oficial Parnamirim -->
+        <img src="assets/ui/parnamirim_logo.png" alt="Prefeitura de Parnamirim" class="logo-parnamirim">
+
+        <!-- Herói Cajulim -->
+        <img src="assets/player/cajulim_portrait.png" alt="Cajulim" class="cajulim-hero">
+
+        <!-- Títulos -->
+        <h1 class="game-title">TURMA DO CAJULIM</h1>
+        <p class="game-subtitle">A Grande Missão da Coleta Seletiva</p>
+
+        <p class="prompt-text">Escolha onde você vai jogar:</p>
+
+        <!-- Grade de Escolha -->
+        <div class="options-grid">
+            <!-- Opção Celular -->
+            <a href="celular/" class="platform-btn btn-mobile" id="btnOptCelular">
+                <span id="badgeCelular" class="badge-recommended" style="display:none;">Recomendado</span>
+                <div class="btn-icon">📱</div>
+                <div class="btn-title">CELULAR</div>
+                <div class="btn-desc">Controles virtuais transparentes na tela (D-Pad e Botões A/B).</div>
+            </a>
+
+            <!-- Opção PC -->
+            <a href="PC/" class="platform-btn btn-pc" id="btnOptPC">
+                <span id="badgePC" class="badge-recommended" style="display:none;">Recomendado</span>
+                <div class="btn-icon">💻</div>
+                <div class="btn-title">PC / NOTEBOOK</div>
+                <div class="btn-desc">Controles no teclado (Setas e Espaço) e modo Tela Cheia.</div>
+            </a>
+        </div>
+
+        <p class="footer-note">Prefeitura de Parnamirim • Secretaria Municipal de Limpeza Urbana</p>
+    </main>
+
+    <script>
+        // Detecção do dispositivo para destacar a melhor opção
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        if (isMobile) {
+            const b = document.getElementById('badgeCelular');
+            if (b) b.style.display = 'block';
+            document.getElementById('btnOptCelular').style.borderColor = '#38bdf8';
+        } else {
+            const b = document.getElementById('badgePC');
+            if (b) b.style.display = 'block';
+            document.getElementById('btnOptPC').style.borderColor = '#4ade80';
+        }
+    </script>
+</body>
+</html>

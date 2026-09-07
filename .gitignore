@@ -1,0 +1,30 @@
+# Ambientes e perfis temporarios
+chrome_temp_profile*
+snap_*
+*.tmp
+
+# Frames e recortes temporarios de desenvolvimento
+frames_video2/
+frames_video3/
+pdf_pages/
+pickup_crops/
+
+# Ignorar arquivos soltos de midia e captura na raiz (mantendo assets/, PC/ e celular/ intactos)
+/*.png
+/*.jpg
+/*.jpeg
+/*.mp4
+/*.pdf
+/*.bat
+/*.ps1
+/*.mp3
+/*.py
+
+# Scripts auxiliares temporarios na raiz
+/*_plan.md
+/findings.md
+/progress.md
+
+# Python
+__pycache__/
+*.pyc
