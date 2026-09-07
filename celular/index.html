@@ -16,6 +16,40 @@
                 e.preventDefault();
             }
         }, { passive: false });
+
+        // Auto Fullscreen ao virar o celular na horizontal (Paisagem)
+        function triggerAutoFullscreen() {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            if (isLandscape && !document.fullscreenElement && !document.webkitFullscreenElement) {
+                const doc = document.documentElement;
+                if (doc.requestFullscreen) {
+                    doc.requestFullscreen().catch(() => {});
+                } else if (doc.webkitRequestFullscreen) {
+                    doc.webkitRequestFullscreen();
+                }
+                if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                    window.screen.orientation.lock('landscape').catch(() => {});
+                }
+            }
+        }
+
+        window.addEventListener('orientationchange', function() {
+            setTimeout(triggerAutoFullscreen, 150);
+            setTimeout(triggerAutoFullscreen, 400);
+        });
+        if (window.screen && window.screen.orientation) {
+            window.screen.orientation.addEventListener('change', function() {
+                setTimeout(triggerAutoFullscreen, 150);
+                setTimeout(triggerAutoFullscreen, 400);
+            });
+        }
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > window.innerHeight) {
+                setTimeout(triggerAutoFullscreen, 100);
+            }
+        });
+        document.addEventListener('touchstart', triggerAutoFullscreen, { passive: true });
+        document.addEventListener('pointerdown', triggerAutoFullscreen, { passive: true });
     </script>
 </head>
 <body>

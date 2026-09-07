@@ -24,10 +24,13 @@
 
 html, body {
     width: 100%;
+    width: 100dvw;
     height: 100%;
+    height: 100dvh;
     overflow: hidden;
     position: fixed;
-    background: #020617;
+    inset: 0;
+    background: #000000;
     color: var(--text-light);
     font-family: 'Fredoka', sans-serif;
 }
@@ -37,20 +40,27 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    margin: 0;
 }
 
 /* Mobile App Wrapper */
 .mobile-wrapper {
     position: relative;
     width: 100vw;
+    width: 100dvw;
     height: 100vh;
+    height: 100dvh;
     max-width: 100vw;
+    max-width: 100dvw;
     max-height: 100vh;
+    max-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     background: #000000;
+    overflow: hidden;
 }
 
 /* Canvas Container with dynamic 16:9 fitting */
@@ -73,7 +83,7 @@ canvas {
     image-rendering: crisp-edges;
 }
 
-/* Floating Mobile Header (Semi-transparent top bar) */
+/* Floating Mobile Header (Aparece apenas em modo retrato, oculta na paisagem para imersão total) */
 .mobile-top-bar {
     position: absolute;
     top: 6px;
@@ -86,6 +96,13 @@ canvas {
     pointer-events: none;
     z-index: 50;
 }
+
+@media (orientation: landscape) {
+    .mobile-top-bar {
+        display: none !important; /* Tela cheia pura sem nada a mais! */
+    }
+}
+
 
 .mobile-logo {
     height: 32px;
