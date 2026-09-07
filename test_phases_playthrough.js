@@ -341,18 +341,18 @@ while (ticks < 2500 && game.state === 'PLAYING') {
         game.keys.down = false;
     }
 
-    // 3. ANTT Weigh Station approach (x >= 4050 && x <= 4240)
-    if (px >= 4050 && px <= 4220) {
+    // 3. ANTT Weigh Station approach (x >= 4050 && x <= 4480)
+    if (px >= 4050 && px <= 4480) {
         game.keys.down = false;
-        if (game.speedKmh > 16) {
+        if (game.speedKmh > 20) {
             game.keys.left = true;
             game.keys.right = false;
         } else {
             game.keys.left = false;
             game.keys.right = true; // Crawl through scale platform
         }
-    } else if (px > 4220) {
-        // Accelerate through open gate
+    } else if (px > 4480) {
+        // Continue onto weighing platform
         game.keys.left = false;
         game.keys.down = false;
         game.keys.right = true;

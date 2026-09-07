@@ -1047,6 +1047,7 @@ class Game {
         this.roundDumped = 0; // How much waste dumped during current round
         this.tarpCoverProgress = 0; // 0 to 100%
         this.phase3CompleteTimer = 0;
+        this.phase3TrashParticles = [];
 
         // Carreta de Transbordo
         this.carreta = {
@@ -1076,11 +1077,10 @@ class Game {
             const t = (x - 3870) / 180;
             return 390 - t * 60;
         }
-        if (x >= 4050 && x <= 4300) {
-            // Plataforma elevada da balança rodoviária (y = 330)
+        if (x >= 4050) {
+            // Plataforma elevada da balança rodoviária de 600px (y = 330)
             return 330;
         }
-        if (x > 4300) return 330;
         if (x >= 3840) return 390;
         const taperIn = Math.min(1, Math.max(0, (x - 400) / 280));
         const taperOut = Math.min(1, Math.max(0, (3840 - x) / 280));
@@ -1108,7 +1108,7 @@ class Game {
     }
 
     initPhase4() {
-        this.levelWidth = 4600;
+        this.levelWidth = 5100;
         this.camera.x = 0;
         this.camera.y = 0;
 
@@ -1664,12 +1664,15 @@ class Game {
                     }
                 }
 
-                // Waste pours out through the chute into the carreta
+                // Waste pours out through the chute into the carreta (Real trash bags & recyclables!)
                 if (this.dumpAngle >= 12) {
                     this.dumpParticleTimer += dt;
-                    if (this.dumpParticleTimer >= 0.04) {
+                    if (this.dumpParticleTimer >= 0.035) {
                         this.dumpParticleTimer = 0;
-                        this.spawnDumpTrashParticle(p.x + 105, p.y + 15);
+                        this.spawnDumpTrashBag(p.x + 95, p.y + 15);
+                        if (Math.random() < 0.4) {
+                            this.spawnDumpTrashBag(p.x + 85, p.y + 20);
+                        }
                         if (window.soundManager && window.soundManager.playDumpRumble && Math.random() < 0.35) {
                             window.soundManager.playDumpRumble();
                         }
@@ -1779,27 +1782,66 @@ class Game {
                 }
             }
         }
+
+        // Update dedicated Phase 3 cascading trash bags and recyclables
+        if (this.phase3TrashParticles) {
+            for (let i = this.phase3TrashParticles.length - 1; i >= 0; i--) {
+                const tp = this.phase3TrashParticles[i];
+                if (!tp.settled) {
+                    tp.vy += tp.gravity * dt;
+                    tp.x += tp.vx * dt;
+                    tp.y += tp.vy * dt;
+                    tp.rot += tp.vRot * dt;
+                    if (tp.y >= tp.targetY) {
+                        tp.y = tp.targetY;
+                        tp.vx *= 0.35;
+                        tp.vy = -tp.vy * 0.22;
+                        tp.vRot *= 0.4;
+                        if (Math.abs(tp.vy) < 18) {
+                            tp.settled = true;
+                            tp.vy = 0;
+                            tp.vx = 0;
+                            tp.vRot = 0;
+                        }
+                    }
+                }
+                tp.life -= dt;
+                if (tp.life <= 0) {
+                    this.phase3TrashParticles.splice(i, 1);
+                }
+            }
+        }
+    }
+
+    spawnDumpTrashBag(x, y) {
+        if (!this.phase3TrashParticles) this.phase3TrashParticles = [];
+        const rand = Math.random();
+        let itemType = 'bag';
+        if (rand > 0.65 && rand <= 0.80) itemType = 'can';
+        else if (rand > 0.80 && rand <= 0.90) itemType = 'bottle';
+        else if (rand > 0.90) itemType = 'box';
+
+        const p = {
+            x: x + (Math.random() * 12 - 6),
+            y: y + (Math.random() * 8 - 4),
+            vx: 85 + Math.random() * 70, // Cascades right into the chute and trailer
+            vy: -15 + Math.random() * 35,
+            gravity: 520,
+            type: itemType,
+            rot: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 9,
+            w: itemType === 'bag' ? 22 : itemType === 'can' ? 12 : itemType === 'bottle' ? 10 : 16,
+            h: itemType === 'bag' ? 26 : itemType === 'can' ? 15 : itemType === 'bottle' ? 20 : 16,
+            life: 1.6,
+            maxLife: 1.6,
+            settled: false,
+            targetY: 375 + Math.random() * 55 // Lands inside the carreta trailer hopper (y=375..430)
+        };
+        this.phase3TrashParticles.push(p);
     }
 
     spawnDumpTrashParticle(x, y) {
-        const types = ['bag', 'can', 'bottle', 'paper'];
-        const chosen = types[Math.floor(Math.random() * types.length)];
-        const p = {
-            x: x + (Math.random() * 8 - 4),
-            y: y + (Math.random() * 6 - 3),
-            vx: 75 + Math.random() * 55, // Falls right through the chute into the trailer
-            vy: 30 + Math.random() * 40,
-            gravity: 460,
-            type: chosen,
-            size: Math.random() * 6 + 6,
-            color: chosen === 'bag' ? '#1e293b' : chosen === 'can' ? '#eab308' : chosen === 'bottle' ? '#38bdf8' : '#34d399',
-            rotation: Math.random() * Math.PI * 2,
-            vRot: (Math.random() - 0.5) * 8,
-            life: 1.2,
-            maxLife: 1.2,
-            targetY: 380 + Math.random() * 50 // Lands in the carreta hopper
-        };
-        this.particles.push(p);
+        this.spawnDumpTrashBag(x, y);
     }
 
     updatePhase4TrafficLights(dt) {
@@ -1995,8 +2037,12 @@ class Game {
             this.showTip('↗️ Subindo a Rampa Alta da Balança Rodoviária! Reduza a velocidade!', 0.3);
         }
 
-        if (p.x >= 4050 && p.x <= 4250) {
-            // O caminhão freia automaticamente na balança elevada
+        if (p.x >= 4050 && p.x < 4480) {
+            this.showTip('⚖️ Entrando na Balança Rodoviária Oficial! Avance até o centro da plataforma...', 0.3);
+        }
+
+        if (p.x >= 4480 && p.x <= 4680) {
+            // O caminhão freia automaticamente na balança com a carreta inteira nivelada na plataforma de 600px
             this.scaleAutoBraking = true;
             if (this.speedKmh > 0) {
                 this.speedKmh = Math.max(0, this.speedKmh - 42 * dt);
@@ -3988,28 +4034,152 @@ class Game {
             }
         }
 
+        // 4b. Render Cascading Trash Bags & Recyclables into the Carreta
+        if (this.phase3TrashParticles && this.phase3TrashParticles.length > 0) {
+            const trashBagAsset = this.assets['item_trash_bag'];
+            for (const tp of this.phase3TrashParticles) {
+                ctx.save();
+                ctx.translate(tp.x, tp.y);
+                ctx.rotate(tp.rot);
+
+                if (tp.type === 'bag') {
+                    if (trashBagAsset) {
+                        ctx.drawImage(trashBagAsset, -tp.w / 2, -tp.h / 2, tp.w, tp.h);
+                    } else {
+                        // High-contrast pixel-art tied black trash bag
+                        ctx.fillStyle = '#09090b';
+                        ctx.fillRect(-4, -tp.h / 2, 8, 5);
+                        ctx.fillStyle = '#27272a';
+                        ctx.fillRect(-6, -tp.h / 2 - 2, 4, 4);
+                        ctx.fillRect(2, -tp.h / 2 - 2, 4, 4);
+                        ctx.fillStyle = '#facc15';
+                        ctx.fillRect(-3, -tp.h / 2 + 3, 6, 2);
+                        ctx.fillStyle = '#18181b';
+                        ctx.beginPath();
+                        if (ctx.roundRect) ctx.roundRect(-tp.w / 2, -tp.h / 2 + 5, tp.w, tp.h - 5, 5);
+                        else ctx.rect(-tp.w / 2, -tp.h / 2 + 5, tp.w, tp.h - 5);
+                        ctx.fill();
+                        ctx.fillStyle = '#3f3f46';
+                        ctx.fillRect(-tp.w / 4, -tp.h / 2 + 8, tp.w / 2, 3);
+                        ctx.fillStyle = '#52525b';
+                        ctx.fillRect(-tp.w / 4, -tp.h / 2 + 13, tp.w / 3, 2);
+                    }
+                } else if (tp.type === 'can') {
+                    // Aluminum beverage can
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(-tp.w / 2, -tp.h / 2, tp.w, tp.h);
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillRect(-tp.w / 2, -tp.h / 2, tp.w, 2);
+                    ctx.fillRect(-tp.w / 2, tp.h / 2 - 2, tp.w, 2);
+                    ctx.fillStyle = '#facc15';
+                    ctx.fillRect(-tp.w / 2, -1, tp.w, 3);
+                } else if (tp.type === 'bottle') {
+                    // Translucent PET plastic bottle
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fillRect(-tp.w / 2, -tp.h / 2 + 4, tp.w, tp.h - 4);
+                    ctx.fillStyle = '#0284c7';
+                    ctx.fillRect(-2, -tp.h / 2, 4, 4);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(-tp.w / 2, -2, tp.w, 4);
+                } else {
+                    // Cardboard packaging carton
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(-tp.w / 2, -tp.h / 2, tp.w, tp.h);
+                    ctx.fillStyle = '#d97706';
+                    ctx.fillRect(-1, -tp.h / 2, 2, tp.h);
+                }
+
+                ctx.restore();
+            }
+        }
+
         // 5. Collection Truck & Tilting Hydraulic Dump Bed
+        // Dynamically compute truck color indicator based on dock alignment or timing needle zone (Verde / Amarelo / Vermelho)
+        let truckStatusColor = '#22c55e';
+        let truckStatusRgb = '34, 197, 94';
+        let truckStatusLabel = '🟢 ZONA VERDE • ALINHADO!';
+
+        if (this.phase3State === 'TIMING_GAME') {
+            const tParams = this.getTimingParams();
+            const needleDist = Math.abs(this.timingNeedlePos - 50);
+            if (needleDist <= tParams.green) {
+                truckStatusColor = '#22c55e';
+                truckStatusRgb = '34, 197, 94';
+                truckStatusLabel = '🟢 ZONA VERDE • PRESSÃO MÁXIMA!';
+            } else if (needleDist <= tParams.yellow) {
+                truckStatusColor = '#facc15';
+                truckStatusRgb = '250, 204, 21';
+                truckStatusLabel = '🟡 ZONA AMARELA • PRESSÃO MÉDIA';
+            } else {
+                truckStatusColor = '#ef4444';
+                truckStatusRgb = '239, 68, 68';
+                truckStatusLabel = '🔴 ZONA VERMELHA • BAIXA PRESSÃO';
+            }
+        } else if (this.phase3State === 'DOCKING' || this.phase3State === 'TRUCK_ENTER') {
+            if (dist > 2.5) {
+                truckStatusColor = '#ef4444';
+                truckStatusRgb = '239, 68, 68';
+                truckStatusLabel = '🔴 ZONA VERMELHA • DÊ RÉ ATÉ A DOCA';
+            } else if (dist > 0.4) {
+                truckStatusColor = '#facc15';
+                truckStatusRgb = '250, 204, 21';
+                truckStatusLabel = '🟡 ZONA AMARELA • DEVAGAR...';
+            } else {
+                truckStatusColor = '#22c55e';
+                truckStatusRgb = '34, 197, 94';
+                truckStatusLabel = '🟢 ZONA VERDE • DOCA ALINHADA!';
+            }
+        } else if (this.phase3State === 'ALIGNED' || this.phase3State === 'DUMPING') {
+            truckStatusColor = '#22c55e';
+            truckStatusRgb = '34, 197, 94';
+            truckStatusLabel = '🟢 ZONA VERDE • PISTÃO ACIONADO!';
+        } else if (this.phase3State === 'TRUCK_EXIT') {
+            truckStatusColor = '#38bdf8';
+            truckStatusRgb = '56, 189, 248';
+            truckStatusLabel = '🔵 CAMINHÃO LIBERADO!';
+        }
+
         const p = this.player;
+
+        // Underglow Neon Glow under the truck chassis onto the concrete floor
+        const underglowGrad = ctx.createRadialGradient(p.x + p.w / 2, p.y + p.h - 4, 10, p.x + p.w / 2, p.y + p.h - 4, p.w * 0.55);
+        underglowGrad.addColorStop(0, `rgba(${truckStatusRgb}, 0.65)`);
+        underglowGrad.addColorStop(1, `rgba(${truckStatusRgb}, 0.0)`);
+        ctx.fillStyle = underglowGrad;
+        ctx.fillRect(p.x - 20, p.y + p.h - 10, p.w + 40, 16);
+
         if (this.phase3State === 'DOCKING' || this.phase3State === 'TRUCK_ENTER' || this.phase3State === 'TRUCK_EXIT') {
             // Whole truck moving
             const truckImg = this.assets['sc_truck'];
             if (truckImg) {
                 ctx.save();
+                ctx.shadowColor = truckStatusColor;
+                ctx.shadowBlur = 18;
                 if (this.phase3State === 'TRUCK_EXIT') {
                     // Truck drives forward to the left (exiting deck)
                     ctx.translate(p.x + p.w, p.y);
                     ctx.scale(-1, 1);
                     ctx.drawImage(truckImg, 0, 0, p.w, p.h);
+                    ctx.fillStyle = `rgba(${truckStatusRgb}, 0.30)`;
+                    ctx.fillRect(0, 0, p.w, p.h);
                 } else {
                     ctx.drawImage(truckImg, p.x, p.y, p.w, p.h);
+                    ctx.fillStyle = `rgba(${truckStatusRgb}, 0.30)`;
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
                 }
                 ctx.restore();
             }
         } else {
-            // Chassis & Cab with Pai Cajulão
+            // Chassis & Cab with Pai Caju
             const chassisImg = this.assets['sc_truck_chassis'] || this.assets['sc_truck'];
             if (chassisImg) {
+                ctx.save();
+                ctx.shadowColor = truckStatusColor;
+                ctx.shadowBlur = 16;
                 ctx.drawImage(chassisImg, p.x, p.y, p.w, p.h);
+                ctx.fillStyle = `rgba(${truckStatusRgb}, 0.30)`;
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.restore();
             }
 
             // Wheel Chocks (Calços de segurança)
@@ -4049,10 +4219,51 @@ class Game {
             ctx.rotate(rad);
             const bedImg = this.assets['sc_truck_bed'] || this.assets['sc_truck'];
             if (bedImg) {
+                ctx.shadowColor = truckStatusColor;
+                ctx.shadowBlur = 16;
                 ctx.drawImage(bedImg, -85, -52, 85, 54);
+                ctx.fillStyle = `rgba(${truckStatusRgb}, 0.30)`;
+                ctx.fillRect(-85, -52, 85, 54);
             }
             ctx.restore();
         }
+
+        // Flashing Rooftop Giroflex Beacon on the cab
+        const beaconX = this.phase3State === 'TRUCK_EXIT' ? p.x + p.w - 22 : p.x + 22;
+        const beaconY = p.y + 4;
+        const beaconPulse = Math.sin(Date.now() / 100) * 0.35 + 0.65;
+        ctx.save();
+        ctx.fillStyle = truckStatusColor;
+        ctx.shadowColor = truckStatusColor;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(beaconX, beaconY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(${truckStatusRgb}, ${0.5 * beaconPulse})`;
+        ctx.beginPath();
+        ctx.arc(beaconX, beaconY, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Floating HUD status badge directly above the truck
+        ctx.save();
+        const badgeW = 184;
+        const badgeH = 18;
+        const badgeX = p.x + (p.w - badgeW) / 2;
+        const badgeY = p.y - 18;
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+        else ctx.rect(badgeX, badgeY, badgeW, badgeH);
+        ctx.fill();
+        ctx.strokeStyle = truckStatusColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.font = 'bold 6.5px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = truckStatusColor;
+        ctx.fillText(truckStatusLabel, badgeX + badgeW / 2, badgeY + 12);
+        ctx.restore();
 
         // 6. Timing Minigame UI Overlay (When in TIMING_GAME state)
         if (this.phase3State === 'TIMING_GAME') {
@@ -4451,11 +4662,20 @@ class Game {
         ctx.fillStyle = '#475569';
         ctx.fillRect(3868, 302, 4, 88);
 
-        // 2. PLATAFORMA ELEVADA DA BALANÇA RODOVIÁRIA (x: 4050 a 4260, y = 330)
+        // 2. PLATAFORMA ELEVADA DA BALANÇA RODOVIÁRIA (x: 4050 a 4650, y = 330, comprimento de 600px)
         const scaleX = 4050;
-        const scaleW = 210;
+        const scaleW = 600;
         const scaleY = 330;
         const scaleH = 32;
+
+        // Base sólida e pilares de concreto sob a plataforma elevada de 600px
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(scaleX, scaleY + scaleH, scaleW, 58);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        for (let px = scaleX + 35; px < scaleX + scaleW; px += 60) {
+            ctx.strokeRect(px - 10, scaleY + scaleH, 20, 58);
+        }
 
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(scaleX, scaleY, scaleW, scaleH);
@@ -4463,7 +4683,7 @@ class Game {
         ctx.lineWidth = 2.5;
         ctx.strokeRect(scaleX, scaleY, scaleW, scaleH);
 
-        // Vigas transversais e células de carga
+        // Vigas transversais e células de carga em toda a extensão de 600px
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 2;
         for (let gx = scaleX + 20; gx < scaleX + scaleW; gx += 25) {
@@ -4476,7 +4696,7 @@ class Game {
             ctx.fillRect(gx - 4, scaleY + scaleH - 6, 8, 6);
         }
 
-        // Borda zebrada da balança
+        // Borda zebrada da balança (amarelo e preto) ao longo de 600px
         for (let sx = scaleX; sx < scaleX + scaleW; sx += 20) {
             ctx.fillStyle = '#facc15';
             ctx.fillRect(sx, scaleY + scaleH - 8, 10, 8);
@@ -4494,8 +4714,8 @@ class Game {
 
         // 3. PÓRTICO E PAINEL ELETRÔNICO MOSTRANDO O PESO DO CAMINHÃO
         // Duas torres estruturais metálicas
-        const tower1X = scaleX + 10;
-        const tower2X = scaleX + scaleW - 10;
+        const tower1X = scaleX + 15;
+        const tower2X = scaleX + scaleW - 15;
         ctx.fillStyle = '#1e293b';
         ctx.fillRect(tower1X - 6, 150, 12, 180);
         ctx.fillRect(tower2X - 6, 150, 12, 180);
@@ -4504,14 +4724,14 @@ class Game {
         ctx.strokeRect(tower1X - 6, 150, 12, 180);
         ctx.strokeRect(tower2X - 6, 150, 12, 180);
 
-        // Viga superior suspensa
+        // Viga superior suspensa entre as duas torres
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(tower1X - 8, 150, tower2X - tower1X + 16, 14);
         ctx.strokeRect(tower1X - 8, 150, tower2X - tower1X + 16, 14);
 
         // O GRANDE PAINEL DIGITAL ELETRÔNICO (MOSTRANDO O PESO DO CAMINHÃO)
-        const panelW = 230;
-        const panelH = 82;
+        const panelW = 260;
+        const panelH = 84;
         const panelX = Math.round(scaleX + (scaleW - panelW) / 2);
         const panelY = 162;
 
@@ -4871,7 +5091,7 @@ class Game {
         const spd = Math.round(this.speedKmh || 0);
         const isOver60 = spd > 60;
         const flashWarn = isOver60 && (Math.floor(Date.now() / 200) % 2 === 0);
-        const isOnScale = this.scaleAutoBraking || this.scaleWeighed || (this.player && this.player.x >= 4050);
+        const isOnScale = this.scaleAutoBraking || this.scaleWeighed || (this.player && this.player.x >= 4450);
 
         // VELOCÍMETRO / PAINEL DE PESAGEM NO CENTRO DA TELA
         const boxW = isOnScale ? 320 : 280;

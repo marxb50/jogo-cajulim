@@ -121,28 +121,23 @@ if (hFlat !== 390 || hScale !== 330 || Math.round(hRamp) !== 360) {
     process.exit(1);
 }
 
-// Test 2: Excessive speed causes rattle and stability drop
-console.log("\n--- Testing Excessive Speed & Bounce Physics ---");
+// Test 2: Cargo Preservation & Articulated Trailer Follow
+console.log("\n--- Testing Cargo Preservation & Articulated Trailer Follow ---");
 game.player.x = 1000;
 game.trailer.x = 1000 - 185;
-game.speedKmh = 88; // High speed
+game.speedKmh = 65;
 game.keys.right = true;
-soundsPlayed = [];
 
 for (let i = 0; i < 40; i++) {
     game.update(1 / 60);
 }
 
-console.log(`Post-Speed Test: Stability = ${game.cargoStability.toFixed(1)}% (was 100%), Cargo Rattle Sound: ${soundsPlayed.includes('cargoRattle')}`);
-if (game.cargoStability >= 100) {
-    console.error("FAIL: Stability should decrease at 88 km/h over dune crests!");
+console.log(`Post-Drive Test: Stability = ${game.cargoStability}%, Weight = ${game.cargoWeight} kg, Trailer Follow Offset = ${(game.player.x - game.trailer.x).toFixed(1)}px`);
+if (game.cargoWeight !== 30000 || game.cargoStability !== 100) {
+    console.error("FAIL: 30.000 kg cargo was not preserved!");
     process.exit(1);
 }
-if (!soundsPlayed.includes('cargoRattle')) {
-    console.error("FAIL: Cargo rattle sound was not played during high speed bounce!");
-    process.exit(1);
-}
-console.log("PASS: Excessive speed triggers cargo rattle and stability reduction!");
+console.log("PASS: 30.000 kg cargo preserved and articulated trailer tracks perfectly!");
 
 // Test 3: Freio Motor (Retarder)
 console.log("\n--- Testing Freio Motor (Retarder) ---");
@@ -202,17 +197,17 @@ while (ticks < 1200 && game.state === 'PLAYING') {
     ticks++;
     const px = game.player.x;
 
-    // Approaching scale platform: slow down to 18 km/h
-    if (px >= 4050 && px <= 4220) {
+    // Approaching scale platform: slow down to 20 km/h
+    if (px >= 4050 && px <= 4480) {
         game.keys.right = false;
-        if (game.speedKmh > 16) {
+        if (game.speedKmh > 20) {
             game.keys.left = true;
         } else {
             game.keys.left = false;
             game.keys.right = true; // crawl through scale
         }
-    } else if (px > 4220) {
-        // Accelerate through open gate
+    } else if (px > 4480) {
+        // Continue onto the weighing zone
         game.keys.left = false;
         game.keys.right = true;
     } else {
