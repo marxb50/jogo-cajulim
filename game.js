@@ -1669,9 +1669,10 @@ class Game {
                     this.dumpParticleTimer += dt;
                     if (this.dumpParticleTimer >= 0.035) {
                         this.dumpParticleTimer = 0;
-                        this.spawnDumpTrashBag(p.x + 95, p.y + 15);
-                        if (Math.random() < 0.4) {
-                            this.spawnDumpTrashBag(p.x + 85, p.y + 20);
+                        // Spawns directly at the chute mouth (x ≈ 540..555, y ≈ 325..335) shooting into the trailer bed
+                        this.spawnDumpTrashBag(542 + Math.random() * 14, 326 + Math.random() * 10);
+                        if (Math.random() < 0.45) {
+                            this.spawnDumpTrashBag(535 + Math.random() * 12, 322 + Math.random() * 8);
                         }
                         if (window.soundManager && window.soundManager.playDumpRumble && Math.random() < 0.35) {
                             window.soundManager.playDumpRumble();
@@ -1792,6 +1793,18 @@ class Game {
                     tp.x += tp.vx * dt;
                     tp.y += tp.vy * dt;
                     tp.rot += tp.vRot * dt;
+
+                    // Hard clamp inside trailer horizontal cargo bed bounds (x: 535..790)
+                    if (tp.x < 535) {
+                        tp.x = 535;
+                        tp.vx = Math.abs(tp.vx) * 0.35;
+                    }
+                    if (tp.x > 790) {
+                        tp.x = 790;
+                        tp.vx = -Math.abs(tp.vx) * 0.35;
+                    }
+
+                    // Settle onto the trash heap inside the trailer
                     if (tp.y >= tp.targetY) {
                         tp.y = tp.targetY;
                         tp.vx *= 0.35;
@@ -1803,6 +1816,15 @@ class Game {
                             tp.vx = 0;
                             tp.vRot = 0;
                         }
+                    }
+
+                    // Floor safety limit: NEVER allow particles below container floor y = 416 (stripe at 426, wheels at 436)
+                    if (tp.y > 416) {
+                        tp.y = 416;
+                        tp.settled = true;
+                        tp.vy = 0;
+                        tp.vx = 0;
+                        tp.vRot = 0;
                     }
                 }
                 tp.life -= dt;
@@ -1821,21 +1843,27 @@ class Game {
         else if (rand > 0.80 && rand <= 0.90) itemType = 'bottle';
         else if (rand > 0.90) itemType = 'box';
 
+        // Heap height rises inside the trailer hopper as it fills with 30 tons
+        const loadFrac = Math.min(1, (this.trailerLoad || 0) / (this.totalTrailerCapacity || 30));
+        // Container bed floor is y = 416, top rim is y = 345
+        const heapTop = 416 - Math.floor(loadFrac * 68);
+        const targetY = Math.max(348, Math.min(416, heapTop + (Math.random() * 10 - 5)));
+
         const p = {
-            x: x + (Math.random() * 12 - 6),
-            y: y + (Math.random() * 8 - 4),
-            vx: 85 + Math.random() * 70, // Cascades right into the chute and trailer
-            vy: -15 + Math.random() * 35,
-            gravity: 520,
+            x: x + (Math.random() * 8 - 4),
+            y: y + (Math.random() * 6 - 3),
+            vx: 155 + Math.random() * 140, // Strong forward momentum arcing into the trailer hopper (x = 550..780)
+            vy: -35 + Math.random() * 45,
+            gravity: 420,
             type: itemType,
             rot: Math.random() * Math.PI * 2,
-            vRot: (Math.random() - 0.5) * 9,
+            vRot: (Math.random() - 0.5) * 8,
             w: itemType === 'bag' ? 22 : itemType === 'can' ? 12 : itemType === 'bottle' ? 10 : 16,
             h: itemType === 'bag' ? 26 : itemType === 'can' ? 15 : itemType === 'bottle' ? 20 : 16,
-            life: 1.6,
-            maxLife: 1.6,
+            life: 2.2,
+            maxLife: 2.2,
             settled: false,
-            targetY: 375 + Math.random() * 55 // Lands inside the carreta trailer hopper (y=375..430)
+            targetY: targetY
         };
         this.phase3TrashParticles.push(p);
     }
@@ -3988,53 +4016,87 @@ class Game {
         }
 
         // 4. Carreta de Transbordo (In the Lower Dock Pit)
-        // Green 30t cargo box is on the LEFT (x = 510..815), Blue cab is on the RIGHT (x = 825..945)
+        // Green 30t cargo box is on the LEFT (x = 512..810), Blue cab is on the RIGHT (x = 812..942)
         const car = this.carreta;
-        if (car) {
-            // Draw garbage heap rising inside the green trailer body (x=512..815, y=345..445)
-            const loadFrac = Math.min(1, (this.trailerLoad || 0) / (this.totalTrailerCapacity || 30));
-            const fillHeight = Math.floor(loadFrac * 85);
-            if (fillHeight > 0) {
-                ctx.fillStyle = '#334155';
-                ctx.fillRect(512, 445 - fillHeight, 305, fillHeight);
-                // Texture pixels inside pile
-                ctx.fillStyle = '#eab308';
-                for (let ox = 525; ox < 805; ox += 30) {
-                    ctx.fillRect(ox, 445 - fillHeight + (ox % 15), 6, 6);
-                }
-                ctx.fillStyle = '#38bdf8';
-                for (let ox = 540; ox < 795; ox += 35) {
-                    ctx.fillRect(ox, 445 - fillHeight + (ox % 20), 5, 8);
-                }
+        const loadFrac = Math.min(1, (this.trailerLoad || 0) / (this.totalTrailerCapacity || 30));
+        const fillHeight = Math.floor(loadFrac * 70);
+
+        // LAYER 4A: Trailer Interior Cargo Hold (Behind the trash)
+        ctx.save();
+        // Interior back wall of the open-top semi-trailer container
+        ctx.fillStyle = '#0b1322';
+        ctx.fillRect(514, 342, 294, 76);
+        // Vertical steel reinforcement ribs on interior back wall
+        ctx.fillStyle = '#162238';
+        for (let rx = 538; rx < 800; rx += 32) {
+            ctx.fillRect(rx, 342, 6, 76);
+        }
+        // Shadow cast by top rail onto interior
+        const interiorShadow = ctx.createLinearGradient(0, 342, 0, 365);
+        interiorShadow.addColorStop(0, 'rgba(2, 6, 23, 0.85)');
+        interiorShadow.addColorStop(1, 'rgba(2, 6, 23, 0.0)');
+        ctx.fillStyle = interiorShadow;
+        ctx.fillRect(514, 342, 294, 23);
+
+        // Rising Garbage Heap inside the trailer container
+        if (fillHeight > 0) {
+            const heapY = 418 - fillHeight;
+            // Dark foundation waste mass
+            ctx.fillStyle = '#18202c';
+            ctx.beginPath();
+            ctx.moveTo(516, 418);
+            ctx.lineTo(516, heapY + 8);
+            // Slight natural crown/mound in the center of the pile
+            ctx.quadraticCurveTo(650, heapY - 4, 806, heapY + 4);
+            ctx.lineTo(806, 418);
+            ctx.closePath();
+            ctx.fill();
+
+            // Textured layer of accumulated compact bags, recyclables and organic waste
+            ctx.fillStyle = '#243042';
+            for (let ox = 522; ox < 800; ox += 18) {
+                const bagH = Math.min(fillHeight, 14 + (ox % 9));
+                const by = 418 - bagH - (ox % 7);
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(ox, by, 16, bagH + 2, 4);
+                else ctx.rect(ox, by, 16, bagH + 2);
+                ctx.fill();
             }
 
-            // Draw Carreta Sprite (Oriented with green box on left under chute and blue cab on right)
-            const carretaImg = this.assets['sc_carreta'];
-            if (carretaImg) {
-                ctx.drawImage(carretaImg, car.x, car.y, car.w, car.h);
+            // Embedded tied black bags in pile
+            ctx.fillStyle = '#09090b';
+            for (let ox = 528; ox < 795; ox += 28) {
+                const by = Math.max(heapY + 2, 416 - fillHeight * (0.3 + (ox % 5) * 0.15));
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(ox, by, 14, 12, 3);
+                else ctx.rect(ox, by, 14, 12);
+                ctx.fill();
+                ctx.fillStyle = '#facc15';
+                ctx.fillRect(ox + 5, by - 2, 4, 2); // Yellow tie string
+                ctx.fillStyle = '#09090b';
             }
 
-            // Security Tarp over the green trailer body when compacting/complete
-            if (this.tarpCoverProgress > 0) {
-                const tarpW = Math.min(308, Math.floor((308 * this.tarpCoverProgress) / 100));
-                ctx.fillStyle = '#15803d';
-                ctx.fillRect(510, 340, tarpW, 14);
-                ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(510, 340, tarpW, 14);
-                // Tie-down cords
-                ctx.strokeStyle = '#eab308';
-                ctx.lineWidth = 1;
-                for (let sx = 525; sx < 510 + tarpW; sx += 35) {
-                    ctx.beginPath();
-                    ctx.moveTo(sx, 354);
-                    ctx.lineTo(sx, 368);
-                    ctx.stroke();
+            // Colorful recyclables scattered across pile surface (yellow cans, blue bottles, red cans, cartons)
+            for (let ox = 532; ox < 790; ox += 24) {
+                const py = Math.max(heapY + 1, 418 - (ox % 13) - fillHeight * 0.7);
+                if (ox % 4 === 0) {
+                    ctx.fillStyle = '#eab308'; // Yellow recyclable
+                    ctx.fillRect(ox, py, 7, 5);
+                } else if (ox % 4 === 1) {
+                    ctx.fillStyle = '#38bdf8'; // Blue PET bottle
+                    ctx.fillRect(ox, py, 5, 8);
+                } else if (ox % 4 === 2) {
+                    ctx.fillStyle = '#ef4444'; // Red soda can
+                    ctx.fillRect(ox, py, 6, 7);
+                } else {
+                    ctx.fillStyle = '#b45309'; // Cardboard carton
+                    ctx.fillRect(ox, py, 8, 6);
                 }
             }
         }
+        ctx.restore();
 
-        // 4b. Render Cascading Trash Bags & Recyclables into the Carreta
+        // LAYER 4B: Render Cascading Trash Bags & Recyclables into the Carreta
         if (this.phase3TrashParticles && this.phase3TrashParticles.length > 0) {
             const trashBagAsset = this.assets['item_trash_bag'];
             for (const tp of this.phase3TrashParticles) {
@@ -4093,6 +4155,152 @@ class Game {
             }
         }
 
+        // LAYER 4C: Chute Delivery Mouth (Hangs right above the open trailer container)
+        ctx.save();
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.moveTo(480, 310);
+        ctx.lineTo(558, 336);
+        ctx.lineTo(550, 350);
+        ctx.lineTo(480, 328);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Yellow hazard chevrons on chute lip
+        ctx.fillStyle = '#eab308';
+        for (let cx = 495; cx < 550; cx += 14) {
+            ctx.beginPath();
+            ctx.moveTo(cx, 320 + (cx - 480) * 0.33);
+            ctx.lineTo(cx + 6, 320 + (cx - 480) * 0.33);
+            ctx.lineTo(cx + 2, 332 + (cx - 480) * 0.33);
+            ctx.lineTo(cx - 4, 332 + (cx - 480) * 0.33);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.restore();
+
+        // LAYER 4D: Trailer Exterior Frame, Lower Body Panel, Wheels & Cab (IN FRONT of trash)
+        ctx.save();
+        // 1. Lower side wall panel with Natal flag and official navy blue paint (y = 400..426)
+        ctx.fillStyle = '#0f2752';
+        ctx.fillRect(514, 400, 294, 26);
+        // Gold trim bar above lower panel
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(514, 398, 294, 2.5);
+        ctx.fillStyle = '#ca8a04';
+        ctx.fillRect(514, 424, 294, 2);
+
+        // Natal Municipal Flag on the lower panel
+        const flagX = 640;
+        const flagY = 403;
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(flagX, flagY, 44, 6);
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(flagX, flagY + 6, 44, 6);
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(flagX, flagY + 12, 44, 6);
+        // White emblem star
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(flagX + 22, flagY + 9, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Corner Uprights & Upper Yellow Rim
+        // Rear corner post (left)
+        ctx.fillStyle = '#0c1e3d';
+        ctx.fillRect(512, 336, 14, 90);
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(514, 338, 6, 88);
+        // Front bulkhead (right before cab)
+        ctx.fillStyle = '#0c1e3d';
+        ctx.fillRect(796, 336, 14, 90);
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(798, 338, 6, 88);
+        // Heavy-duty top yellow guide rail
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(510, 336, 302, 7);
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(510, 337, 302, 2);
+        ctx.fillStyle = '#ca8a04';
+        ctx.fillRect(510, 342, 302, 1.5);
+
+        // 3. Retroreflective Red/White Safety Stripe (y = 426..435)
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(512, 426, 298, 9);
+        for (let bx = 514; bx < 806; bx += 16) {
+            ctx.fillStyle = '#dc2626'; // Red stripe
+            ctx.fillRect(bx, 427, 8, 7);
+            ctx.fillStyle = '#f8fafc'; // White stripe
+            ctx.fillRect(bx + 8, 427, 8, 7);
+        }
+
+        // 4. Trailer Triple Axles and Heavy-Duty Wheels (x = 558, 613, 668, y = 456)
+        [558, 613, 668].forEach(wx => {
+            const wy = 456;
+            // Black Rubber Tire (outer radius 19)
+            ctx.fillStyle = '#090d16';
+            ctx.beginPath();
+            ctx.arc(wx, wy, 19, 0, Math.PI * 2);
+            ctx.fill();
+            // Tire sidewall rim
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.arc(wx, wy, 15, 0, Math.PI * 2);
+            ctx.fill();
+            // Silver Steel Wheel Rim (radius 11)
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath();
+            ctx.arc(wx, wy, 11, 0, Math.PI * 2);
+            ctx.fill();
+            // Inner rim dark groove
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.arc(wx, wy, 8, 0, Math.PI * 2);
+            ctx.fill();
+            // Orange planetary hub (radius 5)
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.arc(wx, wy, 5, 0, Math.PI * 2);
+            ctx.fill();
+            // Chrome center nut
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(wx, wy, 2, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // 5. Blue Tractor Cab on the right (x = 810..942, y = 310..476)
+        const carretaCabImg = this.assets['sc_carreta_cab'];
+        if (carretaCabImg) {
+            ctx.drawImage(carretaCabImg, 810, 314, 130, 162);
+        } else {
+            // Draw cab if image unavailable
+            ctx.fillStyle = '#1e3a8a';
+            ctx.fillRect(812, 330, 110, 130);
+        }
+
+        // 6. Security Tarp over the trailer body when compacting/complete
+        if (this.tarpCoverProgress > 0) {
+            const tarpW = Math.min(300, Math.floor((300 * this.tarpCoverProgress) / 100));
+            ctx.fillStyle = '#15803d';
+            ctx.fillRect(510, 336, tarpW, 14);
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(510, 336, tarpW, 14);
+            // Tie-down cords
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 1;
+            for (let sx = 525; sx < 510 + tarpW; sx += 32) {
+                ctx.beginPath();
+                ctx.moveTo(sx, 350);
+                ctx.lineTo(sx, 366);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+
         // 5. Collection Truck & Tilting Hydraulic Dump Bed
         // Dynamically compute truck color indicator based on dock alignment or timing needle zone (Verde / Amarelo / Vermelho)
         let truckStatusColor = '#22c55e';
@@ -4105,34 +4313,34 @@ class Game {
             if (needleDist <= tParams.green) {
                 truckStatusColor = '#22c55e';
                 truckStatusRgb = '34, 197, 94';
-                truckStatusLabel = '🟢 ZONA VERDE • PRESSÃO MÁXIMA!';
+                truckStatusLabel = '🟢 ZONA VERDE • MÁXIMA!';
             } else if (needleDist <= tParams.yellow) {
                 truckStatusColor = '#facc15';
                 truckStatusRgb = '250, 204, 21';
-                truckStatusLabel = '🟡 ZONA AMARELA • PRESSÃO MÉDIA';
+                truckStatusLabel = '🟡 ZONA AMARELA • MÉDIA';
             } else {
                 truckStatusColor = '#ef4444';
                 truckStatusRgb = '239, 68, 68';
-                truckStatusLabel = '🔴 ZONA VERMELHA • BAIXA PRESSÃO';
+                truckStatusLabel = '🔴 ZONA VERMELHA • BAIXA';
             }
         } else if (this.phase3State === 'DOCKING' || this.phase3State === 'TRUCK_ENTER') {
             if (dist > 2.5) {
                 truckStatusColor = '#ef4444';
                 truckStatusRgb = '239, 68, 68';
-                truckStatusLabel = '🔴 ZONA VERMELHA • DÊ RÉ ATÉ A DOCA';
+                truckStatusLabel = '🔴 ZONA VERMELHA • DÊ RÉ';
             } else if (dist > 0.4) {
                 truckStatusColor = '#facc15';
                 truckStatusRgb = '250, 204, 21';
-                truckStatusLabel = '🟡 ZONA AMARELA • DEVAGAR...';
+                truckStatusLabel = '🟡 ZONA AMARELA • DEVAGAR';
             } else {
                 truckStatusColor = '#22c55e';
                 truckStatusRgb = '34, 197, 94';
-                truckStatusLabel = '🟢 ZONA VERDE • DOCA ALINHADA!';
+                truckStatusLabel = '🟢 ZONA VERDE • ALINHADO!';
             }
         } else if (this.phase3State === 'ALIGNED' || this.phase3State === 'DUMPING') {
             truckStatusColor = '#22c55e';
             truckStatusRgb = '34, 197, 94';
-            truckStatusLabel = '🟢 ZONA VERDE • PISTÃO ACIONADO!';
+            truckStatusLabel = '🟢 ZONA VERDE • DESPEJANDO!';
         } else if (this.phase3State === 'TRUCK_EXIT') {
             truckStatusColor = '#38bdf8';
             truckStatusRgb = '56, 189, 248';
@@ -4247,22 +4455,27 @@ class Game {
 
         // Floating HUD status badge directly above the truck
         ctx.save();
-        const badgeW = 184;
-        const badgeH = 18;
-        const badgeX = p.x + (p.w - badgeW) / 2;
-        const badgeY = p.y - 18;
-        ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+        ctx.font = 'bold 7px "Press Start 2P", monospace';
+        const txtW = (ctx.measureText ? ctx.measureText(truckStatusLabel).width : (truckStatusLabel.length * 7.5)) || 140;
+        const badgeW = Math.max(160, Math.ceil(txtW + 28));
+        const badgeH = 22;
+        const badgeX = Math.round(p.x + (p.w - badgeW) / 2);
+        const badgeY = Math.round(p.y - 24);
+
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
         ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+        if (ctx.roundRect) ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 5);
         else ctx.rect(badgeX, badgeY, badgeW, badgeH);
         ctx.fill();
+
         ctx.strokeStyle = truckStatusColor;
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.font = 'bold 6.5px "Press Start 2P", monospace';
+
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         ctx.fillStyle = truckStatusColor;
-        ctx.fillText(truckStatusLabel, badgeX + badgeW / 2, badgeY + 12);
+        ctx.fillText(truckStatusLabel, Math.round(badgeX + badgeW / 2), Math.round(badgeY + badgeH / 2));
         ctx.restore();
 
         // 6. Timing Minigame UI Overlay (When in TIMING_GAME state)
