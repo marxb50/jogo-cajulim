@@ -2517,15 +2517,6 @@ class Game {
         }
 
         this.updatePhase5Particles(dt);
-
-        const focusX = this.phase5Mode === 'TRACTOR' ? (this.phase5Tractor.x + 110) : (this.player.x + this.player.w / 2);
-        const targetCamera = Math.max(0, Math.min(this.levelWidth - VIRTUAL_WIDTH, focusX - VIRTUAL_WIDTH * 0.42));
-        if (Math.abs(targetCamera - this.camera.x) > 350) {
-            this.camera.x = targetCamera;
-        } else {
-            this.camera.x += (targetCamera - this.camera.x) * Math.min(1.0, dt * 7.0);
-        }
-        this.camera.y = 0;
     }
 
     updatePhase5Player(dt) {
@@ -2600,6 +2591,13 @@ class Game {
 
         tractor.x += tractor.vx * dt;
         tractor.x = Math.max(230, Math.min(limit, tractor.x));
+
+        // Keep Cajulim synchronized with tractor cabin while driving
+        if (this.player) {
+            this.player.x = tractor.x + 75;
+            this.player.y = tractor.y + 20;
+            this.player.vx = tractor.vx;
+        }
 
         const center = tractor.x + 110;
         const isMoving = Math.abs(tractor.vx) > 25;
@@ -2709,6 +2707,36 @@ class Game {
 
     handlePhase5Click(e) {
         if (this.currentPhase !== 5) return;
+
+        if (this.phase5Mode === 'PANEL') {
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = VIRTUAL_WIDTH / rect.width;
+            const scaleY = VIRTUAL_HEIGHT / rect.height;
+            const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
+
+            if (this.phase5PowerComplete) {
+                this.triggerPhase5Action();
+                return;
+            }
+
+            // Click at exit footer (y >= 390) or top-right close area (x >= 760 && y <= 130)
+            if (clickY >= 390 || (clickX >= 760 && clickY <= 130)) {
+                this.triggerPhase5Action();
+                return;
+            }
+
+            // Tapping left or right side of modal regulates pressure
+            if (clickX < VIRTUAL_WIDTH / 2) {
+                this.phase5Pressure = Math.max(10, (this.phase5Pressure || 27) - 6);
+                this.playPhase5Tone(360, 0.07, 'square', 0.025);
+            } else {
+                this.phase5Pressure = Math.min(95, (this.phase5Pressure || 27) + 6);
+                this.playPhase5Tone(480, 0.07, 'square', 0.025);
+            }
+            return;
+        }
+
         this.triggerPhase5Action();
     }
     updatePhase6(dt) {
@@ -3850,15 +3878,22 @@ class Game {
             return;
         }
         if (this.currentPhase === 5) {
-            let targetX = 0;
-            if (this.phase5State === 'COMPACTING' || this.phase5State === 'COMPACTING_WAIT_ADVANCE' || this.phase5State === 'SOIL_COVER') {
-                targetX = Math.max(0, Math.min(850, this.player.x - VIRTUAL_WIDTH * 0.35));
-            } else if (this.phase5State === 'BIOGAS_GENERATION' || this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-                targetX = 2050;
-            } else if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS' || this.phase5State === 'CAJULIM_WAIT_ADVANCE' || this.phase5State === 'LAB_ANALYSIS' || this.phase5State === 'COMPLETE') {
-                targetX = Math.max(3360, Math.min(4240, this.player.x - VIRTUAL_WIDTH * 0.42));
+            let focusX;
+            if (this.phase5Mode === 'TRACTOR') {
+                focusX = this.phase5Tractor ? (this.phase5Tractor.x + 110) : (this.player.x + this.player.w / 2);
+            } else if (this.phase5Mode === 'PANEL') {
+                focusX = 2360;
+            } else if (this.phase5Mode === 'ANALYSIS') {
+                focusX = 4810;
+            } else {
+                focusX = this.player.x + this.player.w / 2;
             }
-            this.camera.x += (targetX - this.camera.x) * 0.12;
+            const targetX = Math.max(0, Math.min(this.levelWidth - VIRTUAL_WIDTH, focusX - VIRTUAL_WIDTH * 0.42));
+            if (Math.abs(targetX - this.camera.x) > 350) {
+                this.camera.x = targetX;
+            } else {
+                this.camera.x += (targetX - this.camera.x) * 0.12;
+            }
             if (this.camera.x < 0) this.camera.x = 0;
             const maxCam = this.levelWidth - VIRTUAL_WIDTH;
             if (this.camera.x > maxCam) this.camera.x = maxCam;
@@ -5936,8 +5971,18 @@ class Game {
         ctx.translate(x, y);
         ctx.scale(pulse, pulse);
 
+        const isMobile = (typeof window !== 'undefined' && (
+            (window.location && window.location.pathname && window.location.pathname.includes('celular')) ||
+            ('ontouchstart' in window) ||
+            (navigator && navigator.maxTouchPoints > 0)
+        ));
+        let displayText = text;
+        if (isMobile && text.includes("ESPAÇO")) {
+            displayText = text.replace(/ESPAÇO(\s*\/\s*E)?/g, "TOQUE / BOTÃO A");
+        }
+
         ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-        const w = Math.max(210, ctx.measureText(text).width + 36);
+        const w = Math.max(210, ctx.measureText(displayText).width + 36);
         const h = subtext ? 42 : 32;
 
         this.drawPhase5RoundedRect(ctx, -w / 2, -h / 2, w, h, 8);
@@ -5950,12 +5995,12 @@ class Game {
         ctx.fillStyle = "#f5ffd0";
         ctx.textAlign = "center";
         if (subtext) {
-            ctx.fillText(text, 0, -3);
+            ctx.fillText(displayText, 0, -3);
             ctx.fillStyle = "#86efac";
             ctx.font = '10px "Fredoka", sans-serif';
             ctx.fillText(subtext, 0, 12);
         } else {
-            ctx.fillText(text, 0, 3);
+            ctx.fillText(displayText, 0, 3);
         }
 
         // Pointer triangle
@@ -6074,10 +6119,64 @@ class Game {
         ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
         ctx.fillText(this.phase5PowerComplete ? "USINA 100% OPERACIONAL · POTÊNCIA 10.0 MW" : `ESTABILIDADE DO FLUXO: ${Math.round(prog * 100)}%`, x + w / 2, y + 268);
 
+        // Interactive tactile buttons (PC click & Mobile touch)
+        if (this.phase5PowerComplete) {
+            const btnPulse = 0.96 + Math.sin((this.gameTime || 0) * 8) * 0.04;
+            ctx.save();
+            ctx.translate(x + w / 2, y + 315);
+            ctx.scale(btnPulse, btnPulse);
+            this.drawPhase5RoundedRect(ctx, -190, -18, 380, 36, 10);
+            ctx.fillStyle = "#22c55e";
+            ctx.fill();
+            ctx.strokeStyle = "#86efac";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
+            ctx.textAlign = "center";
+            ctx.fillText("AVANÇAR MISSÃO ▶", 0, 4);
+            ctx.restore();
+        } else {
+            // Left button: Menos Pressão
+            this.drawPhase5RoundedRect(ctx, x + 50, y + 295, 170, 34, 8);
+            ctx.fillStyle = "#1e3a2f";
+            ctx.fill();
+            ctx.strokeStyle = "#4ade80";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#86efac";
+            ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
+            ctx.textAlign = "center";
+            ctx.fillText("◄ MENOS (-)", x + 135, y + 316);
+
+            // Center button: Sair
+            this.drawPhase5RoundedRect(ctx, x + w / 2 - 60, y + 295, 120, 34, 8);
+            ctx.fillStyle = "#1e293b";
+            ctx.fill();
+            ctx.strokeStyle = "#94a3b8";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#cbd5e1";
+            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            ctx.fillText("SAIR ✕", x + w / 2, y + 316);
+
+            // Right button: Mais Pressão
+            this.drawPhase5RoundedRect(ctx, x + w - 220, y + 295, 170, 34, 8);
+            ctx.fillStyle = "#1e3a2f";
+            ctx.fill();
+            ctx.strokeStyle = "#4ade80";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#86efac";
+            ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
+            ctx.fillText("MAIS (+) ►", x + w - 135, y + 316);
+        }
+
         // Instructions Footer
-        ctx.fillStyle = "#b9dec8";
-        ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
-        ctx.fillText(this.phase5PowerComplete ? "PRESSIONE ESPAÇO / E PARA CONTINUAR ▶" : "◄ A/ESQ: DIMINUIR    ·    D/DIR: AUMENTAR ►    ·    ESPAÇO: SAIR", x + w / 2, y + 330);
+        ctx.fillStyle = "#94d2bd";
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText(this.phase5PowerComplete ? "CLIQUE OU PRESSIONE ESPAÇO / E / BOTÃO A" : "TOQUE NOS BOTÕES OU USE TECLAS ◄ ESQ / DIR ►", x + w / 2, y + 352);
     }
 
     drawPhase5AnalysisPanel(ctx) {
@@ -7573,44 +7672,42 @@ class Game {
         } else if (this.currentPhase === 5) {
             ctx.fillText('1. PEGA LIXO ✓ | 2. TRANSBORDO ✓ | 3. CARRETA ✓ | 4. RODOVIA ✓ | FASE 5: ATERRO & USINA VERDE 🌱⚡ ★', VIRTUAL_WIDTH / 2, 62);
 
-            const info = this.getPhase5StageInfo();
-            // Persistent Mission & Controls Guide Banner (y: 68 to 104)
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
-            ctx.fillRect(10, 68, VIRTUAL_WIDTH - 20, 36);
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(10, 68, VIRTUAL_WIDTH - 20, 36);
+            if (this.phase5Mode !== 'PANEL' && this.phase5Mode !== 'ANALYSIS') {
+                const info = this.getPhase5StageInfo();
+                // Persistent Mission & Controls Guide Banner (y: 68 to 104)
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
+                ctx.fillRect(10, 68, VIRTUAL_WIDTH - 20, 36);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(10, 68, VIRTUAL_WIDTH - 20, 36);
 
-            let ctrlHint = '🎮 CONTROLES: [A/D ou ◄/►] Mover | [W/ESPAÇO] Pular | [E/ESPAÇO] Interagir';
-            if (this.phase5Mode === 'TRACTOR') {
-                ctrlHint = '🚜 TRATOR: [A/D ou ◄/►] Pilotar sobre montes A-D | [E/ESPAÇO] Interagir';
-            } else if (this.phase5Mode === 'PANEL') {
-                ctrlHint = '⚡ PAINEL DE BIOGÁS: [A/◄] Reduzir Pressão | [D/►] Aumentar Pressão | [ESPAÇO] Sair';
-            } else if (this.phase5Mode === 'ANALYSIS') {
-                ctrlHint = '🔬 LABORATÓRIO ETE: Processando laudo da água tratada...';
-            }
+                let ctrlHint = '🎮 CONTROLES: [A/D ou ◄/►] Mover | [W/ESPAÇO] Pular | [E/ESPAÇO] Interagir';
+                if (this.phase5Mode === 'TRACTOR') {
+                    ctrlHint = '🚜 TRATOR: [A/D ou ◄/►] Pilotar sobre montes A-D | [E/ESPAÇO] Interagir';
+                }
 
-            ctx.font = 'bold 7.5px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = '#facc15';
-            ctx.textAlign = 'left';
-            ctx.fillText(`🎯 OBJETIVO: ${info[2]}`, 20, 81);
+                ctx.font = 'bold 7.5px "Press Start 2P", monospace, sans-serif';
+                ctx.fillStyle = '#facc15';
+                ctx.textAlign = 'left';
+                ctx.fillText(`🎯 OBJETIVO: ${info[2]}`, 20, 81);
 
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillText(ctrlHint, 20, 96);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillText(ctrlHint, 20, 96);
 
-            // Action prompt button if near interactable
-            if (this.isNearPhase5Interactable && this.isNearPhase5Interactable()) {
-                const pulse = 0.85 + Math.sin((this.gameTime || 0) * 8) * 0.15;
-                const btnX = 300, btnY = 490, btnW = 360, btnH = 38;
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
-                ctx.fillRect(btnX, btnY, btnW, btnH);
-                ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(btnX, btnY, btnW, btnH);
-                ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
-                ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
-                ctx.textAlign = 'center';
-                ctx.fillText('⚡ [ESPAÇO / E / CLIQUE] EXECUTAR AÇÃO', btnX + btnW / 2, btnY + 23);
+                // Action prompt button if near interactable
+                if (this.isNearPhase5Interactable && this.isNearPhase5Interactable()) {
+                    const pulse = 0.85 + Math.sin((this.gameTime || 0) * 8) * 0.15;
+                    const btnX = 300, btnY = 490, btnW = 360, btnH = 38;
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+                    ctx.fillRect(btnX, btnY, btnW, btnH);
+                    ctx.strokeStyle = '#facc15';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(btnX, btnY, btnW, btnH);
+                    ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
+                    ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('⚡ [ESPAÇO / E / CLIQUE] EXECUTAR AÇÃO', btnX + btnW / 2, btnY + 23);
+                }
             }
         } else if (this.currentPhase === 6) {
 
