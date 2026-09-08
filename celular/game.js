@@ -220,6 +220,7 @@ class Game {
             'cs_intro_father': 'assets/cutscenes/cs_intro_father.jpg',
             'cs_intro_mission': 'assets/cutscenes/cs_intro_mission.jpg',
             'cs_phase1_clear': 'assets/cutscenes/cs_phase1_clear.jpg',
+            'cs_phase2_bairros': 'assets/cutscenes/cs_phase2_bairros.jpg',
             'cs_phase2_clear': 'assets/cutscenes/cs_phase2_clear.jpg',
             'cs_phase3_clear': 'assets/cutscenes/cs_phase3_clear.jpg',
             'cs_phase4_clear': 'assets/cutscenes/cs_phase4_clear.jpg'
@@ -8752,7 +8753,7 @@ class Game {
     getCutsceneRequiredAsset() {
         if (this.cutscene.type === 'INTRO') return 'cs_intro_father';
         if (this.cutscene.type === 'PHASE1_CLEAR') return 'cs_phase1_clear';
-        if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_intro_mission';
+        if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_phase2_bairros';
         if (this.cutscene.type === 'PHASE3_CLEAR') return 'cs_phase2_clear';
         if (this.cutscene.type === 'PHASE4_CLEAR') return 'cs_phase3_clear';
         if (this.cutscene.type === 'PHASE5_CLEAR') return 'cs_phase4_clear';
@@ -9161,7 +9162,7 @@ class Game {
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
             this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'ETAPA 1 CONCLUÍDA • COLETA SELETIVA RESIDENCIAL');
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_intro_mission', 'ETAPA 2 CONCLUÍDA • ROTA DO CAMINHÃO NOS BAIRROS');
+            this.renderCutscenePhaseClear(ctx, 'cs_phase2_bairros', 'ETAPA 2 CONCLUÍDA • ROTA DO CAMINHÃO NOS BAIRROS');
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
             this.renderCutscenePhaseClear(ctx, 'cs_phase2_clear', 'ETAPA 3 CONCLUÍDA • CHEGADA À ESTAÇÃO DE TRANSBORDO');
         } else if (this.cutscene.type === 'PHASE4_CLEAR') {
