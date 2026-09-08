@@ -36,7 +36,8 @@ class Game {
         this.totalAssets = 0;
         this.assetsReady = false;
 
-        this.keys = { left: false, right: false, jump: false, jumpHeld: false, down: false, up: false };
+        this.keys = { left: false, right: false, jump: false, jumpHeld: false, down: false, up: false, action: false };
+        this.actionJustPressed = false;
         this.camera = { x: 0, y: 0 };
         this.particles = [];
         this.floatingTexts = [];
@@ -179,6 +180,11 @@ class Game {
             'sc_trator_compactador': 'assets/scenery/trator_compactador.png',
             'sc_biogas_plant': 'assets/scenery/biogas_plant.png',
             'sc_lagoa_aerador': 'assets/scenery/lagoa_aerador.png',
+            'p_portrait': 'assets/player/cajulim_portrait.png',
+            'p_sheet': 'assets/player/cajulim_sheet.png',
+            'item_trash_bag_raw': 'assets/items/trash_bag.png',
+            'item_pet_bottle_raw': 'assets/items/pet_bottle.png',
+            'item_paper_box_raw': 'assets/items/paper_box.png',
 
             // Institutional Visual Identity Assets
             'ui_parnamirim_logo': 'assets/ui/parnamirim_logo.png',
@@ -298,56 +304,45 @@ class Game {
             } else if (targetPhase === '5') {
                 this.switchPhase(5);
                 this.startGame();
-                if (getParam('state')) {
-                    this.phase5State = getParam('state');
-                    if (this.phase5State === 'COMPACTING_WAIT_ADVANCE') {
-                        this.compactionProgress = 100;
-                        if (this.compactionZones) this.compactionZones.forEach(z => z.comp = 100);
-                        this.player.x = 490;
-                        this.camera.x = 0;
-                    } else if (this.phase5State === 'BIOGAS_GENERATION') {
-                        this.compactionProgress = 100;
-                        this.player.x = 2450;
-                        this.camera.x = 2050;
-                    } else if (this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-                        this.compactionProgress = 100;
-                        this.biogasPowerMW = 10.0;
-                        this.player.x = 2450;
-                        this.camera.x = 2050;
-                    } else if (this.phase5State === 'CHORUME_TREATMENT') {
-                        this.compactionProgress = 100;
-                        this.biogasPowerMW = 10.0;
-                        this.player.x = 3600;
-                        this.player.y = 344;
-                        this.player.w = 48;
-                        this.player.h = 76;
-                        this.player.facing = 1;
-                        this.player.invulnerableTimer = 0;
-                        this.camera.x = 3360;
-                    } else if (this.phase5State === 'LAB_ANALYSIS') {
-                        this.compactionProgress = 100;
-                        this.biogasPowerMW = 10.0;
-                        this.chorumeTreated = 100;
-                        this.player.x = 4980;
-                        this.player.y = 344;
-                        this.player.w = 48;
-                        this.player.h = 76;
-                        this.player.facing = 1;
-                        this.player.invulnerableTimer = 0;
-                        this.camera.x = 4240;
-                    } else if (this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-                        this.compactionProgress = 100;
-                        this.biogasPowerMW = 10.0;
-                        this.chorumeTreated = 100;
-                        this.labSampleTested = true;
-                        this.player.x = 5080;
-                        this.player.y = 344;
-                        this.player.w = 48;
-                        this.player.h = 76;
-                        this.player.facing = 1;
-                        this.player.invulnerableTimer = 0;
-                        this.camera.x = 4240;
+                const stage = getParam('stage') || getParam('state');
+                const mode = getParam('mode');
+                const pos = getParam('pos');
+
+                if (stage) {
+                    this.phase5Stage = stage;
+                    this.phase5State = stage;
+                    if (stage === 'COMPACT' || stage === 'GET_SOIL' || stage === 'COVER' || stage === 'PARK') {
+                        this.phase5Mode = 'TRACTOR';
+                        this.phase5Tractor.x = pos ? parseFloat(pos) : (stage === 'GET_SOIL' ? 340 : 850);
+                        if (stage === 'COVER' || stage === 'PARK') {
+                            this.phase5Zones.forEach(z => z.comp = 100);
+                            this.phase5SoilLoaded = true;
+                        }
+                    } else if (stage === 'TO_BIOGAS' || stage === 'BIOGAS') {
+                        this.phase5Mode = (mode === 'PANEL' || stage === 'BIOGAS') ? 'PANEL' : 'PLAYER';
+                        this.phase5Zones.forEach(z => { z.comp = 100; z.cover = 100; });
+                        this.player.x = pos ? parseFloat(pos) : 2290;
+                        this.camera.x = Math.max(0, this.player.x - 300);
+                    } else if (stage === 'TO_LAGOONS') {
+                        this.phase5Mode = 'PLAYER';
+                        this.phase5Zones.forEach(z => { z.comp = 100; z.cover = 100; });
+                        this.phase5PowerComplete = true;
+                        this.player.x = pos ? parseFloat(pos) : 3400;
+                        this.camera.x = Math.max(0, this.player.x - 300);
+                    } else if (stage === 'TO_LAB' || stage === 'ANALYSIS' || stage === 'COMPLETE') {
+                        this.phase5Mode = (mode === 'ANALYSIS' || stage === 'ANALYSIS') ? 'ANALYSIS' : 'PLAYER';
+                        this.phase5Zones.forEach(z => { z.comp = 100; z.cover = 100; });
+                        this.phase5PowerComplete = true;
+                        this.phase5Aerators.forEach(a => a.active = true);
+                        this.player.x = pos ? parseFloat(pos) : 4800;
+                        this.camera.x = Math.max(0, this.player.x - 300);
                     }
+                } else if (pos) {
+                    this.player.x = parseFloat(pos);
+                    this.camera.x = Math.max(0, this.player.x - 300);
+                }
+                if (mode) {
+                    this.phase5Mode = mode;
                 }
             } else if (targetPhase === '6') {
                 this.switchPhase(6);
@@ -525,11 +520,16 @@ class Game {
                 case 'ArrowLeft': case 'KeyA': this.keys.left = true; break;
                 case 'ArrowRight': case 'KeyD': this.keys.right = true; break;
                 case 'ArrowDown': case 'KeyS': this.keys.down = true; break;
+                case 'KeyE':
+                    this.keys.action = true;
+                    this.actionJustPressed = true;
+                    break;
                 case 'ArrowUp': case 'KeyW': case 'KeyK': case 'KeyZ': case 'KeyJ': case 'Space':
                     this.keys.up = true;
                     this.keys.jump = true;
                     this.keys.jumpHeld = true;
                     this.keyboardJumpHeld = true;
+                    this.actionJustPressed = true;
                     this.player.jumpBuffer = 0.15;
                     if (this.currentPhase === 2 && window.soundManager) window.soundManager.playHorn();
                     break;
@@ -544,6 +544,7 @@ class Game {
                     break;
                 case 'KeyR': this.restartLevel(); break;
                 case 'Enter':
+                    this.actionJustPressed = true;
                     if (this.state === 'TITLE') {
                         this.toggleFullscreen();
                         this.startGame();
@@ -564,6 +565,7 @@ class Game {
                 case 'ArrowLeft': case 'KeyA': this.keys.left = false; break;
                 case 'ArrowRight': case 'KeyD': this.keys.right = false; break;
                 case 'ArrowDown': case 'KeyS': this.keys.down = false; break;
+                case 'KeyE': this.keys.action = false; break;
                 case 'ArrowUp': case 'KeyW': case 'KeyK': case 'KeyZ': case 'KeyJ': case 'Space':
                     this.keys.up = false;
                     this.keyboardJumpHeld = false;
@@ -1216,69 +1218,77 @@ class Game {
 
     initPhase5() {
         this.levelWidth = 5200;
-        this.camera.x = 0;
-        this.camera.y = 0;
+        this.levelHeight = 540;
+        this.camera = { x: 0, y: 0 };
+        const FLOOR = 448;
+        this.phase5Floor = FLOOR;
 
-        // Player starts as the Compactor Tractor ("Pata de Carneiro") in Sector 1
-        this.player.w = 140;
-        this.player.h = 80;
-        this.player.x = 180;
-        this.player.y = 380;
+        // Player starts on foot at the entrance of the Sanitary Landfill
+        this.player.w = 48;
+        this.player.h = 76;
+        this.player.x = 170;
+        this.player.y = FLOOR - this.player.h;
         this.player.vx = 0;
         this.player.vy = 0;
         this.player.facing = 1;
         this.player.grounded = true;
-        this.player.animState = 'tractor';
+        this.player.animState = 'idle';
+        this.player.animFrame = 0;
+        this.player.animTimer = 0;
         this.player.isDead = false;
         this.player.invulnerableTimer = 0;
 
-        // Phase 5 State Machine:
-        // 'COMPACTING' (Trator Aterrando) -> 'COMPACTING_WAIT_ADVANCE' -> 'BIOGAS_GENERATION' (Pressão) -> 'BIOGAS_WAIT_ADVANCE' -> 'CAJULIM_LAGOONS' (Cajulim) -> 'CAJULIM_WAIT_ADVANCE' -> 'COMPLETE'
-        this.phase5State = 'COMPACTING';
+        // Phase 5 State Machine & Modes matching teste gpt:
+        // Modes: 'PLAYER', 'TRACTOR', 'PANEL', 'ANALYSIS', 'WIN'
+        // Stages: 'APPROACH' -> 'COMPACT' -> 'GET_SOIL' -> 'COVER' -> 'PARK' -> 'TO_BIOGAS' -> 'BIOGAS' -> 'TO_LAGOONS' -> 'TO_LAB' -> 'ANALYSIS' -> 'COMPLETE'
+        this.phase5Mode = 'PLAYER';
+        this.phase5Stage = 'APPROACH';
+        this.phase5State = 'APPROACH';
 
-        // Sector 1: Célula Dupla & Jazida de Argila (x: 0 to 1750)
-        // 4 Zonas de Compactação independentes que o jogador precisa rolar:
-        this.compactionZones = [
-            { id: 'A', name: 'Célula Norte (Esq)', x1: 170, x2: 480, comp: 0 },
-            { id: 'B', name: 'Célula Norte (Dir)', x1: 480, x2: 810, comp: 0 },
-            { id: 'C', name: 'Célula Sul (Base)',  x1: 850, x2: 1120, comp: 0 },
-            { id: 'D', name: 'Célula Sul (Rampa)', x1: 1120, x2: 1400, comp: 0 }
+        // Tractor ready at x = 480
+        this.phase5Tractor = {
+            x: 480,
+            y: FLOOR - 117,
+            w: 220,
+            h: 117,
+            facing: 1,
+            vx: 0
+        };
+
+        // 4 distinct waste mounds in Sector 1 (x: 600 to 1500)
+        this.phase5Zones = [
+            { id: 'A', x: 690, w: 175, comp: 0, cover: 0 },
+            { id: 'B', x: 895, w: 175, comp: 0, cover: 0 },
+            { id: 'C', x: 1100, w: 175, comp: 0, cover: 0 },
+            { id: 'D', x: 1305, w: 175, comp: 0, cover: 0 }
         ];
-        this.compactionProgress = 0; // Média das 4 zonas (0 a 100%)
-        this.soilCoverProgress = 0;   // 0 a 100%
-        this.bladeLowered = false;
-        this.bladeLoweredState = false;
-        this.clayLoaded = 0; // Quantidade de argila carregada na lâmina (0 a 100%)
-        this.tractorEngineSoundTimer = 0;
-        this.tractorBladeSoundTimer = 0;
+        this.phase5SoilLoaded = false;
 
-        // Sector 2: Usina de Biogás 10.0 MW & Purgador de Condensado (x: 1750 to 3350)
-        this.biogasPressure = 50; // Alvo: 45 - 68 kPa
-        this.biogasPowerMW = 0.0;  // Alvo expandido: 10.0 MW!
-        this.flareFlameScale = 0.6;
-        this.turbineSpinAngle = 0;
-        this.flareLit = false;
-        this.valvePosition = 50;   // 0 a 100
-        this.filterMoisture = 15;  // 0 a 100% (umidade acumulada no condensador)
-        this.turbineAudioTimer = 0;
-        this.powerGridPulseTimer = 0;
-        this.gridSparks = [];
+        // Sector 2: Biogas Plant (x: 1650 to 3000)
+        this.phase5Pressure = 27; // Ideal range: 40 to 70 kPa
+        this.phase5StableTime = 0; // Needs 6.0 seconds in optimal range
+        this.phase5PowerComplete = false;
+        this.phase5TurbineAngle = 0;
 
-        // Sector 3: Complexo de 3 Lagoas & Laboratório ETE (x: 3350 to 5200)
-        this.chorumeTreated = 0;   // 0 a 100%
-        // 3 Aeradores mecânicos na Lagoa Facultativa
-        this.aerators = [
-            { x: 3950, y: 410, w: 85, h: 68, active: false, rpm: 0, splashTimer: 0, bobPhase: 0 },
-            { x: 4250, y: 410, w: 85, h: 68, active: false, rpm: 0, splashTimer: 0, bobPhase: 1.5 },
-            { x: 4550, y: 410, w: 85, h: 68, active: false, rpm: 0, splashTimer: 0, bobPhase: 3.0 }
+        // Sector 3: Lagoons & Aerators (x: 3000 to 5200)
+        this.phase5Aerators = [
+            { x: 3440, active: false, spin: 0 },
+            { x: 3850, active: false, spin: 0 },
+            { x: 4260, active: false, spin: 0 }
         ];
-        this.labSampleTested = false;
-        this.labSampleResult = null;
 
-        // Partículas visuais
+        // ETE Lab Analysis
+        this.phase5AnalysisTime = 0;
+        this.phase5AnalysisDone = false;
+        this.phase5CompletedAt = 0;
+
+        // Educational messages & prompts
+        this.phase5Message = "Agora vamos cuidar do que chegou ao aterro!";
+        this.phase5MessageTimer = 5.0;
+        this.phase5TipPulse = 0;
         this.phase5Particles = [];
 
-        this.timeLeft = 360; // 6 minutos completos
+        this.timeLeft = 360; // 6 minutes
         this.timerAccumulator = 0;
     }
 
@@ -1487,6 +1497,7 @@ class Game {
             this.updateCamera();
         }
         if (this.tipTimer > 0) this.tipTimer -= dt;
+        this.actionJustPressed = false;
     }
 
     updatePhase3(dt) {
@@ -2239,469 +2250,412 @@ class Game {
         }
     }
 
-    getPhase5GroundY(x) {
-        if (x >= 160 && x <= 820) {
-            // Waste Cell 1 (Célula Norte)
-            const zA = (this.compactionZones && this.compactionZones[0]) ? this.compactionZones[0].comp : (this.compactionProgress || 0);
-            const zB = (this.compactionZones && this.compactionZones[1]) ? this.compactionZones[1].comp : (this.compactionProgress || 0);
-            const comp = (zA + zB) / 200;
-            return 418 + comp * 24;
+    setPhase5Message(text, seconds = 3.5) {
+        this.phase5Message = text;
+        this.phase5MessageTimer = seconds;
+        this.tipText = text;
+        this.tipTimer = seconds;
+    }
+
+    countPhase5Complete(key) {
+        return (this.phase5Zones || []).filter(zone => zone[key] >= 100).length;
+    }
+
+    getPhase5StageInfo() {
+        const compacted = this.countPhase5Complete('comp');
+        const covered = this.countPhase5Complete('cover');
+        const aerators = (this.phase5Aerators || []).filter(a => a.active).length;
+        const info = {
+            APPROACH: [1, "RESÍDUOS", "Vá até o trator e pressione ESPAÇO ou E.", "TRATOR AGUARDANDO"],
+            COMPACT: [1, "RESÍDUOS", "Passe com o trator sobre cada monte de resíduos.", `TRECHOS COMPACTADOS: ${compacted}/4`],
+            GET_SOIL: [1, "RESÍDUOS", "Vá até a jazida à esquerda e carregue a terra.", "TERRA PARA COBERTURA"],
+            COVER: [1, "RESÍDUOS", "Passe novamente para aplicar a cobertura de terra.", `TRECHOS COBERTOS: ${covered}/4`],
+            PARK: [1, "RESÍDUOS", "Estacione no local marcado e pressione ESPAÇO ou E.", "ESTACIONAR E DESCER"],
+            TO_BIOGAS: [2, "BIOGÁS", "Caminhe até o painel da usina e pressione ESPAÇO ou E.", "PAINEL DA USINA"],
+            BIOGAS: [2, "BIOGÁS", "Mantenha a pressão na faixa IDEAL (40–70 kPa).", `ESTABILIDADE: ${Math.round((this.phase5StableTime || 0) / 6 * 100)}%`],
+            TO_LAGOONS: [3, "TRATAMENTO", "Vá pelas passarelas e ligue os três aeradores.", `AERADORES LIGADOS: ${aerators}/3`],
+            TO_LAB: [3, "TRATAMENTO", "Entre no laboratório para acompanhar a análise.", "LABORATÓRIO ETE"],
+            ANALYSIS: [3, "TRATAMENTO", "Acompanhando a análise da amostra...", `ANÁLISE: ${Math.round((this.phase5AnalysisTime || 0) / 2.8 * 100)}%`],
+            COMPLETE: [3, "CONCLUÍDA", "Missão cumprida! O aterro opera com segurança máxima.", "100% CONCLUÍDO"]
+        };
+        return info[this.phase5Stage] || info.APPROACH;
+    }
+
+    isNearPhase5Interactable() {
+        const focusX = this.phase5Mode === 'TRACTOR' ? (this.phase5Tractor.x + 110) : (this.player.x + this.player.w / 2);
+        if (this.phase5Stage === 'APPROACH' && Math.abs(focusX - 565) <= 135) return true;
+        if (this.phase5Stage === 'GET_SOIL' && Math.abs(focusX - 340) <= 140) return true;
+        if (this.phase5Stage === 'PARK' && Math.abs(focusX - 1500) <= 150) return true;
+        if (this.phase5Stage === 'TO_BIOGAS' && Math.abs(focusX - 2360) <= 130) return true;
+        if (this.phase5Stage === 'BIOGAS') return true;
+        if (this.phase5Stage === 'TO_LAGOONS' && (this.phase5Aerators || []).some(a => !a.active && Math.abs(focusX - a.x) <= 110)) return true;
+        if (this.phase5Stage === 'TO_LAB' && Math.abs(focusX - 4810) <= 135) return true;
+        if (this.phase5Stage === 'COMPLETE') return true;
+        return false;
+    }
+
+    triggerPhase5Action() {
+        const focusX = this.phase5Mode === 'TRACTOR' ? (this.phase5Tractor.x + 110) : (this.player.x + this.player.w / 2);
+
+        if (this.phase5Stage === 'APPROACH' && Math.abs(focusX - 565) <= 135) {
+            this.phase5Mode = 'TRACTOR';
+            this.phase5Stage = 'COMPACT';
+            this.phase5State = 'COMPACT';
+            this.phase5Tractor.x = 470;
+            this.player.vx = 0;
+            this.setPhase5Message("Cajulim assumiu o trator. Compacte os quatro trechos!", 4.0);
+            this.playPhase5Tone(180, 0.16, 'sawtooth', 0.03);
+            if (window.soundManager) window.soundManager.playTractorBlade();
+            return;
         }
-        if (x > 820 && x <= 1420) {
-            // Waste Cell 2 (Célula Sul em rampa terraceada)
-            const zC = (this.compactionZones && this.compactionZones[2]) ? this.compactionZones[2].comp : (this.compactionProgress || 0);
-            const zD = (this.compactionZones && this.compactionZones[3]) ? this.compactionZones[3].comp : (this.compactionProgress || 0);
-            const comp2 = (zC + zD) / 200;
-            return 424 - ((x - 820) / 600) * 16 + comp2 * 20;
+
+        if (this.phase5Stage === 'GET_SOIL' && Math.abs(focusX - 340) <= 140) {
+            this.phase5SoilLoaded = true;
+            this.phase5Stage = 'COVER';
+            this.phase5State = 'COVER';
+            this.setPhase5Message("Terra carregada! Agora cubra os quatro trechos.", 4.0);
+            this.playPhase5SuccessSound();
+            if (window.soundManager) window.soundManager.playHydraulic();
+            return;
         }
-        if (x > 1440 && x <= 1680) {
-            // Jazida de Argila (Clay quarry mound)
-            return 450 - Math.sin(((x - 1440) / 240) * Math.PI) * 22;
+
+        if (this.phase5Stage === 'PARK' && Math.abs(focusX - 1500) <= 150) {
+            this.phase5Mode = 'PLAYER';
+            this.phase5Stage = 'TO_BIOGAS';
+            this.phase5State = 'TO_BIOGAS';
+            this.player.x = 1550;
+            this.player.y = this.phase5Floor - this.player.h;
+            this.player.vx = 0;
+            this.setPhase5Message("Resíduos compactados e cobertos! Siga para a usina.", 4.0);
+            this.playPhase5SuccessSound();
+            return;
         }
-        return 460;
+
+        if (this.phase5Stage === 'TO_BIOGAS' && Math.abs(focusX - 2360) <= 130) {
+            this.phase5Mode = 'PANEL';
+            this.phase5Stage = 'BIOGAS';
+            this.phase5State = 'BIOGAS';
+            this.player.vx = 0;
+            this.setPhase5Message("Use esquerda e direita para regular a pressão.", 4.0);
+            this.playPhase5Tone(420, 0.12, 'square', 0.03);
+            return;
+        }
+
+        if (this.phase5Stage === 'BIOGAS') {
+            if (this.phase5PowerComplete) {
+                this.phase5Mode = 'PLAYER';
+                this.phase5Stage = 'TO_LAGOONS';
+                this.phase5State = 'TO_LAGOONS';
+                this.player.x = 2820;
+                this.player.y = this.phase5Floor - this.player.h;
+                this.setPhase5Message("Usina em funcionamento! Siga para as lagoas.", 4.0);
+                this.playPhase5SuccessSound();
+            } else {
+                this.phase5Mode = 'PLAYER';
+                this.phase5Stage = 'TO_BIOGAS';
+                this.phase5State = 'TO_BIOGAS';
+                this.setPhase5Message("Você saiu do painel. Pressione ESPAÇO ou E para continuar.", 2.5);
+            }
+            return;
+        }
+
+        if (this.phase5Stage === 'TO_LAGOONS') {
+            const target = this.phase5Aerators.find(a => !a.active && Math.abs(focusX - a.x) <= 110);
+            if (target) {
+                target.active = true;
+                this.score += 300;
+                this.burstPhase5(target.x, this.phase5Floor - 60, '#74dcff', 18);
+                const idx = this.phase5Aerators.indexOf(target) + 1;
+                this.setPhase5Message(`Aerador ${idx} ligado!`, 2.5);
+                this.playPhase5Tone(330 + idx * 80, 0.18, 'triangle', 0.04);
+                if (window.soundManager) window.soundManager.playAeratorSplash();
+                if (this.phase5Aerators.every(a => a.active)) {
+                    this.phase5Stage = 'TO_LAB';
+                    this.phase5State = 'TO_LAB';
+                    this.setPhase5Message("Os três aeradores estão ligados. Vá ao laboratório!", 4.0);
+                    this.playPhase5SuccessSound();
+                }
+                return;
+            }
+        }
+
+        if (this.phase5Stage === 'TO_LAB' && Math.abs(focusX - 4810) <= 135) {
+            this.phase5Mode = 'ANALYSIS';
+            this.phase5Stage = 'ANALYSIS';
+            this.phase5State = 'ANALYSIS';
+            this.player.vx = 0;
+            this.phase5AnalysisTime = 0;
+            this.setPhase5Message("Cajulim está acompanhando a análise da amostra.", 3.0);
+            this.playPhase5Tone(660, 0.1, 'sine', 0.035);
+            if (window.soundManager) window.soundManager.playLabBeep();
+            return;
+        }
+
+        if (this.phase5Stage === 'COMPLETE') {
+            this.levelClear();
+        }
+    }
+
+    burstPhase5(x, y, color, amount = 12) {
+        if (!this.phase5Particles) this.phase5Particles = [];
+        for (let i = 0; i < amount; i++) {
+            this.phase5Particles.push({
+                x,
+                y,
+                vx: (Math.random() - 0.5) * 180,
+                vy: -40 - Math.random() * 160,
+                life: 0.7 + Math.random() * 0.6,
+                maxLife: 1.3,
+                size: 3 + Math.random() * 6,
+                color
+            });
+        }
+    }
+
+    playPhase5Tone(frequency = 440, duration = 0.1, type = "square", volume = 0.035) {
+        if (window.soundManager && window.soundManager.muted) return;
+        try {
+            const ctx = (window.soundManager && window.soundManager.ctx) ? window.soundManager.ctx : new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.value = frequency;
+            gain.gain.setValueAtTime(volume, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + duration);
+        } catch (_) {}
+    }
+
+    playPhase5SuccessSound() {
+        this.playPhase5Tone(520, 0.09, "square", 0.035);
+        setTimeout(() => this.playPhase5Tone(690, 0.12, "square", 0.035), 90);
+        setTimeout(() => this.playPhase5Tone(880, 0.18, "triangle", 0.04), 190);
     }
 
     updatePhase5(dt) {
         if (!this.gameTime) this.gameTime = 0;
         this.gameTime += dt;
+        this.phase5TipPulse += dt;
+        if (this.phase5MessageTimer > 0) this.phase5MessageTimer -= dt;
 
-        const p = this.player;
+        // Interaction Check: Trigger action on Action key press or Jump near interactable
+        const actionPressed = Boolean(
+            this.actionJustPressed ||
+            (this.keys.action && !this.prevActionHeld) ||
+            ((this.keys.jump || this.keys.up) && !this.prevJumpHeld && this.isNearPhase5Interactable())
+        );
+        this.prevActionHeld = Boolean(this.keys.action);
+        this.prevJumpHeld = Boolean(this.keys.jump || this.keys.up);
 
-        // =========================================================================
-        // 1. STAGE: TRACTOR ATERRANDO ('COMPACTING' & 'COMPACTING_WAIT_ADVANCE')
-        // =========================================================================
-        if (this.phase5State === 'COMPACTING' || this.phase5State === 'COMPACTING_WAIT_ADVANCE') {
-            let moveDir = 0;
-            if (this.keys.left) moveDir -= 1;
-            if (this.keys.right) moveDir += 1;
-
-            const maxSpeed = 160;
-            if (moveDir !== 0) {
-                p.vx += moveDir * 520 * dt;
-                if (Math.abs(p.vx) > maxSpeed) p.vx = moveDir * maxSpeed;
-                p.facing = moveDir > 0 ? 1 : -1;
-            } else {
-                p.vx *= Math.pow(0.7, dt * 60);
-                if (Math.abs(p.vx) < 5) p.vx = 0;
-            }
-
-            p.x += p.vx * dt;
-            if (p.x < 100) { p.x = 100; p.vx = 0; }
-            if (p.x > 1460) { p.x = 1460; p.vx = 0; }
-            p.y = this.getPhase5GroundY(p.x) - 72;
-
-            const isMoving = Math.abs(p.vx) > 10;
-            this.tractorEngineSoundTimer = (this.tractorEngineSoundTimer || 0) - dt;
-            if (this.tractorEngineSoundTimer <= 0) {
-                if (window.soundManager && window.soundManager.playTractorEngine) {
-                    window.soundManager.playTractorEngine(isMoving);
-                }
-                this.tractorEngineSoundTimer = isMoving ? 0.16 : 0.35;
-            }
-
-            if (this.phase5State === 'COMPACTING') {
-                if (isMoving) {
-                    const turbo = (this.keys.jumpHeld || this.bladeLoweredState) ? 2.4 : 1.0;
-                    this.compactionProgress = Math.min(100, (this.compactionProgress || 0) + dt * 16.0 * turbo);
-
-                    if (this.compactionZones) {
-                        this.compactionZones.forEach(z => {
-                            if (p.x >= z.x1 - 40 && p.x <= z.x2 + 40) {
-                                z.comp = Math.min(100, z.comp + dt * 30.0 * turbo);
-                            }
-                        });
-                    }
-
-                    // Spreading soil particles
-                    if (Math.random() < 0.5) {
-                        this.phase5Particles.push({
-                            x: p.x + (p.facing > 0 ? 25 : 115) + (Math.random() - 0.5) * 20,
-                            y: p.y + 68,
-                            vx: -p.facing * (20 + Math.random() * 30),
-                            vy: - (10 + Math.random() * 25),
-                            size: 4 + Math.random() * 5,
-                            color: Math.random() < 0.6 ? '#78350f' : '#d97706',
-                            life: 0.6
-                        });
-                    }
-                }
-
-                if (this.compactionProgress >= 100) {
-                    this.compactionProgress = 100;
-                    if (this.compactionZones) this.compactionZones.forEach(z => z.comp = 100);
-                    this.soilCoverProgress = 100;
-                    this.phase5State = 'COMPACTING_WAIT_ADVANCE';
-                    this.score += 800;
-                    if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
-                    this.addFloatingText(p.x, p.y - 30, '✔ ATERRAMENTO COMPLETO! APERTE [PULO]!', '#facc15');
-                    this.showTip('✔ Aterramento Concluído! Aperte o botão de pulo [ESPACO / K / JOYSTICK] para avançar ao Biogás!', 6.0);
-                }
-            } else if (this.phase5State === 'COMPACTING_WAIT_ADVANCE') {
-                if (this.keys.jump) {
-                    this.keys.jump = false;
-                    this.phase5State = 'BIOGAS_GENERATION';
-                    this.score += 500;
-                    if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
-                    this.addFloatingText(2450, 310, 'ENTRANDO NA USINA DE BIOGÁS!', '#38bdf8');
-                    this.showTip('Etapa 2: Mantenha a pressão na ZONA VERDE (40-70 kPa) com [← / →] até gerar 10.0 MW!', 6.0);
-                    p.x = 2450;
-                    p.y = 418;
-                    p.vx = 0;
-                }
-            }
+        if (actionPressed) {
+            this.triggerPhase5Action();
         }
 
-        // Backward compatibility if called with SOIL_COVER
-        else if (this.phase5State === 'SOIL_COVER') {
-            this.soilCoverProgress = 100;
-            this.phase5State = 'BIOGAS_GENERATION';
-            p.x = 2450;
-            p.y = 418;
-            p.vx = 0;
-        }
+        if (this.phase5Mode === 'PLAYER') this.updatePhase5Player(dt);
+        else if (this.phase5Mode === 'TRACTOR') this.updatePhase5Tractor(dt);
+        else if (this.phase5Mode === 'PANEL') this.updatePhase5Biogas(dt);
+        else if (this.phase5Mode === 'ANALYSIS') this.updatePhase5Analysis(dt);
 
-        // =========================================================================
-        // 2. STAGE: BIOGAS GENERATION ('BIOGAS_GENERATION' & 'BIOGAS_WAIT_ADVANCE')
-        // =========================================================================
-        else if (this.phase5State === 'BIOGAS_GENERATION' || this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-            p.x = 2450;
-            p.y = 418;
-            p.vx = 0;
-
-            if (this.phase5State === 'BIOGAS_GENERATION') {
-                // Direct pressure adjustment via Left / Right (A / D)
-                if (this.keys.left) {
-                    this.biogasPressure = Math.max(10, (this.biogasPressure || 50) - 35 * dt);
-                }
-                if (this.keys.right) {
-                    this.biogasPressure = Math.min(95, (this.biogasPressure || 50) + 35 * dt);
-                }
-
-                // Relieve / purge pressure with Jump (Space / K / Gamepad)
-                if (this.keys.jump) {
-                    this.keys.jump = false;
-                    if (this.biogasPressure > 52) this.biogasPressure = Math.max(52, this.biogasPressure - 18);
-                    else if (this.biogasPressure < 52) this.biogasPressure = Math.min(52, this.biogasPressure + 18);
-                    this.filterMoisture = Math.max(0, (this.filterMoisture || 0) - 40);
-                    if (window.soundManager && window.soundManager.playPurgeValve) window.soundManager.playPurgeValve();
-                    this.addFloatingText(2450, 310, '💧 PRESSÃO PURGADA & ESTABILIZADA!', '#38bdf8');
-                    for (let k = 0; k < 8; k++) {
-                        this.phase5Particles.push({
-                            x: 2360 + (Math.random() - 0.5) * 20,
-                            y: 395,
-                            vx: - (20 + Math.random() * 40),
-                            vy: - (15 + Math.random() * 30),
-                            size: 4 + Math.random() * 5,
-                            color: '#e0f2fe',
-                            life: 0.65
-                        });
-                    }
-                }
-
-                // Subtle organic drift (gentle, easy to manage)
-                const drift = Math.sin(this.gameTime * 1.8) * 4.5 * dt;
-                this.biogasPressure = Math.max(15, Math.min(90, (this.biogasPressure || 50) + drift));
-
-                // Optimal zone is 40 to 70 kPa
-                const isOptimal = this.biogasPressure >= 40 && this.biogasPressure <= 70;
-
-                if (isOptimal) {
-                    this.biogasPowerMW = Math.min(10.0, (this.biogasPowerMW || 0) + dt * 2.4);
-                    this.flareLit = true;
-                    this.flareFlameScale = 1.0 + Math.sin(this.gameTime * 12) * 0.25;
-                    this.turbineSpinAngle = (this.turbineSpinAngle || 0) + dt * 25;
-
-                    this.turbineAudioTimer = (this.turbineAudioTimer || 0) - dt;
-                    if (this.turbineAudioTimer <= 0) {
-                        if (window.soundManager && window.soundManager.playTurbineWhine) {
-                            window.soundManager.playTurbineWhine(0.8 + (this.biogasPowerMW / 10.0) * 0.6);
-                        }
-                        this.turbineAudioTimer = 0.35;
-                    }
-
-                    // Electric transmission sparks
-                    this.powerGridPulseTimer = (this.powerGridPulseTimer || 0) - dt;
-                    if (this.powerGridPulseTimer <= 0) {
-                        this.powerGridPulseTimer = 0.12;
-                        if (!this.gridSparks) this.gridSparks = [];
-                        this.gridSparks.push({
-                            x: 2750,
-                            y: 215,
-                            vx: 220 + Math.random() * 50,
-                            vy: - (Math.random() * 12),
-                            size: 3 + Math.random() * 3,
-                            color: Math.random() < 0.5 ? '#fde047' : '#38bdf8',
-                            life: 1.8
-                        });
-                    }
-                } else {
-                    this.flareLit = false;
-                    this.flareFlameScale = 0.35;
-                    this.turbineSpinAngle = (this.turbineSpinAngle || 0) + dt * 4;
-                }
-
-                if (this.gridSparks) {
-                    for (let i = this.gridSparks.length - 1; i >= 0; i--) {
-                        const sp = this.gridSparks[i];
-                        sp.x += sp.vx * dt;
-                        sp.y += sp.vy * dt;
-                        sp.life -= dt;
-                        if (sp.life <= 0 || sp.x > 3400) this.gridSparks.splice(i, 1);
-                    }
-                }
-
-                if (this.biogasPowerMW >= 10.0) {
-                    this.biogasPowerMW = 10.0;
-                    this.phase5State = 'BIOGAS_WAIT_ADVANCE';
-                    this.score += 1200;
-                    if (window.soundManager && window.soundManager.playPowerGridBeep) {
-                        window.soundManager.playPowerGridBeep();
-                    }
-                    this.addFloatingText(2450, 310, '⚡ 10.0 MW GERADOS! APERTE [PULO]!', '#38bdf8');
-                    this.showTip('⚡ Usina 100% Carregada! Aperte o botão de pulo [ESPACO / K / JOYSTICK] para assumir o Cajulim!', 6.0);
-                }
-            } else if (this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-                if (this.keys.jump) {
-                    this.keys.jump = false;
-                    this.phase5State = 'CHORUME_TREATMENT';
-                    this.score += 500;
-                    if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
-                    this.addFloatingText(3600, 310, 'ASSUMINDO O CAJULIM NAS LAGOAS!', '#22c55e');
-                    this.showTip('Etapa 3: Cajulim na Estação! Pule [ESPACO / K / JOYSTICK] nas bóias p/ ligar os aeradores e vá ao laboratório!', 6.0);
-                    // Spawn Cajulim as platformer hero with camera immediately snapped to Sector 3 catwalk
-                    this.camera.x = 3360;
-                    this.camera.y = 0;
-                    p.x = 3450;
-                    p.y = 344;
-                    p.w = 48;
-                    p.h = 76;
-                    p.vx = 0;
-                    p.vy = 0;
-                    p.facing = 1;
-                    p.invulnerableTimer = 0;
-                    p.grounded = true;
-                    p.animState = 'idle';
-                }
-            }
-        }
-
-        // =========================================================================
-        // 3. STAGE: CAJULIM IN THE LAGOONS & ETE LAB ('CHORUME_TREATMENT', 'LAB_ANALYSIS', 'CAJULIM_WAIT_ADVANCE')
-        // =========================================================================
-        else if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS' || this.phase5State === 'LAB_ANALYSIS' || this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-            p.invulnerableTimer = 0;
-            p.facing = (p.facing === -1) ? -1 : 1;
-            if (isNaN(p.x)) p.x = 3450;
-            if (isNaN(p.y)) p.y = 344;
-            if (isNaN(p.vx)) p.vx = 0;
-            if (isNaN(p.vy)) p.vy = 0;
-
-            let moveDir = 0;
-            if (this.keys.left) moveDir -= 1;
-            if (this.keys.right) moveDir += 1;
-
-            const runSpeed = 260;
-            if (moveDir !== 0) {
-                p.vx += moveDir * 700 * dt;
-                if (Math.abs(p.vx) > runSpeed) p.vx = moveDir * runSpeed;
-                p.facing = moveDir > 0 ? 1 : -1;
-                p.animState = 'walk';
-                p.animTimer = (p.animTimer || 0) + dt * (Math.abs(p.vx) / 26);
-                p.animFrame = Math.floor(p.animTimer) % 8;
-            } else {
-                p.vx *= Math.pow(0.65, dt * 60);
-                if (Math.abs(p.vx) < 5) p.vx = 0;
-                p.animState = 'idle';
-                p.animTimer = (p.animTimer || 0) + dt * 3.5;
-                p.animFrame = Math.floor(p.animTimer) % 4;
-            }
-
-            // Preserve jump input intent for this frame across all checks
-            const jumpPressed = Boolean(this.keys.jump);
-
-            // Gravity & Real Platformer Jump
-            p.vy += 980 * dt;
-            if (p.grounded && jumpPressed && this.phase5State !== 'CAJULIM_WAIT_ADVANCE') {
-                p.vy = -540;
-                p.grounded = false;
-                if (window.soundManager && window.soundManager.playJump) window.soundManager.playJump();
-            }
-
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-
-            // Catwalk platform floor at y = 420
-            const floorY = 420 - p.h;
-            if (p.y >= floorY) {
-                p.y = floorY;
-                p.vy = 0;
-                p.grounded = true;
-            } else {
-                p.grounded = false;
-                p.animState = 'jump';
-                p.animFrame = p.vy < 0 ? 1 : 2;
-            }
-
-            // Lagoon boardwalk bounds (x: 3400 to 5120)
-            if (p.x < 3400) { p.x = 3400; p.vx = 0; }
-            if (p.x > 5120) { p.x = 5120; p.vx = 0; }
-            if (p.y < 100) { p.y = 100; p.vy = 0; }
-
-            // Check aerators interaction
-            if (this.aerators) {
-                this.aerators.forEach(a => {
-                    a.bobPhase = (a.bobPhase || 0) + dt * 2.5;
-                    const nearAerator = Math.abs(p.x - (a.x + 35)) < 65;
-                    if (nearAerator && (jumpPressed || Math.abs(p.y - floorY) > 15)) {
-                        if (!a.active) {
-                            a.active = true;
-                            if (window.soundManager && window.soundManager.playAeratorSplash) {
-                                window.soundManager.playAeratorSplash();
-                            }
-                            this.addFloatingText(a.x + 35, 360, '🌀 AERADOR ATIVADO! (120 RPM)', '#38bdf8');
-                        }
-                    }
-
-                    if (a.active) {
-                        a.rpm = Math.min(120, (a.rpm || 0) + dt * 80);
-                        a.splashTimer = (a.splashTimer || 0) - dt;
-                        if (a.splashTimer <= 0) {
-                            a.splashTimer = 0.09;
-                            for (let k = 0; k < 4; k++) {
-                                this.phase5Particles.push({
-                                    x: a.x + 35 + (Math.random() - 0.5) * 40,
-                                    y: a.y + 40,
-                                    vx: (Math.random() - 0.5) * 70,
-                                    vy: - (35 + Math.random() * 45),
-                                    size: 3 + Math.random() * 4,
-                                    color: this.chorumeTreated > 60 ? '#38bdf8' : '#67e8f9',
-                                    life: 0.55
-                                });
-                            }
-                        }
-                    }
-                });
-
-                // Oxygenation rate
-                const activeCount = this.aerators.filter(a => a.active).length;
-                if (activeCount > 0) {
-                    this.chorumeTreated = Math.min(100, (this.chorumeTreated || 0) + dt * activeCount * 22.0);
-                }
-
-                if (this.chorumeTreated >= 100 && (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS')) {
-                    this.chorumeTreated = 100;
-                    this.phase5State = 'LAB_ANALYSIS';
-                    this.score += 1000;
-                    if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
-                    this.showTip('✔ Chorume 100% Tratado! Caminhe até o Laboratório ETE à direita para certificar a água!', 6.0);
-                    this.addFloatingText(4800, 310, 'CHORUME TRATADO! VÁ AO LABORATÓRIO ETE ➜', '#38bdf8');
-                }
-            }
-
-            // ETE Lab interaction
-            const nearLab = p.x >= 4950;
-            if (nearLab && this.phase5State === 'LAB_ANALYSIS') {
-                if (jumpPressed || this.labSampleTested) {
-                    this.keys.jump = false;
-                    this.labSampleTested = true;
-                    this.labSampleResult = {
-                        ph: '7.0 (Neutro)',
-                        turbidez: '0.1 NTU (Cristalina)',
-                        dqo: '< 30 mg/L',
-                        conformidade: '100% Conforme CONAMA 430'
-                    };
-                    if (window.soundManager && window.soundManager.playLabBeep) window.soundManager.playLabBeep();
-                    if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
-                    this.score += 1500;
-                    this.phase5State = 'CAJULIM_WAIT_ADVANCE';
-                    this.addFloatingText(5080, 280, '🧪 AMOSTRA COLETADA! LAUDO: 100% APROVADA!', '#00ff88');
-
-                    for (let k = 0; k < 35; k++) {
-                        this.phase5Particles.push({
-                            x: 5080 + (Math.random() - 0.5) * 70,
-                            y: 350 + (Math.random() - 0.5) * 50,
-                            vx: (Math.random() - 0.5) * 140,
-                            vy: - (40 + Math.random() * 90),
-                            size: 4 + Math.random() * 5,
-                            color: Math.random() < 0.5 ? '#38bdf8' : '#4ade80',
-                            life: 1.2
-                        });
-                    }
-                    this.showTip('🎉 Aterro Sanitário e Usina Verde 100% Concluídos! Aperte [ESPACO / K / 🎮 PULO] para ver a história!', 6.0);
-                }
-            } else if (this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-                if (jumpPressed) {
-                    this.keys.jump = false;
-                    this.phase5State = 'COMPLETE';
-                    this.levelClear();
-                }
-            } else {
-                if (jumpPressed) {
-                    this.keys.jump = false;
-                }
-            }
+        for (const aerator of (this.phase5Aerators || [])) {
+            if (aerator.active) aerator.spin += dt * 8;
         }
 
         this.updatePhase5Particles(dt);
+
+        const focusX = this.phase5Mode === 'TRACTOR' ? (this.phase5Tractor.x + 110) : (this.player.x + this.player.w / 2);
+        const targetCamera = Math.max(0, Math.min(this.levelWidth - VIRTUAL_WIDTH, focusX - VIRTUAL_WIDTH * 0.42));
+        if (Math.abs(targetCamera - this.camera.x) > 350) {
+            this.camera.x = targetCamera;
+        } else {
+            this.camera.x += (targetCamera - this.camera.x) * Math.min(1.0, dt * 7.0);
+        }
+        this.camera.y = 0;
+    }
+
+    updatePhase5Player(dt) {
+        const p = this.player;
+        let direction = 0;
+        if (this.keys.left) direction -= 1;
+        if (this.keys.right) direction += 1;
+
+        if (direction !== 0) {
+            p.vx += direction * 1100 * dt;
+            p.vx = Math.max(-285, Math.min(285, p.vx));
+            p.facing = direction;
+            p.animState = 'walk';
+            p.animTimer = (p.animTimer || 0) + dt * 10;
+            p.animFrame = Math.floor(p.animTimer) % 8;
+        } else {
+            p.vx *= Math.pow(0.001, dt);
+            if (Math.abs(p.vx) < 2) p.vx = 0;
+            p.animState = 'idle';
+            p.animTimer = (p.animTimer || 0) + dt * 3.4;
+            p.animFrame = Math.floor(p.animTimer) % 4;
+        }
+
+        if ((this.keys.jump || this.keys.up) && p.grounded && !this.isNearPhase5Interactable()) {
+            p.vy = -545;
+            p.grounded = false;
+            this.playPhase5Tone(250, 0.08, "square", 0.025);
+            if (window.soundManager) window.soundManager.playJump();
+        }
+
+        p.vy += 1450 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+
+        const isCatwalk = (p.x >= 3000 && p.x <= 4620);
+        const floorY = (isCatwalk ? 422 : this.phase5Floor) - p.h;
+
+        if (p.y >= floorY) {
+            p.y = floorY;
+            p.vy = 0;
+            p.grounded = true;
+        } else {
+            p.grounded = false;
+            p.animState = 'jump';
+            p.animFrame = p.vy < 0 ? 1 : 2;
+        }
+
+        let minX = 50;
+        let maxX = this.levelWidth - 100;
+        if (this.phase5Stage === 'APPROACH') maxX = 660;
+        if (this.phase5Stage === 'TO_BIOGAS') { minX = 1480; maxX = 2520; }
+        if (this.phase5Stage === 'TO_LAGOONS') { minX = 2760; maxX = 4520; }
+        if (this.phase5Stage === 'TO_LAB') { minX = 2760; maxX = 4940; }
+        p.x = Math.max(minX, Math.min(maxX, p.x));
+    }
+
+    updatePhase5Tractor(dt) {
+        const tractor = this.phase5Tractor;
+        let direction = 0;
+        if (this.keys.left) direction -= 1;
+        if (this.keys.right) direction += 1;
+        const limit = 1520;
+
+        if (direction !== 0) {
+            tractor.vx += direction * 520 * dt;
+            tractor.vx = Math.max(-220, Math.min(220, tractor.vx));
+            tractor.facing = direction;
+        } else {
+            tractor.vx *= Math.pow(0.005, dt);
+            if (Math.abs(tractor.vx) < 3) tractor.vx = 0;
+        }
+
+        tractor.x += tractor.vx * dt;
+        tractor.x = Math.max(230, Math.min(limit, tractor.x));
+
+        const center = tractor.x + 110;
+        const isMoving = Math.abs(tractor.vx) > 25;
+
+        this.tractorEngineSoundTimer = (this.tractorEngineSoundTimer || 0) - dt;
+        if (this.tractorEngineSoundTimer <= 0) {
+            if (window.soundManager) window.soundManager.playTractorEngine(isMoving);
+            this.tractorEngineSoundTimer = isMoving ? 0.16 : 0.35;
+        }
+
+        if (this.phase5Stage === 'COMPACT' && isMoving) {
+            for (const zone of this.phase5Zones) {
+                if (center > zone.x - 40 && center < zone.x + zone.w + 40 && zone.comp < 100) {
+                    zone.comp = Math.min(100, zone.comp + dt * 62);
+                    if (Math.random() < 0.22) this.burstPhase5(center, this.phase5Floor - 20, '#83542b', 2);
+                    if (zone.comp === 100) {
+                        this.score += 180;
+                        this.playPhase5Tone(450, 0.09, 'square', 0.025);
+                        if (window.soundManager) window.soundManager.playCollect('trash');
+                    }
+                }
+            }
+            if (this.phase5Zones.every(zone => zone.comp >= 100)) {
+                this.phase5Stage = 'GET_SOIL';
+                this.phase5State = 'GET_SOIL';
+                this.setPhase5Message("Compactação concluída! Busque a terra na jazida à esquerda.", 4.5);
+                this.playPhase5SuccessSound();
+            }
+        }
+
+        if (this.phase5Stage === 'COVER' && isMoving && this.phase5SoilLoaded) {
+            for (const zone of this.phase5Zones) {
+                if (center > zone.x - 40 && center < zone.x + zone.w + 40 && zone.cover < 100) {
+                    zone.cover = Math.min(100, zone.cover + dt * 70);
+                    if (Math.random() < 0.25) this.burstPhase5(center, this.phase5Floor - 25, '#c58c47', 2);
+                    if (zone.cover === 100) {
+                        this.score += 220;
+                        this.playPhase5Tone(540, 0.1, 'square', 0.025);
+                        if (window.soundManager) window.soundManager.playCollect('star');
+                    }
+                }
+            }
+            if (this.phase5Zones.every(zone => zone.cover >= 100)) {
+                this.phase5Stage = 'PARK';
+                this.phase5State = 'PARK';
+                this.setPhase5Message("Cobertura concluída! Estacione no ponto amarelo.", 4.5);
+                this.playPhase5SuccessSound();
+            }
+        }
+    }
+
+    updatePhase5Biogas(dt) {
+        if (this.phase5PowerComplete) return;
+        if (this.keys.left) this.phase5Pressure -= 29 * dt;
+        if (this.keys.right) this.phase5Pressure += 29 * dt;
+        this.phase5Pressure += Math.sin((this.gameTime || 0) * 1.55) * 1.15 * dt;
+        this.phase5Pressure = Math.max(10, Math.min(95, this.phase5Pressure));
+
+        const ideal = this.phase5Pressure >= 40 && this.phase5Pressure <= 70;
+        if (ideal) this.phase5StableTime = Math.min(6.0, this.phase5StableTime + dt);
+        else this.phase5StableTime = Math.max(0, this.phase5StableTime - dt * 0.18);
+
+        if (this.phase5StableTime >= 6.0) {
+            this.phase5StableTime = 6.0;
+            this.phase5PowerComplete = true;
+            this.score += 1000;
+            this.setPhase5Message("Pressão estabilizada. Usina pronta: 10,0 MW! Pressione ESPAÇO ou E.", 6.0);
+            this.burstPhase5(2360, 310, '#f5dc54', 35);
+            this.playPhase5SuccessSound();
+            if (window.soundManager) window.soundManager.playPowerGridBeep();
+        }
+    }
+
+    updatePhase5Analysis(dt) {
+        this.phase5AnalysisTime = Math.min(2.8, this.phase5AnalysisTime + dt);
+        if (this.phase5AnalysisTime >= 2.8 && !this.phase5AnalysisDone) {
+            this.phase5AnalysisDone = true;
+            this.phase5Stage = 'COMPLETE';
+            this.phase5State = 'COMPLETE';
+            this.phase5Mode = 'WIN';
+            this.phase5CompletedAt = this.gameTime || 0;
+            this.score += 1500;
+            this.setPhase5Message("Análise da simulação concluída. Tratamento certificado: pH 7,0!", 7.0);
+            this.burstPhase5(4820, 320, '#69e7a2', 55);
+            this.playPhase5SuccessSound();
+            if (window.soundManager) window.soundManager.playVictory();
+
+            setTimeout(() => {
+                if (this.currentPhase === 5) {
+                    this.levelClear();
+                }
+            }, 2400);
+        }
     }
 
     updatePhase5Particles(dt) {
         if (!this.phase5Particles) return;
         for (let i = this.phase5Particles.length - 1; i >= 0; i--) {
-            const pt = this.phase5Particles[i];
-            pt.x += pt.vx * dt;
-            pt.y += pt.vy * dt;
-            pt.life -= dt;
-            if (pt.life <= 0) this.phase5Particles.splice(i, 1);
+            const p = this.phase5Particles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vy += 280 * dt;
+            p.life -= dt;
+            if (p.life <= 0) this.phase5Particles.splice(i, 1);
         }
     }
 
     handlePhase5Click(e) {
         if (this.currentPhase !== 5) return;
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = VIRTUAL_WIDTH / rect.width;
-        const scaleY = VIRTUAL_HEIGHT / rect.height;
-        const screenX = (e.clientX - rect.left) * scaleX;
-        const screenY = (e.clientY - rect.top) * scaleY;
-
-        // 1. Advance Prompts when Waiting
-        if (this.phase5State === 'COMPACTING_WAIT_ADVANCE') {
-            this.keys.jump = true;
-            return;
-        }
-        if (this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-            this.keys.jump = true;
-            return;
-        }
-        if (this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-            this.keys.jump = true;
-            return;
-        }
-
-        // 2. Interactive On-Screen Action Buttons at Bottom
-        if (screenY >= 485 && screenY <= 535) {
-            if (this.phase5State === 'COMPACTING') {
-                this.bladeLoweredState = !this.bladeLoweredState;
-            } else if (this.phase5State === 'BIOGAS_GENERATION') {
-                if (screenX >= 200 && screenX <= 380) {
-                    this.biogasPressure = Math.max(10, (this.biogasPressure || 50) - 15);
-                    if (window.soundManager && window.soundManager.playTractorBlade) window.soundManager.playTractorBlade();
-                } else if (screenX >= 400 && screenX <= 580) {
-                    this.biogasPressure = Math.min(95, (this.biogasPressure || 50) + 15);
-                    if (window.soundManager && window.soundManager.playTractorBlade) window.soundManager.playTractorBlade();
-                } else if (screenX >= 600 && screenX <= 820) {
-                    this.keys.jump = true;
-                }
-            } else if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS') {
-                if (this.aerators) {
-                    const allOn = this.aerators.every(a => a.active);
-                    this.aerators.forEach(a => a.active = !allOn);
-                    if (window.soundManager && window.soundManager.playAeratorSplash) window.soundManager.playAeratorSplash();
-                }
-            } else if (this.phase5State === 'LAB_ANALYSIS') {
-                this.labSampleTested = true;
-            }
-        }
+        this.triggerPhase5Action();
     }
     updatePhase6(dt) {
         if (!this.gameTime) this.gameTime = 0;
@@ -5372,751 +5326,811 @@ class Game {
 
         ctx.fillStyle = this.freioMotorActive ? '#38bdf8' : '#64748b';
         ctx.fillText(this.freioMotorActive ? '💨 FREIO MOTOR' : '○ FREIO DESL', miniX + 8, miniY + 30);
-
         ctx.restore();
     }
 
     renderPhase5(ctx) {
-        this.renderPhase5Sector1(ctx);
-        this.renderPhase5Sector2(ctx);
-        this.renderPhase5Sector3(ctx);
-        this.renderPhase5Particles(ctx);
+        this.drawPhase5World(ctx);
+        this.drawPhase5Particles(ctx);
 
-        // Render real animated Cajulim hero during all Lagoon & Lab stages!
-        if (this.phase5State !== 'COMPACTING' && this.phase5State !== 'COMPACTING_WAIT_ADVANCE' && this.phase5State !== 'BIOGAS_GENERATION' && this.phase5State !== 'BIOGAS_WAIT_ADVANCE' && this.phase5State !== 'SOIL_COVER') {
+        // Render Cajulim on foot whenever not driving the tractor or inside modal panels
+        if (this.phase5Mode !== 'TRACTOR' && this.phase5Mode !== 'PANEL' && this.phase5Mode !== 'ANALYSIS') {
             this.renderPlayer(ctx);
         }
-    }
 
-    renderPhase5Sector1(ctx) {
-        const comp = (this.compactionProgress || 0) / 100;
-        const groundY = 460;
+        this.drawPhase5InteractionPrompts(ctx);
 
-        // Ground base
-        ctx.fillStyle = '#15803d';
-        ctx.fillRect(0, groundY, 1750, 80);
-
-        // 1. Célula 1 (x: 120 to 820) - Excavation cutaway with PEAD geomembrane liner
-        ctx.fillStyle = '#1e293b';
-        ctx.beginPath();
-        ctx.moveTo(120, groundY);
-        ctx.lineTo(170, 485);
-        ctx.lineTo(770, 485);
-        ctx.lineTo(820, groundY);
-        ctx.lineTo(820, 540);
-        ctx.lineTo(120, 540);
-        ctx.closePath();
-        ctx.fill();
-
-        // Thick black impermeable PEAD geomembrane liner
-        ctx.strokeStyle = '#020617';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(115, groundY);
-        ctx.lineTo(170, 485);
-        ctx.lineTo(770, 485);
-        ctx.lineTo(820, groundY);
-        ctx.stroke();
-
-        // Drainage gravel & perforated pipes at the base
-        ctx.fillStyle = '#475569';
-        ctx.fillRect(175, 476, 595, 9);
-        ctx.fillStyle = '#0f172a';
-        for (let x = 185; x < 765; x += 30) {
-            ctx.beginPath();
-            ctx.arc(x, 480, 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Célula 1 Waste Mound - Levels and gets compacted as progress increases
-        const moundTopY1 = 418 + comp * 26;
-        ctx.fillStyle = '#334155';
-        ctx.beginPath();
-        ctx.moveTo(170, 475);
-        ctx.lineTo(210, moundTopY1);
-        ctx.lineTo(750, moundTopY1);
-        ctx.lineTo(770, 475);
-        ctx.closePath();
-        ctx.fill();
-
-        // Solid soil cover capping layer on Célula 1 (appears as tractor compacts)
-        if (comp > 0.05) {
-            ctx.fillStyle = '#92400e';
-            ctx.beginPath();
-            ctx.moveTo(195, moundTopY1);
-            ctx.lineTo(765, moundTopY1);
-            ctx.lineTo(765, moundTopY1 - Math.min(18, comp * 18));
-            ctx.lineTo(195, moundTopY1 - Math.min(18, comp * 18));
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#b45309';
-            ctx.fillRect(195, moundTopY1 - Math.min(18, comp * 18), 570, 3);
-        }
-
-        // 2. Célula 2 (x: 820 to 1420)
-        ctx.fillStyle = '#1e293b';
-        ctx.beginPath();
-        ctx.moveTo(820, groundY);
-        ctx.lineTo(860, 485);
-        ctx.lineTo(1380, 485);
-        ctx.lineTo(1420, groundY);
-        ctx.lineTo(1420, 540);
-        ctx.lineTo(820, 540);
-        ctx.closePath();
-        ctx.fill();
-
-        // PEAD liner Célula 2
-        ctx.strokeStyle = '#020617';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(815, groundY);
-        ctx.lineTo(860, 485);
-        ctx.lineTo(1380, 485);
-        ctx.lineTo(1425, groundY);
-        ctx.stroke();
-
-        const moundTopY2 = 422 + comp * 24;
-        ctx.fillStyle = '#334155';
-        ctx.beginPath();
-        ctx.moveTo(860, 475);
-        ctx.lineTo(890, moundTopY2);
-        ctx.lineTo(1350, moundTopY2);
-        ctx.lineTo(1380, 475);
-        ctx.closePath();
-        ctx.fill();
-
-        // Solid soil cover capping layer on Célula 2
-        if (comp > 0.05) {
-            ctx.fillStyle = '#92400e';
-            ctx.beginPath();
-            ctx.moveTo(880, moundTopY2);
-            ctx.lineTo(1360, moundTopY2);
-            ctx.lineTo(1360, moundTopY2 - Math.min(18, comp * 18));
-            ctx.lineTo(880, moundTopY2 - Math.min(18, comp * 18));
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#b45309';
-            ctx.fillRect(880, moundTopY2 - Math.min(18, comp * 18), 480, 3);
-        }
-
-        // Clay Quarry hill on the right (x: 1450 to 1720)
-        ctx.fillStyle = '#b45309';
-        ctx.beginPath();
-        ctx.moveTo(1450, groundY);
-        ctx.quadraticCurveTo(1560, 410, 1670, groundY);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#d97706';
-        ctx.beginPath();
-        ctx.moveTo(1480, groundY);
-        ctx.quadraticCurveTo(1560, 425, 1640, groundY);
-        ctx.closePath();
-        ctx.fill();
-
-        // 3. Compactor Tractor ("Pata de Carneiro")
-        if (this.phase5State === 'COMPACTING' || this.phase5State === 'COMPACTING_WAIT_ADVANCE' || this.phase5State === 'SOIL_COVER') {
-            const p = this.player;
-            const tractorImg = this.assets['sc_trator_compactador'];
-
-            ctx.save();
-            ctx.translate(Math.floor(p.x + p.w / 2), Math.floor(p.y + p.h / 2));
-            if (p.facing < 0) ctx.scale(-1, 1);
-
-            if (tractorImg) {
-                ctx.drawImage(tractorImg, -p.w / 2, -p.h / 2, p.w, p.h);
-            } else {
-                // Procedural compactor tractor
-                ctx.fillStyle = '#eab308';
-                ctx.fillRect(-p.w / 2 + 20, -p.h / 2 + 15, 85, 38);
-                // Cabin
-                ctx.fillStyle = '#fef08a';
-                ctx.fillRect(-p.w / 2 + 45, -p.h / 2 - 8, 35, 25);
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillRect(-p.w / 2 + 50, -p.h / 2 - 4, 25, 18);
-                // Wheels
-                ctx.fillStyle = '#1e293b';
-                ctx.beginPath();
-                ctx.arc(-p.w / 2 + 35, p.h / 2 - 12, 18, 0, Math.PI * 2);
-                ctx.arc(p.w / 2 - 35, p.h / 2 - 12, 18, 0, Math.PI * 2);
-                ctx.fill();
-                // Spikes ("Patas de Carneiro")
-                ctx.fillStyle = '#94a3b8';
-                for (let k = 0; k < 6; k++) {
-                    const ang = (k * Math.PI) / 3;
-                    ctx.fillRect(-p.w / 2 + 35 + Math.cos(ang) * 16 - 2, p.h / 2 - 12 + Math.sin(ang) * 16 - 2, 4, 4);
-                    ctx.fillRect(p.w / 2 - 35 + Math.cos(ang) * 16 - 2, p.h / 2 - 12 + Math.sin(ang) * 16 - 2, 4, 4);
-                }
-                // Dozer Blade
-                ctx.fillStyle = '#ca8a04';
-                ctx.fillRect(p.w / 2 - 15, p.h / 2 - 28, 14, 30);
-            }
-            ctx.restore();
-        }
-
-        // Sector 1: Cell ground cutaway and tractor operation (sky kept clean for HUD guide)
-
-        // 5. PROMINENT ARCADE ADVANCE PROMPT WHEN TRACTOR COMPLETES
-        if (this.phase5State === 'COMPACTING_WAIT_ADVANCE') {
-            const promptW = 620;
-            const promptH = 92;
-            const promptX = 490;
-            const promptY = 220;
-
-            const pulse = 0.85 + Math.sin((this.gameTime || 0) * 8) * 0.15;
-
-            ctx.save();
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.94)';
-            ctx.fillRect(promptX - promptW / 2, promptY - promptH / 2, promptW, promptH);
-            ctx.strokeStyle = '#facc15';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(promptX - promptW / 2, promptY - promptH / 2, promptW, promptH);
-
-            ctx.textAlign = 'center';
-            ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('✔ CÉLULA ATERRADA E COMPACTADA COM SUCESSO!', promptX, promptY - 14);
-
-            ctx.font = 'bold 11px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
-            ctx.fillText('⭐ APERTE O BOTÃO DE PULO [ESPACO / K / JOYSTICK] PARA AVANCAR ▶', promptX, promptY + 18);
-            ctx.restore();
-        }
-    }
-
-    renderPhase5Sector2(ctx) {
-        // Sector 2: Usina de Biogás 10.0 MW (x: 1750 to 3350)
-        const groundY = 460;
-        ctx.fillStyle = '#15803d';
-        ctx.fillRect(1750, groundY, 1600, 80);
-
-        // Underground vertical gas extraction wells
-        const wellX = [1850, 1980, 2100, 2220];
-        wellX.forEach(wx => {
-            ctx.fillStyle = '#334155';
-            ctx.fillRect(wx - 4, 380, 8, 100);
-            ctx.fillStyle = '#64748b';
-            for (let py = 410; py < 475; py += 12) {
-                ctx.fillRect(wx - 6, py, 12, 3);
-            }
-            const bubY = 470 - ((this.gameTime * 40 + wx) % 85);
-            ctx.fillStyle = '#38bdf8';
-            ctx.beginPath();
-            ctx.arc(wx, bubY, 3, 0, Math.PI * 2);
-            ctx.fill();
-        });
-
-        // Horizontal collection manifold pipe leading to plant
-        ctx.fillStyle = '#475569';
-        ctx.fillRect(1840, 375, 480, 10);
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(2315, 330, 10, 55);
-
-        // Condensation Trap / Moisture Filter (x: 2330, y: 335, w: 45, h: 80)
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(2330, 335, 45, 80);
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(2330, 335, 45, 80);
-
-        // Water level inside filter
-        const moistH = ((this.filterMoisture || 15) / 100) * 65;
-        ctx.fillStyle = this.filterMoisture > 70 ? 'rgba(239, 68, 68, 0.75)' : 'rgba(56, 189, 248, 0.65)';
-        ctx.fillRect(2332, 413 - moistH, 41, moistH);
-
-        // Purge drain valve
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(2348, 415, 9, 15);
-        ctx.font = '6px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.fillText('FILTRO', 2352, 348);
-        ctx.fillText(`${Math.round(this.filterMoisture || 0)}%`, 2352, 360);
-
-        // Biogas Power Station Building & Flare Tower
-        const plantImg = this.assets['sc_biogas_plant'];
-        if (plantImg) {
-            ctx.drawImage(plantImg, 2380, 210, 480, 252);
-        } else {
-            // Procedural Power Station
-            ctx.fillStyle = '#166534';
-            ctx.fillRect(2390, 310, 280, 150);
-            ctx.fillStyle = '#15803d';
-            ctx.fillRect(2380, 290, 300, 22);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
-            ctx.fillText('USINA BIOGÁS 10.0 MW ⚡', 2410, 325);
-        }
-
-        // Animated Flare Torch (x: 2300, y: 225)
-        const flareX = 2300;
-        const flareTipY = 225;
-        if (this.flareLit) {
-            const h = 28 * this.flareFlameScale;
-            const flareGrad = ctx.createRadialGradient(flareX, flareTipY - h / 2, 3, flareX, flareTipY - h / 2, 24);
-            flareGrad.addColorStop(0, '#60a5fa');
-            flareGrad.addColorStop(0.35, '#facc15');
-            flareGrad.addColorStop(0.85, '#ef4444');
-            flareGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
-            ctx.fillStyle = flareGrad;
-            ctx.beginPath();
-            ctx.arc(flareX, flareTipY - h / 2, 22 * this.flareFlameScale, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Dual Turbines (Turbina A & Turbina B)
-        const turbX = [2670, 2790];
-        turbX.forEach((tx, idx) => {
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(tx - 35, 360, 70, 60);
-            ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(tx - 35, 360, 70, 60);
-
-            // Spinning fan rotor
-            ctx.save();
-            ctx.translate(tx, 390);
-            ctx.rotate(this.turbineSpinAngle * (idx === 0 ? 1 : 1.15));
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 3;
-            for (let b = 0; b < 4; b++) {
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(Math.cos(b * Math.PI / 2) * 22, Math.sin(b * Math.PI / 2) * 22);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            ctx.font = '6px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = '#facc15';
-            ctx.textAlign = 'center';
-            ctx.fillText(`TURBINA ${idx === 0 ? 'A' : 'B'}`, tx, 432);
-        });
-
-        // High-voltage transmission lines to the city
-        ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(2800, 230);
-        ctx.quadraticCurveTo(2950, 250, 3100, 230);
-        ctx.quadraticCurveTo(3220, 250, 3350, 230);
-        ctx.stroke();
-
-        // Electric power pulses
-        if (this.gridSparks) {
-            this.gridSparks.forEach(sp => {
-                ctx.fillStyle = sp.color;
-                ctx.beginPath();
-                ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // =========================================================================
-        // PROMINENT RETRO-ARCADE BIOGAS PRESSURE & POWER CONTROL DASHBOARD
-        // Centered directly in camera view below HUD banner (y: 112 to 270)
-        // =========================================================================
-        const dashX = 2240;
-        const dashY = 112;
-        const dashW = 580;
-        const dashH = 154;
-
+        // Screen-space UI modals and overlays (cancel camera transform)
         ctx.save();
-        ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
-        ctx.fillRect(dashX, dashY, dashW, dashH);
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(dashX, dashY, dashW, dashH);
+        ctx.translate(Math.floor(this.camera.x), Math.floor(this.camera.y || 0));
 
-        // Header Title
-        ctx.font = 'bold 9.5px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#38bdf8';
-        ctx.textAlign = 'left';
-        ctx.fillText('⚡ ETAPA 2: REGULAGEM DE PRESSÃO DO BIOGÁS (CH4)', dashX + 16, dashY + 20);
+        if (this.phase5Mode === 'PANEL') {
+            this.drawPhase5BiogasPanel(ctx);
+        }
+        if (this.phase5Mode === 'ANALYSIS') {
+            this.drawPhase5AnalysisPanel(ctx);
+        }
+        if (this.phase5MessageTimer > 0 && this.phase5Stage !== 'COMPLETE' && this.phase5Mode !== 'PANEL' && this.phase5Mode !== 'ANALYSIS') {
+            this.drawPhase5Message(ctx);
+        }
 
-        // 1. Horizontal Pressure Gauge (0 to 100 kPa)
-        const barX = dashX + 20;
-        const barY = dashY + 28;
-        const barW = 540;
-        const barH = 24;
+        ctx.restore();
+    }
 
-        // Background / Low zone (0 to 40 kPa = 40% of bar)
-        ctx.fillStyle = '#78350f';
-        ctx.fillRect(barX, barY, barW * 0.40, barH);
+    drawPhase5World(ctx) {
+        const FLOOR = this.phase5Floor || 448;
+        const W = this.levelWidth || 5200;
 
-        // GREEN OPTIMAL ZONE (40 to 70 kPa = 30% of bar)
-        ctx.fillStyle = '#15803d';
-        ctx.fillRect(barX + barW * 0.40, barY, barW * 0.30, barH);
-        ctx.strokeStyle = '#4ade80';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(barX + barW * 0.40, barY, barW * 0.30, barH);
+        // Ground base with realistic engineering soil layers
+        ctx.fillStyle = "#55793b"; // Natural grass
+        ctx.fillRect(0, FLOOR, W, 540 - FLOOR);
+        ctx.fillStyle = "#9b693d"; // Sector 1: Earth / clay compaction area
+        ctx.fillRect(0, FLOOR + 18, 1650, 540 - FLOOR);
+        ctx.fillStyle = "#496d4a"; // Sector 2: Industrial biogas lawn
+        ctx.fillRect(1650, FLOOR + 18, 1350, 540 - FLOOR);
+        ctx.fillStyle = "#355f63"; // Sector 3: Water treatment bedrock
+        ctx.fillRect(3000, FLOOR + 18, 2200, 540 - FLOOR);
+        ctx.fillStyle = "#d6b06a"; // Top layer fine gravel / clay path
+        ctx.fillRect(0, FLOOR, W, 18);
 
-        // High zone (70 to 100 kPa = 30% of bar)
-        ctx.fillStyle = '#7f1d1d';
-        ctx.fillRect(barX + barW * 0.70, barY, barW * 0.30, barH);
+        // Sector Banners
+        this.drawPhase5SectorBanner(ctx, 90, "1", "CÉLULA DE RESÍDUOS", "Compactação e Cobertura", "#e8ad45");
+        this.drawPhase5SectorBanner(ctx, 1760, "2", "USINA DE BIOGÁS", "Geração de Energia Limpa", "#53c985");
+        this.drawPhase5SectorBanner(ctx, 3060, "3", "TRATAMENTO DE CHORUME", "Aeração & Laboratório ETE", "#55c9eb");
 
-        // Frame
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(barX, barY, barW, barH);
+        // Sector Components
+        this.drawPhase5Entry(ctx);
+        this.drawPhase5WasteSector(ctx);
+        this.drawPhase5BiogasSector(ctx);
+        this.drawPhase5LagoonSector(ctx);
+        this.drawPhase5Lab(ctx);
+    }
 
-        // Green Zone Label inside bar
-        ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#86efac';
-        ctx.textAlign = 'center';
-        ctx.fillText('✔ ZONA IDEAL (40-70 kPa)', barX + barW * 0.55, barY + 16);
-
-        // Current Pressure Needle / Cursor
-        const pressVal = Math.max(0, Math.min(100, this.biogasPressure || 50));
-        const cursorX = barX + (barW * pressVal) / 100;
-        const isOptimal = pressVal >= 40 && pressVal <= 70;
-
-        ctx.fillStyle = isOptimal ? '#22c55e' : '#ef4444';
-        ctx.beginPath();
-        ctx.moveTo(cursorX - 7, barY - 6);
-        ctx.lineTo(cursorX + 7, barY - 6);
-        ctx.lineTo(cursorX, barY + barH + 4);
-        ctx.closePath();
+    drawPhase5SectorBanner(ctx, x, number, title, subtitle, color) {
+        ctx.save();
+        ctx.translate(x, 114);
+        this.drawPhase5RoundedRect(ctx, 0, 0, 360, 68, 10);
+        ctx.fillStyle = "rgba(6, 28, 19, 0.92)";
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Line 2: Digital Readout & Controls
+        // Circle with sector number
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(36, 34, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#102319";
+        ctx.font = '900 22px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText(number, 36, 43);
+
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#fff7d6";
+        ctx.font = 'bold 11px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText(title, 72, 30);
+        ctx.fillStyle = "#cfe8d3";
+        ctx.font = '11px "Fredoka", sans-serif';
+        ctx.fillText(subtitle, 72, 52);
+        ctx.restore();
+    }
+
+    drawPhase5Entry(ctx) {
+        const FLOOR = this.phase5Floor || 448;
+        ctx.save();
+        // Entrance pillars
+        ctx.fillStyle = "#dce7cf";
+        ctx.fillRect(25, FLOOR - 170, 16, 170);
+        ctx.fillRect(390, FLOOR - 170, 16, 170);
+
+        // Signboard
+        ctx.fillStyle = "#17392a";
+        this.drawPhase5RoundedRect(ctx, 40, FLOOR - 160, 352, 54, 8);
+        ctx.fill();
+        ctx.strokeStyle = "#d8ec75";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#efffc6";
+        ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText("ATERRO SANITÁRIO", 216, FLOOR - 134);
+        ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
+        ctx.fillStyle = "#7ee3aa";
+        ctx.fillText("PARNAMIRIM / SELIM", 216, FLOOR - 116);
+        ctx.restore();
+    }
+
+    drawPhase5WasteSector(ctx) {
+        const FLOOR = this.phase5Floor || 448;
+
+        // Jazida de terra (soil deposit mound)
+        ctx.save();
+        ctx.fillStyle = "#8f582f";
+        ctx.beginPath();
+        ctx.moveTo(225, FLOOR);
+        ctx.quadraticCurveTo(330, FLOOR - 75, 455, FLOOR);
+        ctx.fill();
+        ctx.strokeStyle = "#e6bc68";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = "#fff1bd";
         ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillStyle = isOptimal ? '#4ade80' : '#ef4444';
-        ctx.fillText(`PRESSÃO: ${Math.round(pressVal)} kPa [${isOptimal ? 'REGIME IDEAL!' : 'FORA DA ZONA!'}]`, dashX + 20, dashY + 68);
-
-        ctx.font = '7px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#94a3b8';
-        ctx.textAlign = 'right';
-        ctx.fillText('CONTROLES: [← A / → D] | [ESPACO/K] PURGAR', dashX + dashW - 16, dashY + 68);
-
-        // 2. Power Generation Bar (0 to 10.0 MW)
-        const pwrY = dashY + 78;
-        const pwrH = 22;
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(barX, pwrY, barW, pwrH);
-
-        const pwrPercent = Math.min(1, (this.biogasPowerMW || 0) / 10.0);
-        const pwrGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-        pwrGrad.addColorStop(0, '#0284c7');
-        pwrGrad.addColorStop(1, '#38bdf8');
-        ctx.fillStyle = pwrGrad;
-        ctx.fillRect(barX, pwrY, Math.floor(barW * pwrPercent), pwrH);
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(barX, pwrY, barW, pwrH);
-
-        ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.fillText(`ENERGIA GERADA: ${(this.biogasPowerMW || 0).toFixed(1)} / 10.0 MW (${Math.round(pwrPercent * 100)}%)`, barX + barW / 2, pwrY + 15);
-
-        // Status Bottom Line
-        ctx.font = 'bold 7.5px "Press Start 2P", monospace, sans-serif';
-        ctx.textAlign = 'center';
-        if (this.biogasPowerMW >= 10.0) {
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('⚡ 10.0 MW GERADOS! 50.000 CASAS ABASTECIDAS COM SUCESSO!', dashX + dashW / 2, dashY + 120);
-            ctx.fillStyle = '#facc15';
-            ctx.fillText('APERTE O BOTÃO DE PULO [ESPACO / K / JOYSTICK] PARA AVANCAR ▶', dashX + dashW / 2, dashY + 138);
-        } else if (isOptimal) {
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('⚡ GERANDO ENERGIA LIMPA (+2.4 MW/s)! MANTENHA A PRESSÃO!', dashX + dashW / 2, dashY + 124);
-            ctx.fillStyle = '#94a3b8';
-            ctx.fillText('Filtro de Condensado: ' + Math.round(this.filterMoisture || 0) + '% (Purgar c/ Espaço se subir)', dashX + dashW / 2, dashY + 140);
-        } else {
-            ctx.fillStyle = '#facc15';
-            ctx.fillText('⚠ AJUSTE A PRESSÃO P/ DENTRO DA ZONA VERDE (40-70 kPa)!', dashX + dashW / 2, dashY + 124);
-            ctx.fillStyle = '#94a3b8';
-            ctx.fillText('Use as teclas [A / ←] ou [D / →] para regular a válvula de metano', dashX + dashW / 2, dashY + 140);
-        }
+        ctx.textAlign = "center";
+        ctx.fillText("JAZIDA DE TERRA", 340, FLOOR - 35);
         ctx.restore();
 
-        // 3. PROMINENT ARCADE ADVANCE PROMPT WHEN BIOGAS COMPLETES
-        if (this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-            const promptW = 640;
-            const promptH = 92;
-            const promptX = 2530;
-            const promptY = 280;
+        if (this.phase5Stage === 'GET_SOIL' && Math.abs((this.phase5Tractor.x + 110) - 340) <= 150) {
+            this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: CARREGAR TERRA", "Para cobrir a célula", 340, FLOOR - 85);
+        }
 
-            const pulse = 0.85 + Math.sin((this.gameTime || 0) * 8) * 0.15;
+        // 4 Waste Mounds (Zones A, B, C, D)
+        const zones = this.phase5Zones || [];
+        for (let i = 0; i < zones.length; i++) {
+            const zone = zones[i];
+            const comp = (zone.comp || 0) / 100;
+            const cover = (zone.cover || 0) / 100;
+            const pileH = 65 - comp * 38; // Starts 65px high, flattens to 27px
+            const center = zone.x + zone.w / 2;
 
+            // Base mound
             ctx.save();
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
-            ctx.fillRect(promptX - promptW / 2, promptY - promptH / 2, promptW, promptH);
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(promptX - promptW / 2, promptY - promptH / 2, promptW, promptH);
-
-            ctx.textAlign = 'center';
-            ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillText('⚡ USINA 100% CARREGADA (10.0 MW GERADOS)!', promptX, promptY - 14);
-
-            ctx.font = 'bold 11px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
-            ctx.fillText('⭐ APERTE O BOTÃO DE PULO [ESPACO / K / JOYSTICK] PARA AVANCAR ▶', promptX, promptY + 18);
-            ctx.restore();
-        }
-    }
-
-    renderPhase5Sector3(ctx) {
-        // Sector 3: Complexo de 3 Lagoas & Laboratório ETE (x: 3350 to 5200)
-        const groundY = 460;
-        ctx.fillStyle = '#15803d';
-        ctx.fillRect(3350, groundY, 1850, 80);
-
-        const trt = (this.chorumeTreated || 0) / 100;
-
-        // 1. Lagoa 1: Decantação Anaeróbia de Lodo (x: 3420 to 3840)
-        ctx.fillStyle = '#0f172a';
-        ctx.beginPath();
-        ctx.moveTo(3420, 430);
-        ctx.lineTo(3460, 490);
-        ctx.lineTo(3800, 490);
-        ctx.lineTo(3840, 430);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = '#020617';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(3415, 430);
-        ctx.lineTo(3460, 490);
-        ctx.lineTo(3800, 490);
-        ctx.lineTo(3845, 430);
-        ctx.stroke();
-
-        // Dark Leachate Water (Chorume Bruto)
-        ctx.fillStyle = '#3a2012';
-        ctx.fillRect(3445, 442, 370, 44);
-
-        ctx.font = '7px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#fef08a';
-        ctx.textAlign = 'center';
-        ctx.fillText('1. DECANTAÇÃO ANAERÓBIA', 3630, 436);
-
-        // 2. Lagoa 2: Aeração Facultativa com 3 Aeradores Mecânicos (x: 3880 to 4680)
-        ctx.fillStyle = '#0f172a';
-        ctx.beginPath();
-        ctx.moveTo(3880, 430);
-        ctx.lineTo(3920, 490);
-        ctx.lineTo(4640, 490);
-        ctx.lineTo(4680, 430);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = '#020617';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(3875, 430);
-        ctx.lineTo(3920, 490);
-        ctx.lineTo(4640, 490);
-        ctx.lineTo(4685, 430);
-        ctx.stroke();
-
-        // Dynamic Wastewater color transition
-        const r = Math.round(58 + (40 * (1 - trt)));
-        const g = Math.round(35 + trt * 150);
-        const b = Math.round(20 + trt * 220);
-        const waterColor = `rgb(${r}, ${g}, ${b})`;
-
-        ctx.fillStyle = waterColor;
-        ctx.beginPath();
-        ctx.moveTo(3900, 440);
-        for (let wx = 3900; wx <= 4660; wx += 25) {
-            const wy = 440 + Math.sin(this.gameTime * 3 + wx * 0.05) * 3;
-            ctx.lineTo(wx, wy);
-        }
-        ctx.lineTo(4635, 485);
-        ctx.lineTo(3925, 485);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.font = '7px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#86efac';
-        ctx.textAlign = 'center';
-        ctx.fillText('2. AERAÇÃO FACULTATIVA (3 AERADORES)', 4280, 436);
-
-        // 3. Lagoa 3: Polimento e Reúso (x: 4720 to 5000)
-        ctx.fillStyle = '#0f172a';
-        ctx.beginPath();
-        ctx.moveTo(4720, 430);
-        ctx.lineTo(4750, 490);
-        ctx.lineTo(4970, 490);
-        ctx.lineTo(5000, 430);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = '#020617';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(4715, 430);
-        ctx.lineTo(4750, 490);
-        ctx.lineTo(4970, 490);
-        ctx.lineTo(5005, 430);
-        ctx.stroke();
-
-        // Crystal-clear turquoise water
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(4740, 442, 240, 44);
-
-        ctx.font = '7px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#38bdf8';
-        ctx.textAlign = 'center';
-        ctx.fillText('3. POLIMENTO & REÚSO 🌱', 4860, 436);
-
-        // Water lilies on Lagoon 3
-        ctx.fillStyle = '#22c55e';
-        for (let lx = 4760; lx < 4960; lx += 45) {
-            const ly = 444 + Math.sin(this.gameTime * 2 + lx) * 2;
+            ctx.fillStyle = cover > 0 ? "#a86f3d" : "#2c2924";
             ctx.beginPath();
-            ctx.arc(lx, ly, 7, 0, Math.PI * 1.8);
+            ctx.moveTo(zone.x - 14, FLOOR);
+            ctx.quadraticCurveTo(center, FLOOR - pileH, zone.x + zone.w + 14, FLOOR);
+            ctx.closePath();
             ctx.fill();
-            ctx.fillStyle = '#f472b6';
-            ctx.beginPath();
-            ctx.arc(lx, ly - 3, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#22c55e';
-        }
 
-        // Boardwalk / Inspection Pier (x: 3380 to 5160, y: 420)
-        ctx.fillStyle = '#78350f';
-        ctx.fillRect(3380, 420, 1780, 10);
-        ctx.fillStyle = '#b45309';
-        for (let px = 3390; px < 5160; px += 20) {
-            ctx.fillRect(px, 420, 2, 10);
-        }
+            // Scattered waste items inside pile (visible if not fully covered)
+            if (cover < 0.98) {
+                ctx.globalAlpha = 1 - cover;
+                const trashImg = this.assets['item_trash_bag_raw'];
+                const bottleImg = this.assets['item_pet_bottle_raw'];
+                const boxImg = this.assets['item_paper_box_raw'];
 
-        // 3 Floating Surface Aerators in Lagoa 2
-        const aeratorImg = this.assets['sc_lagoa_aerador'];
-        this.aerators.forEach((a) => {
-            const bobY = Math.sin(a.bobPhase) * 3;
+                for (let k = 0; k < 6; k++) {
+                    const tx = zone.x + 12 + (k * 27) % (zone.w - 24);
+                    const ty = FLOOR - 16 - (k % 3) * 11 * (1 - comp * 0.5);
+                    if (k % 3 === 0 && trashImg) {
+                        ctx.drawImage(trashImg, tx, ty, 22, 22);
+                    } else if (k % 3 === 1 && bottleImg) {
+                        ctx.drawImage(bottleImg, tx, ty, 10, 22);
+                    } else if (boxImg) {
+                        ctx.drawImage(boxImg, tx, ty, 20, 20);
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+            }
 
-            ctx.save();
-            ctx.translate(a.x, a.y + bobY);
-
-            if (aeratorImg) {
-                ctx.drawImage(aeratorImg, 0, 0, a.w, a.h);
-            } else {
-                // Floats
-                ctx.fillStyle = '#0284c7';
+            // Clay cover layer over mound
+            if (cover > 0) {
+                ctx.fillStyle = `rgba(205, 145, 70, ${cover})`;
                 ctx.beginPath();
-                ctx.roundRect(5, 40, 25, 14, 6);
-                ctx.roundRect(35, 40, 25, 14, 6);
-                ctx.roundRect(65, 40, 25, 14, 6);
+                ctx.moveTo(zone.x - 14, FLOOR);
+                ctx.quadraticCurveTo(center, FLOOR - pileH - cover * 7, zone.x + zone.w + 14, FLOOR);
+                ctx.closePath();
                 ctx.fill();
-
-                // Frame
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(15, 40);
-                ctx.lineTo(47, 18);
-                ctx.lineTo(75, 40);
-                ctx.stroke();
-
-                // Motor
-                ctx.fillStyle = '#1e3a8a';
-                ctx.fillRect(40, 6, 16, 16);
-
-                // Spinning Paddle Wheel
-                ctx.strokeStyle = '#94a3b8';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                const ang = this.gameTime * (a.active ? 15 : 1);
-                ctx.arc(47, 46, 12, ang, ang + Math.PI);
-                ctx.stroke();
             }
 
-            // Aerator Status Badge
-            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-            ctx.textAlign = 'center';
-            if (a.active) {
-                ctx.fillStyle = '#4ade80';
-                ctx.fillText('✔ 120 RPM', 45, -6);
-            } else {
-                ctx.fillStyle = '#facc15';
-                ctx.fillText('LIGAR [PULO]', 45, -6);
-            }
+            // Zone Status Badge
+            const badgeW = 76;
+            const badgeH = 22;
+            this.drawPhase5RoundedRect(ctx, center - badgeW / 2, FLOOR - pileH - 32, badgeW, badgeH, 6);
+            ctx.fillStyle = "rgba(10, 29, 20, 0.9)";
+            ctx.fill();
+            ctx.strokeStyle = zone.cover >= 100 || (zone.comp >= 100 && this.phase5Stage !== 'COVER') ? "#8cec78" : "#ffe28a";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = zone.cover >= 100 || (zone.comp >= 100 && this.phase5Stage !== 'COVER') ? "#8cec78" : "#ffe28a";
+            ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+            ctx.textAlign = "center";
+            const val = this.phase5Stage === 'COVER' || this.phase5Stage === 'PARK' ? Math.round(zone.cover) : Math.round(zone.comp);
+            ctx.fillText(`${zone.id} · ${val}%`, center, FLOOR - pileH - 17);
             ctx.restore();
-        });
-
-        // 4. Estação Laboratorial ETE (x: 5020 to 5160)
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(5020, 310, 130, 110);
-        ctx.fillStyle = '#0284c7';
-        ctx.fillRect(5015, 300, 140, 14);
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(5030, 325, 110, 48);
-
-        // Digital screen
-        ctx.fillStyle = '#020617';
-        ctx.fillRect(5035, 330, 100, 38);
-        ctx.font = '6.5px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = this.labSampleTested ? '#4ade80' : '#facc15';
-        ctx.textAlign = 'center';
-        ctx.fillText('LAB ETE', 5085, 344);
-        ctx.fillText(this.labSampleTested ? 'pH 7.0 ✔' : 'COLETA ⏳', 5085, 358);
-
-        // Test tube rack
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(5050, 395, 60, 8);
-        for (let t = 0; t < 5; t++) {
-            ctx.fillStyle = this.labSampleTested ? '#38bdf8' : '#e0f2fe';
-            ctx.fillRect(5055 + t * 10, 380, 6, 18);
         }
 
-        // Action prompt if near LAB in LAB_ANALYSIS
-        if (this.phase5State === 'LAB_ANALYSIS' && !this.labSampleTested) {
-            ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = '#facc15';
-            ctx.textAlign = 'center';
-            ctx.fillText('🧪 COLETAR LAUDO [ESPACO / K / JOYSTICK]', 5085, 290);
+        // Tractor Parking Bay
+        ctx.save();
+        ctx.strokeStyle = this.phase5Stage === 'PARK' ? "#ffe45c" : "rgba(255, 255, 255, 0.35)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 8]);
+        ctx.strokeRect(1455, FLOOR - 130, 200, 126);
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = this.phase5Stage === 'PARK' ? "#ffe45c" : "rgba(255, 255, 255, 0.6)";
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText("ESTACIONAMENTO", 1555, FLOOR - 140);
+        ctx.restore();
+
+        if (this.phase5Stage === 'PARK' && Math.abs((this.phase5Tractor.x + 110) - 1550) <= 145) {
+            this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: DESCER DO TRATOR", "Célula concluída!", 1555, FLOOR - 80);
         }
 
-        // Sector 3: 3 Lagoas & Laboratório ETE (sky kept clean for HUD guide)
+        this.drawPhase5Tractor(ctx);
+    }
 
-        // 5. PROMINENT ARCADE ADVANCE PROMPT WHEN CAJULIM COMPLETES LAB
-        if (this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-            const promptW = 660;
-            const promptH = 92;
-            const promptX = 4720;
-            const promptY = 230;
+    drawPhase5Tractor(ctx) {
+        const t = this.phase5Tractor;
+        if (!t) return;
+        const FLOOR = this.phase5Floor || 448;
+        const tratorImg = this.assets['sc_trator_compactador'];
 
-            const pulse = 0.85 + Math.sin((this.gameTime || 0) * 8) * 0.15;
+        ctx.save();
+        const drawX = t.facing < 0 ? t.x : t.x + t.w;
+        ctx.translate(drawX, t.y);
+        ctx.scale(-t.facing, 1);
 
+        if (tratorImg && tratorImg.complete && tratorImg.naturalWidth > 0) {
+            ctx.drawImage(tratorImg, 0, 0, t.w, t.h);
+        } else {
+            // Procedural heavy compactor tractor fallback
+            ctx.fillStyle = "#eab308";
+            ctx.fillRect(20, 25, t.w - 40, t.h - 45);
+            // Cab
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(60, 5, 70, 45);
+            // Sheepfoot compactor drum
+            ctx.fillStyle = "#64748b";
+            ctx.beginPath();
+            ctx.arc(40, t.h - 22, 22, 0, Math.PI * 2);
+            ctx.arc(t.w - 40, t.h - 22, 22, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Cajulim sprite inside tractor cabin when driving!
+        if (this.phase5Mode === 'TRACTOR') {
             ctx.save();
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
-            ctx.fillRect(promptX - promptW / 2, promptY - promptH / 2, promptW, promptH);
-            ctx.strokeStyle = '#4ade80';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(promptX - promptW / 2, promptY - promptH / 2, promptW, promptH);
-
-            ctx.textAlign = 'center';
-            ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('🎉 AGUA 100% PURIFICADA! LAUDO APROVADO!', promptX, promptY - 14);
-
-            ctx.font = 'bold 10.5px "Press Start 2P", monospace, sans-serif';
-            ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
-            ctx.fillText('⭐ APERTE O BOTÃO DE PULO [ESPACO / K / JOYSTICK] P/ A HISTÓRIA ▶', promptX, promptY + 18);
+            this.drawPhase5RoundedRect(ctx, 95, 12, 45, 48, 6);
+            ctx.clip();
+            const portrait = this.assets['p_portrait'];
+            if (portrait && portrait.complete && portrait.naturalWidth > 0) {
+                ctx.drawImage(portrait, 95, 12, 45, 48);
+            } else {
+                ctx.fillStyle = "#f59e0b";
+                ctx.fillRect(95, 12, 45, 48);
+            }
+            ctx.fillStyle = "rgba(84, 191, 211, 0.2)";
+            ctx.fillRect(95, 12, 45, 48);
             ctx.restore();
+
+            ctx.strokeStyle = "rgba(215, 247, 249, 0.7)";
+            ctx.lineWidth = 1.5;
+            this.drawPhase5RoundedRect(ctx, 95, 12, 45, 48, 6);
+            ctx.stroke();
+        }
+
+        // Soil load visual in front blade if loaded
+        if (this.phase5SoilLoaded) {
+            ctx.fillStyle = "#8f582f";
+            ctx.beginPath();
+            ctx.arc(t.w - 15, t.h - 30, 16, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+
+        // Prompt to enter tractor if player is near
+        if (this.phase5Stage === 'APPROACH' && Math.abs(this.player.x - (t.x + 110)) <= 130) {
+            this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: ENTRAR NO TRATOR", "Iniciar compactação", t.x + 110, t.y - 30);
         }
     }
-    renderPhase5Particles(ctx) {
-        if (!this.phase5Particles) return;
-        this.phase5Particles.forEach(pt => {
-            ctx.fillStyle = pt.color;
+
+    drawPhase5BiogasSector(ctx) {
+        const FLOOR = this.phase5Floor || 448;
+
+        // Underground collection pipeline connecting Sector 1 to Sector 2
+        ctx.save();
+        ctx.strokeStyle = "#273f3d";
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.moveTo(1650, FLOOR - 20);
+        ctx.lineTo(1940, FLOOR - 20);
+        ctx.lineTo(1940, FLOOR - 110);
+        ctx.lineTo(2160, FLOOR - 110);
+        ctx.stroke();
+        ctx.strokeStyle = "#84aaa1";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Biogas Plant Facility
+        const plantImg = this.assets['sc_biogas_plant'];
+        ctx.globalAlpha = this.phase5PowerComplete ? 1.0 : 0.88;
+        if (plantImg && plantImg.complete && plantImg.naturalWidth > 0) {
+            ctx.drawImage(plantImg, 1960, FLOOR - 230, 520, 230);
+        } else {
+            // Procedural Biogas digester & generator building
+            ctx.fillStyle = "#1e3a34";
+            ctx.fillRect(1980, FLOOR - 200, 480, 200);
+            ctx.fillStyle = "#2a544b";
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+            ctx.arc(2120, FLOOR - 120, 75, 0, Math.PI * 2);
             ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Animated clean power energy flow when active
+        if (this.phase5PowerComplete) {
+            for (let x = 2080; x < 2520; x += 55) {
+                const pulse = 0.5 + Math.sin((this.gameTime || 0) * 6 + x) * 0.3;
+                ctx.fillStyle = `rgba(255, 235, 100, ${pulse})`;
+                ctx.fillRect(x, FLOOR - 165, 18, 10);
+            }
+        }
+
+        // Accessible control terminal stand
+        const panelX = 2290;
+        const panelY = FLOOR - 105;
+        this.drawPhase5RoundedRect(ctx, panelX, panelY, 115, 105, 8);
+        ctx.fillStyle = "#122b28";
+        ctx.fill();
+        ctx.strokeStyle = this.phase5Stage === 'TO_BIOGAS' ? "#dff360" : "#55c98d";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Screen on terminal
+        ctx.fillStyle = "#bcefe0";
+        ctx.fillRect(panelX + 15, panelY + 14, 85, 38);
+        // Status indicator LED
+        ctx.fillStyle = this.phase5PowerComplete ? "#2fc76d" : "#dfb540";
+        ctx.beginPath();
+        ctx.arc(panelX + 28, panelY + 68, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#efffe7";
+        ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText("PAINEL CH₄", panelX + 57, panelY + 92);
+        ctx.restore();
+
+        if (this.phase5Stage === 'TO_BIOGAS' && Math.abs((this.player.x + this.player.w / 2) - (panelX + 57)) <= 120) {
+            this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: REGULAR USINA", "Controle de Pressão CH4", panelX + 57, panelY - 30);
+        }
+
+        // Security gate between Sector 2 and Sector 3
+        ctx.save();
+        ctx.fillStyle = this.phase5PowerComplete ? "rgba(42, 172, 99, 0.2)" : "rgba(15, 35, 27, 0.85)";
+        ctx.fillRect(2750, FLOOR - 200, 28, 200);
+        ctx.fillRect(2920, FLOOR - 200, 28, 200);
+
+        if (!this.phase5PowerComplete) {
+            ctx.fillStyle = "rgba(14, 31, 24, 0.85)";
+            ctx.fillRect(2778, FLOOR - 180, 142, 180);
+            ctx.fillStyle = "#f0d966";
+            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            ctx.textAlign = "center";
+            ctx.fillText("USINA EM", 2849, FLOOR - 105);
+            ctx.fillText("AJUSTE", 2849, FLOOR - 85);
+        }
+        ctx.restore();
+    }
+
+    drawPhase5LagoonSector(ctx) {
+        const FLOOR = this.phase5Floor || 448;
+
+        // Leachate lagoon basin with aeration ripples
+        ctx.save();
+        ctx.fillStyle = "#1e383e";
+        ctx.fillRect(3050, FLOOR - 10, 1500, 540 - (FLOOR - 10));
+
+        // Water surface waves
+        ctx.fillStyle = "#2f7890";
+        for (let x = 3070; x < 4530; x += 45) {
+            const wave = Math.sin((this.gameTime || 0) * 2.5 + x * 0.02) * 4;
+            ctx.fillRect(x, FLOOR + 12 + wave, 28, 3);
+            ctx.fillStyle = "#53aabd";
+            ctx.fillRect(x + 14, FLOOR + 38 - wave, 22, 2);
+            ctx.fillStyle = "#2f7890";
+        }
+
+        // Elevated safety gangway / walkway for Cajulim
+        ctx.fillStyle = "#744b2b";
+        ctx.fillRect(3010, FLOOR - 8, 1570, 22);
+        ctx.fillStyle = "#d8aa5e";
+        for (let x = 3020; x < 4570; x += 42) {
+            ctx.fillRect(x, FLOOR - 6, 32, 4);
+        }
+        // Safety handrail
+        ctx.strokeStyle = "#183a42";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(3020, FLOOR - 32);
+        ctx.lineTo(4570, FLOOR - 32);
+        ctx.stroke();
+        for (let x = 3030; x < 4580; x += 80) {
+            ctx.fillRect(x, FLOOR - 32, 5, 26);
+        }
+
+        // 3 Floating Aerators
+        const aeratorImg = this.assets['sc_lagoa_aerador'];
+        const aerators = this.phase5Aerators || [];
+
+        aerators.forEach((a, index) => {
+            const bob = a.active ? Math.sin((this.gameTime || 0) * 4 + index) * 3 : 0;
+            ctx.globalAlpha = a.active ? 1.0 : 0.75;
+            if (aeratorImg && aeratorImg.complete && aeratorImg.naturalWidth > 0) {
+                ctx.drawImage(aeratorImg, a.x - 70, FLOOR - 130 + bob, 140, 140);
+            } else {
+                // Procedural floating aerator
+                ctx.fillStyle = "#334155";
+                ctx.fillRect(a.x - 45, FLOOR - 40 + bob, 90, 32);
+                ctx.fillStyle = "#0284c7";
+                ctx.beginPath();
+                ctx.arc(a.x, FLOOR - 35 + bob, 22, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Water spray & oxygen rings if active
+            if (a.active) {
+                const ringPulse = 0.45 + Math.sin((this.gameTime || 0) * 8 + index) * 0.2;
+                ctx.strokeStyle = `rgba(138, 232, 255, ${ringPulse})`;
+                ctx.lineWidth = 3;
+                for (let ring = 0; ring < 3; ring++) {
+                    ctx.beginPath();
+                    ctx.ellipse(a.x, FLOOR + 45, 45 + ring * 18, 9 + ring * 4, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            // Gangway control switch post
+            this.drawPhase5RoundedRect(ctx, a.x - 38, FLOOR - 80, 76, 52, 6);
+            ctx.fillStyle = a.active ? "#2cc874" : "#142d28";
+            ctx.fill();
+            ctx.strokeStyle = a.active ? "#bff37a" : "#f1cb58";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = "#efffe9";
+            ctx.font = 'bold 6px "Press Start 2P", monospace, sans-serif';
+            ctx.textAlign = "center";
+            ctx.fillText(`PAINEL ${index + 1}`, a.x, FLOOR - 62);
+            ctx.fillStyle = a.active ? "#e3ffc9" : "#ffdf72";
+            ctx.fillText(a.active ? "LIGADO ✓" : "LIGAR", a.x, FLOOR - 44);
+
+            if (this.phase5Stage === 'TO_LAGOONS' && !a.active && Math.abs((this.player.x + this.player.w / 2) - a.x) <= 100) {
+                this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: LIGAR AERADOR", `Ativar oxigenação #${index + 1}`, a.x, FLOOR - 110);
+            }
         });
+
+        ctx.restore();
+    }
+
+    drawPhase5Lab(ctx) {
+        const FLOOR = this.phase5Floor || 448;
+        ctx.save();
+
+        // ETE Analytical Laboratory Building
+        const labX = 4630;
+        const labY = FLOOR - 200;
+        const labW = 370;
+        const labH = 200;
+
+        ctx.fillStyle = "#e9ead6";
+        ctx.fillRect(labX, labY, labW, labH);
+        ctx.fillStyle = "#376b64";
+        ctx.fillRect(labX - 15, labY - 22, labW + 30, 26);
+
+        // Header signboard
+        ctx.fillStyle = "#143b33";
+        this.drawPhase5RoundedRect(ctx, labX + 60, labY + 12, 250, 36, 6);
+        ctx.fill();
+        ctx.fillStyle = "#c9f39c";
+        ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText("LABORATÓRIO ETE", labX + 185, labY + 34);
+
+        // Windows
+        ctx.fillStyle = "#5eb9d1";
+        ctx.fillRect(labX + 25, labY + 65, 75, 55);
+        ctx.fillRect(labX + 225, labY + 65, 75, 55);
+        ctx.strokeStyle = "#173d39";
+        ctx.lineWidth = 5;
+        ctx.strokeRect(labX + 25, labY + 65, 75, 55);
+        ctx.strokeRect(labX + 225, labY + 65, 75, 55);
+
+        // Door
+        ctx.fillStyle = "#173d39";
+        ctx.fillRect(labX + 130, labY + 80, 65, 120);
+        ctx.fillStyle = this.phase5AnalysisDone ? "#68e097" : "#f0d36b";
+        ctx.beginPath();
+        ctx.arc(labX + 182, labY + 135, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sample analysis kiosk on the right
+        this.drawPhase5RoundedRect(ctx, 5030, FLOOR - 130, 115, 130, 8);
+        ctx.fillStyle = "#20483e";
+        ctx.fill();
+        ctx.strokeStyle = "#64cde4";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = "#e9fff2";
+        ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText("AMOSTRA", 5087, FLOOR - 100);
+        ctx.fillStyle = "#78d7ea";
+        ctx.fillRect(5057, FLOOR - 85, 60, 38);
+
+        ctx.fillStyle = this.phase5AnalysisDone ? "#72eb9f" : "#eef8cf";
+        ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText(this.phase5AnalysisDone ? "pH 7.0 ✓" : "AGUARDE", 5087, FLOOR - 24);
+
+        ctx.restore();
+
+        if (this.phase5Stage === 'TO_LAB' && Math.abs((this.player.x + this.player.w / 2) - 4810) <= 130) {
+            this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: ANALISAR AMOSTRA", "Laudo Químico & pH", 4810, FLOOR - 235);
+        }
+    }
+
+    drawPhase5InteractionPrompts(ctx) {
+        // Prompts are drawn in their respective sector draw methods above for world-space proximity!
+    }
+
+    drawPhase5WorldPrompt(ctx, text, subtext, x, y) {
+        const pulse = 0.94 + Math.sin((this.phase5TipPulse || 0) * 7) * 0.06;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(pulse, pulse);
+
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        const w = Math.max(210, ctx.measureText(text).width + 36);
+        const h = subtext ? 42 : 32;
+
+        this.drawPhase5RoundedRect(ctx, -w / 2, -h / 2, w, h, 8);
+        ctx.fillStyle = "rgba(5, 25, 17, 0.94)";
+        ctx.fill();
+        ctx.strokeStyle = "#dff56a";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#f5ffd0";
+        ctx.textAlign = "center";
+        if (subtext) {
+            ctx.fillText(text, 0, -3);
+            ctx.fillStyle = "#86efac";
+            ctx.font = '10px "Fredoka", sans-serif';
+            ctx.fillText(subtext, 0, 12);
+        } else {
+            ctx.fillText(text, 0, 3);
+        }
+
+        // Pointer triangle
+        ctx.beginPath();
+        ctx.moveTo(-7, h / 2);
+        ctx.lineTo(7, h / 2);
+        ctx.lineTo(0, h / 2 + 8);
+        ctx.closePath();
+        ctx.fillStyle = "#dff56a";
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    drawPhase5Particles(ctx) {
+        if (!this.phase5Particles || this.phase5Particles.length === 0) return;
+        ctx.save();
+        this.phase5Particles.forEach(p => {
+            const alpha = Math.max(0, Math.min(1, p.life / (p.maxLife || 1)));
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = p.color || '#facc15';
+            ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        });
+        ctx.restore();
+    }
+
+    drawPhase5BiogasPanel(ctx) {
+        // Screen-space modal dialog (960x540 canvas)
+        ctx.fillStyle = "rgba(1, 13, 9, 0.82)";
+        ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+        const x = 140;
+        const y = 80;
+        const w = 680;
+        const h = 380;
+
+        this.drawPhase5RoundedRect(ctx, x, y, w, h, 16);
+        ctx.fillStyle = "#0d2b22";
+        ctx.fill();
+        ctx.strokeStyle = this.phase5PowerComplete ? "#8ee685" : "#65d9b1";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Header
+        ctx.fillStyle = "#efffdc";
+        ctx.font = 'bold 14px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("CENTRAL DE BIOGÁS (CH₄)", x + 32, y + 42);
+        ctx.fillStyle = "#8acaaa";
+        ctx.font = '13px "Fredoka", sans-serif';
+        ctx.fillText("O gás metano captado nas células antigas movimenta os motogeradores de energia limpa.", x + 32, y + 68);
+
+        // Gauge Bar
+        const gaugeX = x + 50;
+        const gaugeY = y + 110;
+        const gaugeW = 580;
+        const gaugeH = 64;
+
+        this.drawPhase5RoundedRect(ctx, gaugeX, gaugeY, gaugeW, gaugeH, 10);
+        ctx.fillStyle = "#9d473e"; // Red: low/high dangerous zones
+        ctx.fill();
+
+        // Yellow intermediate zones
+        ctx.fillStyle = "#e0b84c";
+        ctx.fillRect(gaugeX + gaugeW * 0.20, gaugeY, gaugeW * 0.15, gaugeH);
+        ctx.fillRect(gaugeX + gaugeW * 0.70, gaugeY, gaugeW * 0.15, gaugeH);
+
+        // Green optimal zone (40 - 70 kPa)
+        ctx.fillStyle = "#49c579";
+        ctx.fillRect(gaugeX + gaugeW * 0.35, gaugeY, gaugeW * 0.35, gaugeH);
+
+        this.drawPhase5RoundedRect(ctx, gaugeX, gaugeY, gaugeW, gaugeH, 10);
+        ctx.strokeStyle = "#efffdc";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Scale Labels
+        ctx.fillStyle = "rgba(5, 23, 17, 0.9)";
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText("BAIXA", gaugeX + 80, gaugeY + 38);
+        ctx.fillText("FAIXA IDEAL: 40-70 kPa", gaugeX + gaugeW / 2, gaugeY + 38);
+        ctx.fillText("ALTA", gaugeX + gaugeW - 80, gaugeY + 38);
+
+        // Pressure Needle Indicator
+        const pNorm = Math.max(0, Math.min(1, ((this.phase5Pressure || 27) - 10) / 85));
+        const needleX = gaugeX + pNorm * gaugeW;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(needleX, gaugeY - 14);
+        ctx.lineTo(needleX - 10, gaugeY - 30);
+        ctx.lineTo(needleX + 10, gaugeY - 30);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(needleX - 2, gaugeY - 14, 4, gaugeH + 28);
+
+        // Pressure Readout
+        const isIdeal = this.phase5Pressure >= 40 && this.phase5Pressure <= 70;
+        ctx.fillStyle = isIdeal ? "#8cf09e" : "#ffd36c";
+        ctx.font = 'bold 11px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText(`${Math.round(this.phase5Pressure)} kPa · ${isIdeal ? "PRESSÃO ESTÁVEL (IDEAL)" : "AJUSTE AS VÁLVULAS"}`, x + w / 2, y + 220);
+
+        // Stability Progress Bar
+        const prog = Math.min(1, Math.max(0, (this.phase5StableTime || 0) / 6.0));
+        this.drawPhase5RoundedRect(ctx, x + 50, y + 250, 580, 28, 8);
+        ctx.fillStyle = "#071b14";
+        ctx.fill();
+        if (prog > 0) {
+            this.drawPhase5RoundedRect(ctx, x + 52, y + 252, 576 * prog, 24, 6);
+            ctx.fillStyle = this.phase5PowerComplete ? "#79e37e" : "#56c9a0";
+            ctx.fill();
+        }
+
+        ctx.fillStyle = "#f0fbdc";
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText(this.phase5PowerComplete ? "USINA 100% OPERACIONAL · POTÊNCIA 10.0 MW" : `ESTABILIDADE DO FLUXO: ${Math.round(prog * 100)}%`, x + w / 2, y + 268);
+
+        // Instructions Footer
+        ctx.fillStyle = "#b9dec8";
+        ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText(this.phase5PowerComplete ? "PRESSIONE ESPAÇO / E PARA CONTINUAR ▶" : "◄ A/ESQ: DIMINUIR    ·    D/DIR: AUMENTAR ►    ·    ESPAÇO: SAIR", x + w / 2, y + 330);
+    }
+
+    drawPhase5AnalysisPanel(ctx) {
+        // Screen-space modal dialog (960x540 canvas)
+        ctx.fillStyle = "rgba(1, 13, 9, 0.75)";
+        ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+        const x = 200;
+        const y = 140;
+        const w = 560;
+        const h = 260;
+
+        this.drawPhase5RoundedRect(ctx, x, y, w, h, 16);
+        ctx.fillStyle = "#eff6dc";
+        ctx.fill();
+        ctx.strokeStyle = "#4aaf87";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Cajulim portrait
+        const portrait = this.assets['p_portrait'];
+        if (portrait && portrait.complete && portrait.naturalWidth > 0) {
+            ctx.drawImage(portrait, x + 35, y + 45, 100, 100);
+        } else {
+            ctx.fillStyle = "#123a2c";
+            ctx.fillRect(x + 35, y + 45, 100, 100);
+        }
+
+        // Title and description
+        ctx.fillStyle = "#123a2c";
+        ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("ANÁLISE LABORATORIAL", x + 160, y + 55);
+        ctx.font = '13px "Fredoka", sans-serif';
+        ctx.fillText("Cajulim afere o efluente tratado na Estação ETE.", x + 160, y + 82);
+
+        // Progress Bar
+        const prog = Math.min(1, Math.max(0, (this.phase5AnalysisTime || 0) / 2.8));
+        this.drawPhase5RoundedRect(ctx, x + 160, y + 110, 350, 26, 6);
+        ctx.fillStyle = "#c8d8c8";
+        ctx.fill();
+        if (prog > 0) {
+            this.drawPhase5RoundedRect(ctx, x + 162, y + 112, 346 * prog, 22, 5);
+            ctx.fillStyle = "#4acb88";
+            ctx.fill();
+        }
+
+        ctx.fillStyle = "#173d30";
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText(`PROCESSANDO LAUDO: ${Math.round(prog * 100)}%`, x + 160, y + 160);
+
+        ctx.fillStyle = "#477564";
+        ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText("LEITURA DA AMOSTRA: pH 7.0 (ÁGUA PURIFICADA)", x + 160, y + 185);
+
+        if (this.phase5AnalysisDone) {
+            ctx.fillStyle = "#15803d";
+            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            ctx.fillText("✔ TRATAMENTO CONCLUÍDO COM SUCESSO!", x + 160, y + 215);
+        }
+    }
+
+    drawPhase5Message(ctx) {
+        if (!this.phase5Message) return;
+        const alpha = Math.max(0, Math.min(1, this.phase5MessageTimer < 0.5 ? this.phase5MessageTimer * 2 : 1));
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        const msg = this.phase5Message;
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        const msgW = Math.min(840, Math.max(480, ctx.measureText(msg).width + 120));
+        const boxX = (VIRTUAL_WIDTH - msgW) / 2;
+        const boxY = 114;
+        const boxH = 58;
+
+        this.drawPhase5RoundedRect(ctx, boxX, boxY, msgW, boxH, 12);
+        ctx.fillStyle = "rgba(5, 26, 18, 0.94)";
+        ctx.fill();
+        ctx.strokeStyle = "#d8ef6a";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Cajulim mini avatar
+        const portrait = this.assets['p_portrait'];
+        if (portrait && portrait.complete && portrait.naturalWidth > 0) {
+            ctx.drawImage(portrait, boxX + 10, boxY + 6, 46, 46);
+        }
+
+        ctx.fillStyle = "#d9f36d";
+        ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("CAJULIM INFORMA:", boxX + 68, boxY + 20);
+
+        ctx.fillStyle = "#fff8da";
+        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        ctx.fillText(msg, boxX + 68, boxY + 40);
+
+        ctx.restore();
+    }
+
+    drawPhase5RoundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
     }
 
     renderPhase6(ctx) {
@@ -7446,60 +7460,13 @@ class Game {
             ctx.fillText(`PESO: ${curWeight.toLocaleString('pt-BR')}kg`, 380, 28);
             ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
         } else if (this.currentPhase === 5) {
-            if (this.phase5State === 'COMPACTING' || this.phase5State === 'COMPACTING_WAIT_ADVANCE' || this.phase5State === 'SOIL_COVER') {
-                const comp = Math.min(100, Math.round(this.compactionProgress || 0));
-                ctx.fillStyle = '#facc15';
-                ctx.fillText(`ATERRAMENTO: ${comp}%`, 115, 28);
-                const barX = 310;
-                const barY = 16;
-                const barW = 85;
-                const barH = 14;
-                ctx.fillStyle = '#0f172a';
-                ctx.fillRect(barX, barY, barW, barH);
-                ctx.fillStyle = comp >= 100 ? '#22c55e' : '#facc15';
-                ctx.fillRect(barX, barY, Math.floor((barW * comp) / 100), barH);
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(barX, barY, barW, barH);
-                if (this.phase5State === 'COMPACTING_WAIT_ADVANCE') {
-                    ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-                    ctx.fillStyle = '#4ade80';
-                    ctx.fillText('✔ APERTE [PULO]', 310, 42);
-                    ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
-                }
-            } else if (this.phase5State === 'BIOGAS_GENERATION' || this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-                const mw = (this.biogasPowerMW || 0).toFixed(1);
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillText(`BIOGÁS: ${mw}/10.0MW`, 115, 28);
-                const press = Math.round(this.biogasPressure || 50);
-                const isOptimal = press >= 40 && press <= 70;
-                ctx.fillStyle = isOptimal ? '#22c55e' : '#ef4444';
-                ctx.fillText(`CH4: ${press}kPa`, 340, 28);
-                if (this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-                    ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-                    ctx.fillStyle = '#facc15';
-                    ctx.fillText('⚡ APERTE [PULO]', 340, 42);
-                    ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
-                }
-            } else if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS') {
-                const trt = Math.min(100, Math.round(this.chorumeTreated || 0));
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillText(`AERAÇÃO: ${trt}%`, 115, 28);
-                const activeAerators = this.aerators ? this.aerators.filter(a => a.active).length : 0;
-                ctx.fillStyle = activeAerators === 3 ? '#22c55e' : '#facc15';
-                ctx.fillText(`AERADORES: ${activeAerators}/3`, 295, 28);
-            } else if (this.phase5State === 'LAB_ANALYSIS' || this.phase5State === 'CAJULIM_WAIT_ADVANCE' || this.phase5State === 'COMPLETE') {
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillText(`ETE: ${this.labSampleTested ? 'PURIFICADA' : 'COLETA'}`, 115, 28);
-                ctx.fillStyle = this.labSampleTested ? '#4ade80' : '#facc15';
-                ctx.fillText(this.labSampleTested ? 'LAUDO: pH 7.0 ✔' : 'VÁ AO LAB ➜', 315, 28);
-                if (this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-                    ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-                    ctx.fillStyle = '#4ade80';
-                    ctx.fillText('🎉 APERTE [PULO]', 315, 42);
-                    ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
-                }
-            }
+            const info = this.getPhase5StageInfo();
+            ctx.fillStyle = '#86efac';
+            ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
+            ctx.fillText(`SETOR ${info[0]}/3: ${info[1]}`, 115, 28);
+            ctx.fillStyle = '#facc15';
+            ctx.fillText(info[3], 340, 28);
+            ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
         } else if (this.currentPhase === 6) {
             const hp = this.boss ? Math.max(0, this.boss.hp) : 0;
             ctx.fillStyle = '#ef4444';
@@ -7547,6 +7514,7 @@ class Game {
         } else if (this.currentPhase === 5) {
             ctx.fillText('1. PEGA LIXO ✓ | 2. TRANSBORDO ✓ | 3. CARRETA ✓ | 4. RODOVIA ✓ | FASE 5: ATERRO & USINA VERDE 🌱⚡ ★', VIRTUAL_WIDTH / 2, 62);
 
+            const info = this.getPhase5StageInfo();
             // Persistent Mission & Controls Guide Banner (y: 68 to 104)
             ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
             ctx.fillRect(10, 68, VIRTUAL_WIDTH - 20, 36);
@@ -7554,120 +7522,36 @@ class Game {
             ctx.lineWidth = 1.5;
             ctx.strokeRect(10, 68, VIRTUAL_WIDTH - 20, 36);
 
-            let missionText = '';
-            let controlText = '';
-            if (this.phase5State === 'COMPACTING') {
-                missionText = '🎯 ETAPA 1/3 (TRATOR): Aterre e compacte os resíduos na célula dirigindo o trator!';
-                controlText = '🎮 CONTROLES: [←/→] Mover Trator | [ESPACO / K / JOYSTICK] Acelerar Aterramento';
-            } else if (this.phase5State === 'COMPACTING_WAIT_ADVANCE') {
-                missionText = '⭐ ETAPA 1 CONCLUIDA: Célula sanitária totalmente aterrada e compactada!';
-                controlText = '▶ APERTE O BOTÃO DE PULO [ESPACO / K / JOYSTICK] PARA AVANCAR À USINA DE BIOGÁS!';
-            } else if (this.phase5State === 'SOIL_COVER') {
-                missionText = '🎯 ETAPA 1/3 (TRATOR): Conclua o aterramento dirigindo o trator!';
-                controlText = '🎮 CONTROLES: [←/→] Mover Trator | [ESPACO / K / JOYSTICK] Acelerar Aterramento';
-            } else if (this.phase5State === 'BIOGAS_GENERATION') {
-                missionText = '🎯 ETAPA 2/3 (USINA DE BIOGÁS): Regule a pressão na ZONA VERDE (40-70 kPa) para gerar 10.0 MW!';
-                controlText = '🎮 CONTROLES: [← A / → D] Ajustar Pressão | [ESPACO / K / JOYSTICK] Purgar Filtro de Umidade';
-            } else if (this.phase5State === 'BIOGAS_WAIT_ADVANCE') {
-                missionText = '⭐ ETAPA 2 CONCLUIDA: 10.0 MW gerados! 50.000 lares abastecidos com energia limpa!';
-                controlText = '▶ APERTE O BOTÃO DE PULO [ESPACO / K / JOYSTICK] PARA ASSUMIR O CAJULIM NAS LAGOAS!';
-            } else if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS') {
-                missionText = '🎯 ETAPA 3/3 (CAJULIM): Pule nas passarelas para acionar os aeradores das lagoas!';
-                controlText = '🎮 CONTROLES: [←/→] Correr | [ESPACO / K / JOYSTICK] Pular no Deque / Ligar Aeradores';
-            } else if (this.phase5State === 'LAB_ANALYSIS') {
-                missionText = '🎯 ETAPA 3/3 (LABORATÓRIO ETE): Chorume tratado! Caminhe até o laboratório à direita coletar o laudo!';
-                controlText = '🎮 CONTROLES: [→] Andar até o Lab ETE | [ESPACO / K / JOYSTICK] Coletar Amostra de Água';
-            } else if (this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-                missionText = '🎉 ETAPA 3 CONCLUIDA: Água purificada com sucesso (pH 7.0 Neutro)! Conforme CONAMA 430!';
-                controlText = '▶ APERTE O BOTÃO DE PULO [ESPACO / K / JOYSTICK] PARA VER A HISTÓRIA E ENFRENTAR O VILÃO!';
+            let ctrlHint = '🎮 CONTROLES: [A/D ou ◄/►] Mover | [W/ESPAÇO] Pular | [E/ESPAÇO] Interagir';
+            if (this.phase5Mode === 'TRACTOR') {
+                ctrlHint = '🚜 TRATOR: [A/D ou ◄/►] Pilotar sobre montes A-D | [E/ESPAÇO] Interagir';
+            } else if (this.phase5Mode === 'PANEL') {
+                ctrlHint = '⚡ PAINEL DE BIOGÁS: [A/◄] Reduzir Pressão | [D/►] Aumentar Pressão | [ESPAÇO] Sair';
+            } else if (this.phase5Mode === 'ANALYSIS') {
+                ctrlHint = '🔬 LABORATÓRIO ETE: Processando laudo da água tratada...';
             }
 
             ctx.font = 'bold 7.5px "Press Start 2P", monospace, sans-serif';
             ctx.fillStyle = '#facc15';
             ctx.textAlign = 'left';
-            ctx.fillText(missionText, 20, 81);
+            ctx.fillText(`🎯 OBJETIVO: ${info[2]}`, 20, 81);
 
             ctx.fillStyle = '#38bdf8';
-            ctx.fillText(controlText, 20, 96);
+            ctx.fillText(ctrlHint, 20, 96);
 
-            // Interactive Bottom Action Buttons (y: 490 to 528)
-            const pulse = 0.85 + Math.sin((this.gameTime || 0) * 8) * 0.15;
-
-            if (this.phase5State === 'COMPACTING_WAIT_ADVANCE' || this.phase5State === 'BIOGAS_WAIT_ADVANCE' || this.phase5State === 'CAJULIM_WAIT_ADVANCE') {
-                // Prominent Advance Button
-                const btnX = 180, btnY = 490, btnW = 600, btnH = 38;
+            // Action prompt button if near interactable
+            if (this.isNearPhase5Interactable && this.isNearPhase5Interactable()) {
+                const pulse = 0.85 + Math.sin((this.gameTime || 0) * 8) * 0.15;
+                const btnX = 300, btnY = 490, btnW = 360, btnH = 38;
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
                 ctx.fillRect(btnX, btnY, btnW, btnH);
                 ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 2;
                 ctx.strokeRect(btnX, btnY, btnW, btnH);
-                ctx.font = 'bold 9.5px "Press Start 2P", monospace, sans-serif';
+                ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
                 ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
                 ctx.textAlign = 'center';
-                ctx.fillText('⭐ APERTE [ESPACO / K / JOYSTICK] OU CLIQUE AQUI PARA AVANCAR ▶', btnX + btnW / 2, btnY + 24);
-            } else if (this.phase5State === 'COMPACTING' || this.phase5State === 'SOIL_COVER') {
-                const btnX = 300, btnY = 490, btnW = 360, btnH = 38;
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-                ctx.fillRect(btnX, btnY, btnW, btnH);
-                ctx.strokeStyle = '#eab308';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(btnX, btnY, btnW, btnH);
-                ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
-                ctx.fillStyle = '#fef08a';
-                ctx.textAlign = 'center';
-                ctx.fillText('🚜 [ESPACO/K] ACELERAR ATERRAMENTO', btnX + btnW / 2, btnY + 23);
-            } else if (this.phase5State === 'BIOGAS_GENERATION') {
-                // Button 1: Valve -
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-                ctx.fillRect(200, 490, 180, 38);
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(200, 490, 180, 38);
-                ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
-                ctx.fillStyle = '#bae6fd';
-                ctx.textAlign = 'center';
-                ctx.fillText('◀ [A] PRESSÃO -', 290, 513);
-
-                // Button 2: Valve +
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-                ctx.fillRect(400, 490, 180, 38);
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(400, 490, 180, 38);
-                ctx.fillStyle = '#bae6fd';
-                ctx.fillText('[D] PRESSÃO + ▶', 490, 513);
-
-                // Button 3: Purge
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-                ctx.fillRect(600, 490, 220, 38);
-                const warnMoist = this.filterMoisture > 70;
-                ctx.strokeStyle = warnMoist ? '#ef4444' : '#38bdf8';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(600, 490, 220, 38);
-                ctx.fillStyle = warnMoist ? '#fca5a5' : '#7dd3fc';
-                ctx.fillText('💧 [ESPACO/K] PURGAR', 710, 513);
-            } else if (this.phase5State === 'CHORUME_TREATMENT' || this.phase5State === 'CAJULIM_LAGOONS') {
-                const btnX = 300, btnY = 490, btnW = 360, btnH = 38;
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-                ctx.fillRect(btnX, btnY, btnW, btnH);
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(btnX, btnY, btnW, btnH);
-                ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
-                ctx.fillStyle = '#bae6fd';
-                ctx.textAlign = 'center';
-                ctx.fillText('🌀 [ESPACO/K] ATIVAR AERADORES', btnX + btnW / 2, btnY + 23);
-            } else if (this.phase5State === 'LAB_ANALYSIS' && !this.labSampleTested) {
-                const btnX = 300, btnY = 490, btnW = 360, btnH = 38;
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-                ctx.fillRect(btnX, btnY, btnW, btnH);
-                ctx.strokeStyle = '#22c55e';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(btnX, btnY, btnW, btnH);
-                ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
-                ctx.fillStyle = '#86efac';
-                ctx.textAlign = 'center';
-                ctx.fillText('🧪 [ESPACO/K] COLETAR LAUDO', btnX + btnW / 2, btnY + 23);
+                ctx.fillText('⚡ [ESPAÇO / E / CLIQUE] EXECUTAR AÇÃO', btnX + btnW / 2, btnY + 23);
             }
         } else if (this.currentPhase === 6) {
 
@@ -9841,6 +9725,8 @@ class Game {
             this.keys.up = true;
             this.keys.jump = true;
             this.keys.jumpHeld = true;
+            this.keys.action = true;
+            this.actionJustPressed = true;
             this.keyboardJumpHeld = true;
             if (this.player) this.player.jumpBuffer = 0.2;
             if (this.currentPhase === 2 && window.soundManager) window.soundManager.playHorn();
@@ -9856,6 +9742,7 @@ class Game {
             }
         }, () => {
             this.keys.up = false;
+            this.keys.action = false;
             this.keyboardJumpHeld = false;
             if (!this.gamepadJumpHeld) {
                 this.keys.jump = false;
@@ -9865,8 +9752,11 @@ class Game {
 
         bindBtn('btnTouchB', () => {
             this.keys.down = true;
+            this.keys.action = true;
+            this.actionJustPressed = true;
         }, () => {
             this.keys.down = false;
+            this.keys.action = false;
         });
 
         const soundBtn = document.getElementById('btnMobileSound');
