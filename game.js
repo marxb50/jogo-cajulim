@@ -1696,10 +1696,10 @@ class Game {
 
         // Road Traffic Lights (Semáforos) replacing cones!
         this.trafficLights = [
-            { x: 850, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 3.5, waited: false, passed: false },
-            { x: 1950, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 4.0, waited: false, passed: false },
-            { x: 2850, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 3.5, waited: false, passed: false },
-            { x: 3700, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 3.0, waited: false, passed: false }
+            { x: 850, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 1.8, waited: false, passed: false },
+            { x: 1950, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 2.0, waited: false, passed: false },
+            { x: 2850, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 1.8, waited: false, passed: false },
+            { x: 3700, y: ROAD_Y - 96, w: 48, h: 96, state: 'RED', timer: 1.6, waited: false, passed: false }
         ];
 
         // Road Hazards (Oil slicks)
@@ -1946,9 +1946,9 @@ class Game {
 
         // Semáforos de Trânsito ao longo da Rodovia das Dunas (Fase 4)
         this.trafficLights = [
-            { x: 1050, y: this.getDuneHeight(1050) - 96, w: 48, h: 96, state: 'RED', timer: 3.5, waited: false, passed: false },
-            { x: 2150, y: this.getDuneHeight(2150) - 96, w: 48, h: 96, state: 'RED', timer: 3.5, waited: false, passed: false },
-            { x: 3150, y: this.getDuneHeight(3150) - 96, w: 48, h: 96, state: 'RED', timer: 3.0, waited: false, passed: false }
+            { x: 1050, y: this.getDuneHeight(1050) - 96, w: 48, h: 96, state: 'RED', timer: 1.8, waited: false, passed: false },
+            { x: 2150, y: this.getDuneHeight(2150) - 96, w: 48, h: 96, state: 'RED', timer: 2.0, waited: false, passed: false },
+            { x: 3150, y: this.getDuneHeight(3150) - 96, w: 48, h: 96, state: 'RED', timer: 1.6, waited: false, passed: false }
         ];
 
         // Estado da Balança ANTT e Rampa
@@ -2704,7 +2704,7 @@ class Game {
                         const remaining = Math.max(0, Math.ceil(tl.timer));
                         this.showTip(`🛑 Sinal Vermelho! Carreta aguardando verde... (${remaining}s)`, 0.3);
                         
-                        if (tl.timer <= 0.8 && tl.state === 'RED') {
+                        if (tl.timer <= 0.5 && tl.state === 'RED') {
                             tl.state = 'YELLOW';
                         }
                         if (tl.timer <= 0) {
@@ -4155,7 +4155,7 @@ class Game {
                         const remaining = Math.max(0, Math.ceil(tl.timer));
                         this.showTip(`🛑 Sinal Vermelho! Aguarde o verde... (${remaining}s)`, 0.3);
                         
-                        if (tl.timer <= 0.8 && tl.state === 'RED') {
+                        if (tl.timer <= 0.5 && tl.state === 'RED') {
                             tl.state = 'YELLOW';
                         }
                         if (tl.timer <= 0) {
