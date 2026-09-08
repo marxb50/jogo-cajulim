@@ -30,7 +30,30 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.ctx.imageSmoothingEnabled = false;
 
-        this.currentPhase = 1; // 1: Pega o Lixo, 2: Caminhão ao Transbordo
+        let initialPhase = 1;
+        let hasDirectPhase = false;
+        let initialCutscene = null;
+        if (typeof window !== 'undefined' && window.location) {
+            const searchParams = new URLSearchParams(window.location.search || '');
+            const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+            const getParam = (key) => searchParams.get(key) || hashParams.get(key);
+            const targetPhase = getParam('fase') || getParam('phase');
+            if (targetPhase) {
+                const parsed = parseInt(targetPhase, 10);
+                if (parsed >= 1 && parsed <= 6) {
+                    initialPhase = parsed;
+                    hasDirectPhase = true;
+                }
+            }
+            if (getParam('cutscene')) {
+                initialCutscene = getParam('cutscene');
+            }
+        }
+
+        this.currentPhase = initialPhase;
+        this.hasDirectPhase = hasDirectPhase;
+        this.initialCutscene = initialCutscene;
+        this.state = (hasDirectPhase || initialCutscene) ? 'PLAYING' : 'TITLE';
         this.assets = {};
         this.loadedCount = 0;
         this.totalAssets = 0;
@@ -41,8 +64,6 @@ class Game {
         this.camera = { x: 0, y: 0 };
         this.particles = [];
         this.floatingTexts = [];
-
-        this.state = 'TITLE'; // TITLE, PLAYING, LEVEL_CLEAR, GAME_OVER
         this.score = 0;
         this.lives = 3;
         this.timeLeft = 300;
@@ -224,12 +245,11 @@ class Game {
 
     onAllAssetsLoaded() {
         this.assetsReady = true;
-        this.initLevel();
         if (typeof window !== 'undefined' && window.location) {
             const searchParams = new URLSearchParams(window.location.search || '');
             const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
             const getParam = (key) => searchParams.get(key) || hashParams.get(key);
-            const targetPhase = getParam('fase') || getParam('phase');
+            const targetPhase = getParam('fase') || getParam('phase') || (this.hasDirectPhase ? String(this.currentPhase) : null);
 
             if (targetPhase) {
                 this.cutscene.active = false;
@@ -416,26 +436,32 @@ class Game {
                     this.player.y = 384;
                     this.levelClear();
                 }
-            } else if (params.get('autostart') === '1') {
+            } else if (getParam('autostart') === '1') {
                 this.startGame();
-                if (params.get('pos')) {
-                    this.player.x = parseFloat(params.get('pos'));
+                if (getParam('pos')) {
+                    this.player.x = parseFloat(getParam('pos'));
                     this.camera.x = Math.max(0, this.player.x - 200);
                 }
-                if (params.get('walk') === '1') {
+                if (getParam('walk') === '1') {
                     this.keys.right = true;
                     this.player.facing = 1;
                     this.player.vx = 80;
                     this.player.animState = 'walk';
                     this.player.animFrame = 1;
                 }
-                if (params.get('jump') === '1') {
+                if (getParam('jump') === '1') {
                     this.player.isGrounded = false;
                     this.player.vy = -180;
                     this.player.animState = 'jump';
                     this.player.animFrame = 1;
                     this.player.y = 330;
                 }
+            }
+
+            if (!targetPhase && !getParam('cutscene')) {
+                this.currentPhase = 1;
+                this.state = 'TITLE';
+                this.initLevel();
             }
         }
     }
@@ -499,7 +525,12 @@ class Game {
             }
             if (this.state === 'TITLE') {
                 if (e.code === 'Space' || e.code === 'Enter') {
-                    this.startCutscene('INTRO');
+                    if (this.currentPhase > 1) {
+                        this.switchPhase(this.currentPhase);
+                        this.startGame();
+                    } else {
+                        this.startCutscene('INTRO');
+                    }
                     return;
                 }
             }
@@ -580,8 +611,31 @@ class Game {
         this.initMobileTouchControls();
         this.canvas.addEventListener('click', (e) => {
             if (window.soundManager) window.soundManager.resume();
+            if (!this.assetsReady) return;
+
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = VIRTUAL_WIDTH / rect.width;
+            const scaleY = VIRTUAL_HEIGHT / rect.height;
+            const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
+
+            // In-Game Phase Selection via Top Sub-Banner (y between 48 and 72)
+            if (this.state === 'PLAYING' && clickY >= 48 && clickY <= 72) {
+                const targetClickedPhase = Math.floor(clickX / (VIRTUAL_WIDTH / 6)) + 1;
+                if (targetClickedPhase >= 1 && targetClickedPhase <= 6 && targetClickedPhase !== this.currentPhase) {
+                    this.switchPhase(targetClickedPhase);
+                    this.startGame();
+                    return;
+                }
+            }
+
             if (this.state === 'TITLE') {
-                this.startCutscene('INTRO');
+                if (this.currentPhase > 1) {
+                    this.switchPhase(this.currentPhase);
+                    this.startGame();
+                } else {
+                    this.startCutscene('INTRO');
+                }
                 return;
             }
             if (this.state === 'LEVEL_CLEAR') {
@@ -3836,6 +3890,11 @@ class Game {
     render() {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+        if (!this.assetsReady) {
+            this.renderLoadingScreen(ctx);
+            return;
+        }
 
         this.renderBackground(ctx);
 
@@ -7614,6 +7673,47 @@ class Game {
         ctx.fillText(this.tipText, VIRTUAL_WIDTH / 2, tipY + 25);
     }
 
+    renderLoadingScreen(ctx) {
+        ctx.fillStyle = '#0a121e';
+        ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+        const logo = this.assets['ui_parnamirim_logo'];
+        if (logo && logo.complete && (logo.naturalWidth === undefined || logo.naturalWidth > 0)) {
+            ctx.drawImage(logo, VIRTUAL_WIDTH / 2 - 130, 80, 260, 49);
+        }
+
+        ctx.font = 'bold 20px "Press Start 2P", monospace, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('TURMA DO CAJULIM', VIRTUAL_WIDTH / 2, 175);
+
+        ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
+        ctx.fillStyle = '#fde047';
+        ctx.fillText(`CARREGANDO FASE ${this.currentPhase}...`, VIRTUAL_WIDTH / 2, 225);
+
+        const pct = Math.min(100, Math.floor((this.loadedCount / Math.max(1, this.totalAssets)) * 100));
+        const barW = 340;
+        const barH = 22;
+        const barX = (VIRTUAL_WIDTH - barW) / 2;
+        const barY = 265;
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(barX, barY, Math.floor((barW * pct) / 100), barH);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(barX, barY, barW, barH);
+
+        ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`${pct}%`, VIRTUAL_WIDTH / 2, barY + 16);
+
+        ctx.font = '9px "Press Start 2P", monospace, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('Preparando missão ecológica em Parnamirim...', VIRTUAL_WIDTH / 2, 330);
+    }
+
     renderTitleScreen(ctx) {
         ctx.fillStyle = 'rgba(0, 20, 10, 0.82)';
         ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
@@ -9732,7 +9832,12 @@ class Game {
             if (this.currentPhase === 2 && window.soundManager) window.soundManager.playHorn();
 
             if (this.state === 'TITLE') {
-                this.startCutscene('INTRO');
+                if (this.currentPhase > 1) {
+                    this.switchPhase(this.currentPhase);
+                    this.startGame();
+                } else {
+                    this.startCutscene('INTRO');
+                }
             } else if (this.state === 'CUTSCENE') {
                 this.advanceCutscene();
             } else if (this.state === 'LEVEL_CLEAR') {

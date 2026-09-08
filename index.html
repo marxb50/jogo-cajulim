@@ -843,8 +843,8 @@
         function actionStartGame() {
             playBeep(880, 'triangle', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html';
-            }, 120);
+                window.location.href = currentPlatform + '/index.html?fase=1&cutscene=intro&v=5.1';
+            }, 100);
         }
 
         // Passo 2B: Botão FASES -> Abre menu com Fases 1 a 6
@@ -857,9 +857,28 @@
         function launchPhase(phaseNumber) {
             playBeep(920, 'sine', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1';
-            }, 120);
+                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1&v=5.1';
+            }, 100);
         }
+
+        // Leitura de parâmetros de retorno do jogo (ex: ?view=phases&platform=PC)
+        (function checkDirectView() {
+            try {
+                const searchParams = new URLSearchParams(window.location.search || '');
+                const targetView = searchParams.get('view');
+                const targetPlatform = searchParams.get('platform');
+                if (targetPlatform === 'celular' || targetPlatform === 'PC') {
+                    selectPlatform(targetPlatform);
+                }
+                if (targetView === 'phases') {
+                    if (targetPlatform) selectPlatform(targetPlatform);
+                    switchView('viewPhases');
+                } else if (targetView === 'action') {
+                    if (targetPlatform) selectPlatform(targetPlatform);
+                    switchView('viewAction');
+                }
+            } catch (e) {}
+        })();
     </script>
 </body>
 </html>
