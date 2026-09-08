@@ -367,7 +367,8 @@
         .phase-card-btn.p-phase3:hover { border-color: #34d399; }
         .phase-card-btn.p-phase4:hover { border-color: #c084fc; }
         .phase-card-btn.p-phase5:hover { border-color: #a3e635; }
-        .phase-card-btn.p-phase6:hover { border-color: #f43f5e; }
+        .phase-card-btn.p-phase6:hover { border-color: #2dd4bf; }
+        .phase-card-btn.p-phase7:hover { border-color: #f43f5e; }
 
         .phase-icon-box {
             font-size: 26px;
@@ -683,50 +684,61 @@
                     <div class="phase-icon-box">🚛</div>
                     <div class="phase-info">
                         <span class="phase-badge-tag" style="color:#fbbf24;">FASE 2</span>
-                        <div class="phase-name">Caminhão ao Transbordo</div>
-                        <div class="phase-sub">Direção no trânsito e desvio de obstáculos.</div>
+                        <div class="phase-name">Rota do Caminhão Coletor</div>
+                        <div class="phase-sub">Coleta nos bairros e acesso à rodovia.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
 
                 <!-- Fase 3 -->
                 <div class="phase-card-btn p-phase3" onclick="launchPhase(3)">
-                    <div class="phase-icon-box">🏗️</div>
+                    <div class="phase-icon-box">🛣️</div>
                     <div class="phase-info">
                         <span class="phase-badge-tag" style="color:#34d399;">FASE 3</span>
-                        <div class="phase-name">Estação de Transbordo</div>
-                        <div class="phase-sub">Manobra na doca e despejo na carreta.</div>
+                        <div class="phase-name">Rodovia ao Transbordo</div>
+                        <div class="phase-sub">Trânsito, semáforos, biodiesel e chegada.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
 
                 <!-- Fase 4 -->
                 <div class="phase-card-btn p-phase4" onclick="launchPhase(4)">
-                    <div class="phase-icon-box">🚚</div>
+                    <div class="phase-icon-box">🏗️</div>
                     <div class="phase-info">
                         <span class="phase-badge-tag" style="color:#c084fc;">FASE 4</span>
-                        <div class="phase-name">Carreta ao Aterro</div>
-                        <div class="phase-sub">Limite 60 km/h, semáforos e balança 30t.</div>
+                        <div class="phase-name">Estação de Transbordo</div>
+                        <div class="phase-sub">Manobra na doca e despejo na carreta 30t.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
 
                 <!-- Fase 5 -->
                 <div class="phase-card-btn p-phase5" onclick="launchPhase(5)">
-                    <div class="phase-icon-box">🚜</div>
+                    <div class="phase-icon-box">🚚</div>
                     <div class="phase-info">
                         <span class="phase-badge-tag" style="color:#a3e635;">FASE 5</span>
-                        <div class="phase-name">Aterro & Usina Verde</div>
-                        <div class="phase-sub">Trator compactador, biogás e laboratório.</div>
+                        <div class="phase-name">Carreta ao Aterro</div>
+                        <div class="phase-sub">Dunas litorâneas, estabilidade e balança.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
 
                 <!-- Fase 6 -->
                 <div class="phase-card-btn p-phase6" onclick="launchPhase(6)">
+                    <div class="phase-icon-box">🚜</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#2dd4bf;">FASE 6</span>
+                        <div class="phase-name">Aterro & Usina Verde</div>
+                        <div class="phase-sub">Trator compactador, biogás e laboratório.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 7 -->
+                <div class="phase-card-btn p-phase7" onclick="launchPhase(7)">
                     <div class="phase-icon-box">👾</div>
                     <div class="phase-info">
-                        <span class="phase-badge-tag" style="color:#f43f5e;">FASE 6</span>
+                        <span class="phase-badge-tag" style="color:#f43f5e;">FASE 7</span>
                         <div class="phase-name">O Grande Chefão</div>
                         <div class="phase-sub">Batalha épica contra o Barão do Entulho!</div>
                     </div>
@@ -853,11 +865,11 @@
             switchView('viewPhases');
         }
 
-        // Passo 3: Escolhe qualquer fase de 1 a 6 (Entra direto na fase sem cutscenes)
+        // Passo 3: Escolhe qualquer fase de 1 a 7 (Entra direto na fase sem cutscenes)
         function launchPhase(phaseNumber) {
             playBeep(920, 'sine', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1&v=5.1';
+                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1&v=7.0';
             }, 100);
         }
 
