@@ -248,22 +248,33 @@ class Game {
                 }
                 if (getParam('state')) {
                     this.phase3State = getParam('state');
-                    if (this.phase3State === 'DUMPING') {
+                    if (this.phase3State === 'TIMING_GAME') {
+                        this.player.x = this.dockTargetX;
+                        this.timingNeedlePos = 50;
+                        this.currentTruckIndex = parseInt(getParam('truck'), 10) || 2;
+                    } else if (this.phase3State === 'DUMPING') {
                         this.player.x = this.dockTargetX;
                         this.dumpAngle = 25;
-                        this.trailerLoad = 15.0;
-                        this.dumpProgress = 50;
-                        this.currentTruckIndex = 1;
+                        this.currentTruckIndex = parseInt(getParam('truck'), 10) || 2;
+                        this.truckDumped = 3.8;
+                        this.roundDumpTarget = 7.5;
+                        this.roundDumped = 3.8;
+                        this.trailerLoad = 11.3;
+                        this.dumpProgress = 38;
                         for (let k = 0; k < 8; k++) {
                             this.spawnDumpTrashBag(this.player.x + 94, this.player.y + 15);
                         }
+                    } else if (this.phase3State === 'TRUCK_EXIT') {
+                        this.player.x = 180;
+                        this.dumpAngle = 0;
+                        this.currentTruckIndex = parseInt(getParam('truck'), 10) || 2;
                     } else if (this.phase3State === 'COMPACTING' || this.phase3State === 'COMPLETE') {
                         this.player.x = this.dockTargetX;
                         this.dumpAngle = 0;
                         this.trailerLoad = 30.0;
                         this.dumpProgress = 100;
                         this.tarpCoverProgress = 85;
-                        this.currentTruckIndex = 1;
+                        this.currentTruckIndex = 4;
                     }
                 }
             } else if (targetPhase === '4') {
@@ -1015,16 +1026,18 @@ class Game {
             { x: 480, y: 470, w: 480, h: 70, type: 'pit_ground' }
         ];
 
-        // Fleet and Capacity (Continuous stream filling entire 30t carreta)
+        // 4 Trucks Fleet System (4 trucks x 7.5t = 30.0t total in carreta)
         this.currentTruckIndex = 1;
-        this.totalTrucks = 1;
-        this.truckCapacity = 30.0;
-        this.truckDumped = 0;
+        this.totalTrucks = 4;
+        this.truckCapacity = 7.5; // tons per truck
+        this.truckDumped = 0; // 0 to 7.5t for current truck
+        this.roundDumpTarget = 0;
+        this.roundDumped = 0;
         this.trailerLoad = 0; // 0 to 30.0t total in carreta
         this.totalTrailerCapacity = 30; // 30 tons
 
         // Phase 3 State Machine:
-        // 'DOCKING' -> 'ALIGNED' -> 'DUMPING' -> 'COMPACTING' -> 'COMPLETE'
+        // 'DOCKING' -> 'ALIGNED' -> 'TIMING_GAME' -> 'DUMPING' -> 'TRUCK_EXIT' -> 'TRUCK_ENTER' -> ... -> 'COMPACTING' -> 'COMPLETE'
         this.phase3State = 'DOCKING';
         this.dockTargetX = 345;
         this.dockDistance = 9.5; // meters
@@ -1032,6 +1045,13 @@ class Game {
         this.dockBeepTimer = 0;
         this.alignedTimer = 0;
         this.exitTimer = 0;
+
+        // Timing Minigame ("jogos de flecha / mira hidráulica")
+        this.timingNeedlePos = 15;
+        this.timingNeedleDir = 1;
+        this.timingResult = null;
+        this.timingResultTimer = 0;
+        this.dumpSpeedMultiplier = 1.0;
 
         // Dumping & Hydraulic System
         this.dumpAngle = 0; // 0 to 40 degrees
@@ -1482,7 +1502,7 @@ class Game {
                 p.vx = 0;
                 this.phase3State = 'DOCKING';
                 this.dockAlignedTimer = 0;
-                this.showTip('Caminhão na plataforma! Dê ré até a calha de descarga!', 3.0);
+                this.showTip(`Caminhão #${this.currentTruckIndex}/4 na plataforma! Dê ré até a calha de descarga!`, 3.0);
             }
         } else if (this.phase3State === 'DOCKING') {
             let moveDir = 0;
@@ -1526,7 +1546,7 @@ class Game {
 
             // Aligned check: within 16px of targetX
             if (diff <= 16) {
-                this.showTip('🟢 DOCA CONECTADA! Aperte [ESPAÇO] para iniciar descarga!', 1.0);
+                this.showTip('🟢 DOCA CONECTADA! Aperte [ESPAÇO] para travar as rodas!', 1.0);
                 if (this.keys.jump || Math.abs(p.vx) < 10) {
                     this.dockAlignedTimer += dt;
                     if (this.keys.jump || this.dockAlignedTimer >= 0.8) {
@@ -1547,7 +1567,7 @@ class Game {
             } else {
                 this.dockAlignedTimer = 0;
                 if (p.x < targetX - 50) {
-                    this.showTip(`Atracamento na Doca: Dê ré até a calha (Faltam ${this.dockDistance}m)`, 0.5);
+                    this.showTip(`Atracamento na Doca (${this.currentTruckIndex}/4): Dê ré até a calha (Faltam ${this.dockDistance}m)`, 0.5);
                 } else {
                     this.showTip('Reduza a velocidade! Quase na doca...', 0.5);
                 }
@@ -1555,42 +1575,123 @@ class Game {
         } else if (this.phase3State === 'ALIGNED') {
             p.vx = 0;
             this.alignedTimer = (this.alignedTimer || 0) + dt;
-            if (this.alignedTimer >= 0.4) {
-                this.phase3State = 'DUMPING';
-                this.dumpAngle = 0;
-                this.showTip('Basculando caçamba... Despejando lixo na carreta!', 2.5);
+            if (this.alignedTimer >= 0.5) {
+                this.phase3State = 'TIMING_GAME';
+                this.timingNeedlePos = 15;
+                this.timingNeedleDir = 1;
+                this.timingResult = null;
+                this.timingResultTimer = 0;
+                this.keys.jump = false;
+                this.keys.jumpHeld = false;
+                this.showTip('🎯 MIRA HIDRÁULICA: Aperte [ESPAÇO] quando a flecha estiver no VERDE!', 4.0);
+            }
+        } else if (this.phase3State === 'TIMING_GAME') {
+            p.vx = 0;
+            if (this.timingResult === null) {
+                // Needle oscillates back and forth continuously
+                this.timingNeedlePos += this.timingNeedleDir * params.speed * dt;
+                if (this.timingNeedlePos >= 98) {
+                    this.timingNeedlePos = 98;
+                    this.timingNeedleDir = -1;
+                } else if (this.timingNeedlePos <= 2) {
+                    this.timingNeedlePos = 2;
+                    this.timingNeedleDir = 1;
+                }
+
+                // Player triggers timing hit with Space or W or Up
+                if (this.keys.jump || this.keys.up) {
+                    this.keys.jump = false;
+                    this.keys.jumpHeld = false;
+                    const distCenter = Math.abs(this.timingNeedlePos - 50);
+                    const remainingInTruck = Math.max(0, this.truckCapacity - this.truckDumped);
+
+                    if (distCenter <= params.green) {
+                        // 🟢 VERDE: DESPEJO TOTAL! Força máxima!
+                        this.timingResult = 'PERFECT';
+                        this.dumpSpeedMultiplier = 2.4;
+                        this.score += 500;
+                        this.roundDumpTarget = remainingInTruck;
+                        this.addFloatingText(480, 95, `🎯 PERFEITO! FORÇA MÁXIMA (+${this.roundDumpTarget.toFixed(1)}t)! +500 PTS`, '#4ade80');
+                        this.spawnSparkles(480, 130, 35);
+                        if (window.soundManager && window.soundManager.playTimingHitPerfect) {
+                            window.soundManager.playTimingHitPerfect();
+                        }
+                    } else if (distCenter <= params.yellow) {
+                        // 🟡 AMARELO: DESPEJO MÉDIO (+2.5t)
+                        this.timingResult = 'GOOD';
+                        this.dumpSpeedMultiplier = 1.4;
+                        this.score += 200;
+                        this.roundDumpTarget = Math.min(2.5, remainingInTruck);
+                        this.addFloatingText(480, 95, `👍 BOM! PRESSÃO MÉDIA (+${this.roundDumpTarget.toFixed(1)}t)! +200 PTS`, '#facc15');
+                        if (window.soundManager && window.soundManager.playTimingHitGood) {
+                            window.soundManager.playTimingHitGood();
+                        }
+                    } else {
+                        // 🔴 VERMELHO: BAIXA PRESSÃO (0t)
+                        this.timingResult = 'MISS';
+                        this.dumpSpeedMultiplier = 0.5;
+                        this.score += 10;
+                        this.roundDumpTarget = 0;
+                        this.addFloatingText(480, 95, '⚠️ BAIXA PRESSÃO! NADA DESPEJADO', '#ef4444');
+                        if (window.soundManager && window.soundManager.playTimingHitMiss) {
+                            window.soundManager.playTimingHitMiss();
+                        }
+                    }
+                    this.timingResultTimer = 0;
+                }
+            } else {
+                this.timingResultTimer += dt;
+                if (this.timingResultTimer >= 0.65) {
+                    if (this.timingResult === 'MISS') {
+                        // VERMELHO: Tenta novamente a mira!
+                        this.timingResult = null;
+                        this.timingResultTimer = 0;
+                        this.timingNeedlePos = 15;
+                        this.timingNeedleDir = 1;
+                        const remain = (this.truckCapacity - this.truckDumped).toFixed(1);
+                        this.showTip(`Pressão insuficiente! Tente no VERDE ou AMARELO! Faltam ${remain}t no caminhão`, 3.0);
+                    } else {
+                        // AMARELO ou VERDE: Despeja!
+                        this.phase3State = 'DUMPING';
+                        this.roundDumped = 0;
+                        this.dumpAngle = 0;
+                        const actionDesc = this.timingResult === 'PERFECT' ? 'Despejo Total' : `Despejo Médio (+${this.roundDumpTarget.toFixed(1)}t)`;
+                        this.showTip(`Basculando Caçamba #${this.currentTruckIndex}: ${actionDesc}...`, 2.5);
+                    }
+                }
             }
         } else if (this.phase3State === 'DUMPING') {
             p.vx = 0;
 
-            // Hydraulic lift: dump bed rotates up to 40°
-            if (this.dumpAngle < 40 && this.trailerLoad < this.totalTrailerCapacity) {
-                this.dumpAngle = Math.min(40, this.dumpAngle + 26 * dt);
-            }
-
-            // Hydraulic sound
-            this.hydraulicSoundTimer += dt;
-            if (this.hydraulicSoundTimer >= 0.12 && this.trailerLoad < this.totalTrailerCapacity) {
-                this.hydraulicSoundTimer = 0;
-                if (window.soundManager && window.soundManager.playHydraulic) {
-                    window.soundManager.playHydraulic();
+            if (this.roundDumpTarget - this.roundDumped > 0.05) {
+                // Hydraulic lift: dump bed rotates up to 40°
+                if (this.dumpAngle < 40) {
+                    this.dumpAngle = Math.min(40, this.dumpAngle + (26 * this.dumpSpeedMultiplier) * dt);
                 }
-            }
 
-            if (this.trailerLoad < this.totalTrailerCapacity) {
-                // Pour rate: ~4.6 tons per second (takes ~6.5s for the entire 30t)
-                const dumpRate = 4.6 * dt;
-                const toDump = Math.min(dumpRate, this.totalTrailerCapacity - this.trailerLoad);
+                // Hydraulic sound
+                this.hydraulicSoundTimer += dt;
+                if (this.hydraulicSoundTimer >= 0.12) {
+                    this.hydraulicSoundTimer = 0;
+                    if (window.soundManager && window.soundManager.playHydraulic) {
+                        window.soundManager.playHydraulic();
+                    }
+                }
+
+                // Pour rate
+                const dumpRate = (3.8 * this.dumpSpeedMultiplier) * dt;
+                const toDump = Math.min(dumpRate, this.roundDumpTarget - this.roundDumped);
+                this.roundDumped += toDump;
+                this.truckDumped = Math.min(this.truckCapacity, this.truckDumped + toDump);
                 this.trailerLoad = Math.min(this.totalTrailerCapacity, this.trailerLoad + toDump);
                 this.dumpProgress = Math.min(100, Math.floor((this.trailerLoad / this.totalTrailerCapacity) * 100));
                 this.score += Math.floor(toDump * 45);
 
-                // Spawn trash pouring OUT OF THE COLLECTOR TRUCK (saindo dele!)
+                // Spawn trash pouring OUT OF THE COLLECTOR TRUCK into the chute
                 if (this.dumpAngle >= 8) {
                     this.dumpParticleTimer += dt;
                     if (this.dumpParticleTimer >= 0.032) {
                         this.dumpParticleTimer = 0;
-                        // Spawns right at the raised tailgate opening of the collector truck
                         const spawnX = p.x + 94 + (Math.random() * 12 - 6);
                         const spawnY = p.y + 24 - (this.dumpAngle * 0.38) + (Math.random() * 8 - 4);
                         this.spawnDumpTrashBag(spawnX, spawnY);
@@ -1603,27 +1704,89 @@ class Game {
                     }
                 }
 
-                this.showTip(`Enchendo a Carreta: ${this.trailerLoad.toFixed(1)} / 30.0t (${this.dumpProgress}%)`, 0.4);
+                const remain = Math.max(0, this.truckCapacity - this.truckDumped).toFixed(1);
+                this.showTip(`Caminhão #${this.currentTruckIndex}: ${this.truckDumped.toFixed(1)} / ${this.truckCapacity}t (Faltam ${remain}t) | Carreta: ${this.trailerLoad.toFixed(1)}/30t`, 0.4);
             } else {
-                // Carreta is 100% full (30.0t)!
-                this.trailerLoad = this.totalTrailerCapacity;
-                this.dumpProgress = 100;
-
-                // Lower bed back down
-                this.dumpAngle = Math.max(0, this.dumpAngle - 45 * dt);
-                this.showTip('Carreta 100% cheia! Recolhendo caçamba...', 0.4);
+                // Round dump target reached! Lower bed back down
+                this.roundDumped = this.roundDumpTarget;
+                this.dumpAngle = Math.max(0, this.dumpAngle - 48 * dt);
+                this.showTip(`Caçamba #${this.currentTruckIndex} recolhendo pistão...`, 0.4);
 
                 if (this.dumpAngle <= 0.5) {
                     this.dumpAngle = 0;
+
+                    // Check if current truck is empty (dumped all 7.5t)
+                    if (this.truckDumped >= this.truckCapacity - 0.05) {
+                        this.truckDumped = this.truckCapacity;
+
+                        if (this.currentTruckIndex >= this.totalTrucks || this.trailerLoad >= this.totalTrailerCapacity - 0.05) {
+                            // All 4 trucks completed! Carreta is 100% full (30t)!
+                            this.trailerLoad = this.totalTrailerCapacity;
+                            this.dumpProgress = 100;
+                            this.phase3State = 'COMPACTING';
+                            this.phase3CompleteTimer = 0;
+                            this.tarpCoverProgress = 0;
+                            this.supervisor.cheer = true;
+                            this.addFloatingText(650, 240, 'CARRETA 30t 100% CHEIA!', '#00ff88');
+                            this.spawnSparkles(650, 320, 50);
+                            if (window.soundManager && window.soundManager.playHorn) {
+                                window.soundManager.playHorn();
+                            }
+                        } else {
+                            // Truck 1, 2, or 3 finished! Proceed to TRUCK_EXIT
+                            this.phase3State = 'TRUCK_EXIT';
+                            this.exitTimer = 0;
+                            this.addFloatingText(p.x + 60, p.y - 20, `CAMINHÃO #${this.currentTruckIndex} DESCARREGADO!`, '#38bdf8');
+                            this.spawnSparkles(p.x + 60, p.y + 20, 25);
+                            if (window.soundManager && window.soundManager.playHorn) {
+                                window.soundManager.playHorn();
+                            }
+                        }
+                    } else {
+                        // Truck still has remaining waste (e.g. after good/yellow hit). Player tries timing again!
+                        this.phase3State = 'TIMING_GAME';
+                        this.timingResult = null;
+                        this.timingResultTimer = 0;
+                        this.timingNeedlePos = 20;
+                        this.timingNeedleDir = 1;
+                        const remain = (this.truckCapacity - this.truckDumped).toFixed(1);
+                        this.addFloatingText(480, 95, `👍 RESTAM ${remain}t! TENTE A MIRA NOVAMENTE!`, '#facc15');
+                        this.showTip(`Caminhão #${this.currentTruckIndex}: Restam ${remain}t no baú! Tente acertar no VERDE!`, 3.5);
+                    }
+                }
+            }
+        } else if (this.phase3State === 'TRUCK_EXIT') {
+            // Truck drives off to the left
+            const exitSpeed = (this.keys.left || this.keys.a) ? 340 : 250;
+            p.vx = -exitSpeed;
+            p.x += p.vx * dt;
+
+            // Exhaust smoke puffs as it leaves
+            if (Math.random() < 0.25) {
+                this.spawnSmoke(p.x + 10, p.y + p.h - 15);
+            }
+
+            if (p.x < -140) {
+                // Next truck enters!
+                if (this.currentTruckIndex < this.totalTrucks) {
+                    this.currentTruckIndex++;
+                    this.phase3State = 'TRUCK_ENTER';
+                    p.x = -130;
+                    p.vx = 220;
+                    this.truckDumped = 0;
+                    this.roundDumped = 0;
+                    this.roundDumpTarget = 0;
+                    this.dumpAngle = 0;
+                    this.timingResult = null;
+                    this.timingResultTimer = 0;
+                    this.dockAlignedTimer = 0;
+                    this.dockBeepTimer = 0;
+                    this.supervisor.cheer = true;
+                    this.showTip(`Caminhão #${this.currentTruckIndex}/4 na doca! Dê ré até a calha!`, 3.0);
+                } else {
                     this.phase3State = 'COMPACTING';
                     this.phase3CompleteTimer = 0;
                     this.tarpCoverProgress = 0;
-                    this.supervisor.cheer = true;
-                    this.addFloatingText(650, 240, 'CARRETA 30t 100% CHEIA!', '#00ff88');
-                    this.spawnSparkles(650, 320, 50);
-                    if (window.soundManager && window.soundManager.playHorn) {
-                        window.soundManager.playHorn();
-                    }
                 }
             }
         } else if (this.phase3State === 'COMPACTING') {
@@ -3856,13 +4019,19 @@ class Game {
             ctx.lineWidth = 2;
             const bubbleX = sup.x + 85;
             const bubbleY = sup.y + 16;
-            let bubbleText = 'Dê ré até a doca!';
-            if (this.phase3State === 'DOCKING') {
-                bubbleText = this.player.x < 240 ? 'Dê ré até a doca!' : 'Quase lá... devagar!';
+            let bubbleText = `Caminhão #${this.currentTruckIndex}, ré à doca!`;
+            if (this.phase3State === 'TRUCK_ENTER') {
+                bubbleText = `Caminhão #${this.currentTruckIndex}! Entre na doca!`;
+            } else if (this.phase3State === 'DOCKING') {
+                bubbleText = this.player.x < 240 ? `Caminhão #${this.currentTruckIndex}, ré até a doca!` : 'Quase lá... devagar!';
             } else if (this.phase3State === 'ALIGNED') {
-                bubbleText = 'Travado! Acionando pistão!';
+                bubbleText = 'Travado! Prepare a mira!';
+            } else if (this.phase3State === 'TIMING_GAME') {
+                bubbleText = 'Aperte no VERDE!';
             } else if (this.phase3State === 'DUMPING') {
-                bubbleText = 'Despejando lixo na carreta!';
+                bubbleText = `Despejando carga #${this.currentTruckIndex}!`;
+            } else if (this.phase3State === 'TRUCK_EXIT') {
+                bubbleText = `Caminhão #${this.currentTruckIndex} liberado!`;
             } else if (this.phase3State === 'COMPACTING' || this.phase3State === 'COMPLETE') {
                 bubbleText = 'Carreta 30t 100% cheia!';
             }
@@ -4185,11 +4354,21 @@ class Game {
         // 5. Collection Truck & Tilting Hydraulic Dump Bed (Clean and natural pixel art - no colored tints or lights)
         const p = this.player;
 
-        if (this.phase3State === 'DOCKING') {
-            // Whole truck moving in reverse towards the dock
+        if (this.phase3State === 'DOCKING' || this.phase3State === 'TRUCK_ENTER') {
+            // Whole truck moving in reverse towards the dock or entering
             const truckImg = this.assets['sc_truck'];
             if (truckImg) {
                 ctx.drawImage(truckImg, p.x, p.y, p.w, p.h);
+            }
+        } else if (this.phase3State === 'TRUCK_EXIT') {
+            // Whole truck driving off to the left, flipped horizontally to face left
+            const truckImg = this.assets['sc_truck'];
+            if (truckImg) {
+                ctx.save();
+                ctx.translate(p.x + p.w, p.y);
+                ctx.scale(-1, 1);
+                ctx.drawImage(truckImg, 0, 0, p.w, p.h);
+                ctx.restore();
             }
         } else {
             // Chassis & Cab with Pai Caju
@@ -4240,88 +4419,182 @@ class Game {
             ctx.restore();
         }
 
-        // 6. Phase 3 Interactive HUD Card in center/right
-        ctx.save();
-        const cardX = 490;
-        const cardY = 75;
-        const cardW = 340;
-        const cardH = 48;
+        // 6. Timing Minigame UI Overlay (When in TIMING_GAME state)
+        if (this.phase3State === 'TIMING_GAME') {
+            const gaugeX = 310;
+            const gaugeY = 105;
+            const gaugeW = 340;
+            const gaugeH = 30;
 
-        if (this.phase3State === 'DOCKING') {
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
-            ctx.fillRect(cardX, cardY, cardW, cardH);
-            ctx.strokeStyle = dist <= 0.5 ? '#22c55e' : '#eab308';
+            // Background panel
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
+            ctx.fillRect(gaugeX - 10, gaugeY - 28, gaugeW + 20, gaugeH + 46);
+            ctx.strokeStyle = '#facc15';
             ctx.lineWidth = 2;
-            ctx.strokeRect(cardX, cardY, cardW, cardH);
+            ctx.strokeRect(gaugeX - 10, gaugeY - 28, gaugeW + 20, gaugeH + 46);
 
+            // Title
             ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`CAMINHÃO COLETOR | DOCA: ${this.dockDistance} m`, cardX + cardW / 2, cardY + 18);
+            ctx.fillText(`MIRA HIDRÁULICA - CAMINHÃO #${this.currentTruckIndex}/4`, gaugeX + gaugeW / 2, gaugeY - 12);
 
-            ctx.fillStyle = dist <= 0.5 ? '#4ade80' : '#facc15';
-            const actionText = dist <= 0.5 ? '🟢 ALINHADO! APERTE [ESPAÇO] PARA TRAVAR' : '◄◄◄ DÊ RÉ DEVAGAR ATÉ A DOCA';
-            ctx.fillText(actionText, cardX + cardW / 2, cardY + 36);
-        } else if (this.phase3State === 'ALIGNED') {
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
-            ctx.fillRect(cardX, cardY, cardW, cardH);
-            ctx.strokeStyle = '#22c55e';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(cardX, cardY, cardW, cardH);
-
-            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('CAMINHÃO TRAVADO NA DOCA!', cardX + cardW / 2, cardY + 18);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('ACIONANDO PISTÃO HIDRÁULICO...', cardX + cardW / 2, cardY + 36);
-        } else if (this.phase3State === 'DUMPING') {
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.90)';
-            ctx.fillRect(cardX, cardY, cardW, cardH);
-            ctx.strokeStyle = '#22c55e';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(cardX, cardY, cardW, cardH);
-
-            // Progress Bar of Carreta
-            const innerW = cardW - 20;
-            const innerH = 14;
-            const progressW = Math.min(innerW, Math.floor((innerW * (this.dumpProgress || 0)) / 100));
+            // Frame
             ctx.fillStyle = '#0f172a';
-            ctx.fillRect(cardX + 10, cardY + 8, innerW, innerH);
+            ctx.fillRect(gaugeX, gaugeY, gaugeW, gaugeH);
+
+            const tParams = this.getTimingParams();
+            const centerPx = gaugeX + gaugeW / 2;
+            const greenHalfPx = (tParams.green / 100) * gaugeW;
+            const yellowHalfPx = (tParams.yellow / 100) * gaugeW;
+
+            // Red Zones (outer edges)
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(gaugeX + 2, gaugeY + 2, gaugeW - 4, gaugeH - 4);
+
+            // Yellow Zones (intermediate)
+            ctx.fillStyle = '#eab308';
+            ctx.fillRect(centerPx - yellowHalfPx, gaugeY + 2, yellowHalfPx * 2, gaugeH - 4);
+
+            // Green Zone (center sweet spot)
             ctx.fillStyle = '#22c55e';
-            ctx.fillRect(cardX + 10, cardY + 8, progressW, innerH);
+            ctx.fillRect(centerPx - greenHalfPx, gaugeY + 2, greenHalfPx * 2, gaugeH - 4);
 
-            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-            ctx.textAlign = 'center';
+            // White center target line
+            ctx.beginPath();
+            ctx.moveTo(centerPx, gaugeY + 2);
+            ctx.lineTo(centerPx, gaugeY + gaugeH - 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Oscillating Needle Indicator
+            const needleX = gaugeX + (this.timingNeedlePos / 100) * gaugeW;
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`CARRETA: ${this.trailerLoad.toFixed(1)} / 30.0t (${Math.floor(this.dumpProgress || 0)}%)`, cardX + cardW / 2, cardY + 19);
+            ctx.fillRect(needleX - 2, gaugeY - 4, 4, gaugeH + 8);
+            // Arrowhead on top
+            ctx.beginPath();
+            ctx.moveTo(needleX, gaugeY + gaugeH + 4);
+            ctx.lineTo(needleX - 5, gaugeY + gaugeH + 11);
+            ctx.lineTo(needleX + 5, gaugeY + gaugeH + 11);
+            ctx.fill();
 
-            ctx.fillStyle = '#facc15';
-            ctx.fillText('DESPEJANDO LIXO NA CARRETA...', cardX + cardW / 2, cardY + 38);
-        } else if (this.phase3State === 'COMPACTING' || this.phase3State === 'COMPLETE') {
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.90)';
-            ctx.fillRect(cardX, cardY, cardW, cardH);
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(cardX, cardY, cardW, cardH);
-
-            const innerW = cardW - 20;
-            const innerH = 14;
-            const progressW = Math.min(innerW, Math.floor((innerW * (this.tarpCoverProgress || 0)) / 100));
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(cardX + 10, cardY + 8, innerW, innerH);
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(cardX + 10, cardY + 8, progressW, innerH);
-
-            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('CARRETA 100% CHEIA: 30.0t', cardX + cardW / 2, cardY + 19);
-
-            ctx.fillStyle = '#4ade80';
-            ctx.fillText('LONA DE SEGURANÇA LACRADA!', cardX + cardW / 2, cardY + 38);
+            // Bottom status message
+            ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
+            const truckLeft = Math.max(0, this.truckCapacity - this.truckDumped).toFixed(1);
+            if (this.timingResult === 'PERFECT') {
+                ctx.fillStyle = '#4ade80';
+                ctx.fillText(`🎯 PERFEITO! FORÇA MÁXIMA (+${(this.roundDumpTarget || 7.5).toFixed(1)}t)! +500 PTS`, gaugeX + gaugeW / 2, gaugeY + gaugeH + 12);
+            } else if (this.timingResult === 'GOOD') {
+                ctx.fillStyle = '#facc15';
+                const amt = (this.roundDumpTarget || 2.5).toFixed(1);
+                ctx.fillText(`👍 BOM! PRESSÃO MÉDIA (+${amt}t)! +200 PTS`, gaugeX + gaugeW / 2, gaugeY + gaugeH + 12);
+            } else if (this.timingResult === 'MISS') {
+                ctx.fillStyle = '#ef4444';
+                ctx.fillText('⚠️ BAIXA PRESSÃO! TENTE DE NOVO!', gaugeX + gaugeW / 2, gaugeY + gaugeH + 12);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(`🔴 0t | 🟡 +2.5t | 🟢 TUDO! [Resta: ${truckLeft}t]`, gaugeX + gaugeW / 2, gaugeY + gaugeH + 12);
+            }
         }
-        ctx.restore();
+
+        // 7. Phase 3 Interactive HUD Card in center/right (When NOT in TIMING_GAME state)
+        if (this.phase3State !== 'TIMING_GAME') {
+            ctx.save();
+            const cardX = 490;
+            const cardY = 75;
+            const cardW = 340;
+            const cardH = 48;
+
+            if (this.phase3State === 'DOCKING' || this.phase3State === 'TRUCK_ENTER') {
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+                ctx.fillRect(cardX, cardY, cardW, cardH);
+                ctx.strokeStyle = dist <= 0.5 ? '#22c55e' : '#eab308';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+                ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(`CAMINHÃO #${this.currentTruckIndex}/4 | DOCA: ${this.dockDistance} m`, cardX + cardW / 2, cardY + 18);
+
+                ctx.fillStyle = dist <= 0.5 ? '#4ade80' : '#facc15';
+                const actionText = dist <= 0.5 ? '🟢 ALINHADO! APERTE [ESPAÇO] PARA TRAVAR' : '◄◄◄ DÊ RÉ DEVAGAR ATÉ A DOCA';
+                ctx.fillText(actionText, cardX + cardW / 2, cardY + 36);
+            } else if (this.phase3State === 'ALIGNED') {
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+                ctx.fillRect(cardX, cardY, cardW, cardH);
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+                ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#4ade80';
+                ctx.fillText(`CAMINHÃO #${this.currentTruckIndex}/4 TRAVADO NA DOCA!`, cardX + cardW / 2, cardY + 18);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText('PREPARANDO MIRA HIDRÁULICA...', cardX + cardW / 2, cardY + 36);
+            } else if (this.phase3State === 'DUMPING') {
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.90)';
+                ctx.fillRect(cardX, cardY, cardW, cardH);
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+                // Progress Bar of Carreta
+                const innerW = cardW - 20;
+                const innerH = 14;
+                const progressW = Math.min(innerW, Math.floor((innerW * (this.dumpProgress || 0)) / 100));
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(cardX + 10, cardY + 8, innerW, innerH);
+                ctx.fillStyle = '#22c55e';
+                ctx.fillRect(cardX + 10, cardY + 8, progressW, innerH);
+
+                ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(`CARRETA: ${this.trailerLoad.toFixed(1)} / 30.0t (${Math.floor(this.dumpProgress || 0)}%)`, cardX + cardW / 2, cardY + 19);
+
+                ctx.fillStyle = '#facc15';
+                ctx.fillText(`DESPEJANDO CARGA #${this.currentTruckIndex}/4 NA CARRETA...`, cardX + cardW / 2, cardY + 38);
+            } else if (this.phase3State === 'TRUCK_EXIT') {
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.90)';
+                ctx.fillRect(cardX, cardY, cardW, cardH);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+                ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillText(`CAMINHÃO #${this.currentTruckIndex}/4 DESCARREGADO!`, cardX + cardW / 2, cardY + 18);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(this.currentTruckIndex < this.totalTrucks ? `AGUARDE O PRÓXIMO COLETOR (${this.currentTruckIndex + 1}/4)...` : 'TODOS OS COLETORES LIBERADOS!', cardX + cardW / 2, cardY + 36);
+            } else if (this.phase3State === 'COMPACTING' || this.phase3State === 'COMPLETE') {
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.90)';
+                ctx.fillRect(cardX, cardY, cardW, cardH);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+                const innerW = cardW - 20;
+                const innerH = 14;
+                const progressW = Math.min(innerW, Math.floor((innerW * (this.tarpCoverProgress || 0)) / 100));
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(cardX + 10, cardY + 8, innerW, innerH);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(cardX + 10, cardY + 8, progressW, innerH);
+
+                ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText('CARRETA 100% CHEIA: 30.0t', cardX + cardW / 2, cardY + 19);
+
+                ctx.fillStyle = '#4ade80';
+                ctx.fillText('LONA DE SEGURANÇA LACRADA!', cardX + cardW / 2, cardY + 38);
+            }
+            ctx.restore();
+        }
     }
 
     renderPhase4(ctx) {
@@ -7130,12 +7403,14 @@ class Game {
             ctx.fillStyle = '#38bdf8';
             ctx.fillText(`REPAROS: ${this.wrenchesCollected}/${this.totalWrenches}`, 320, 28);
         } else if (this.currentPhase === 3) {
+            ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
             const loadPct = Math.min(100, Math.round(this.dumpProgress || 0));
             ctx.fillStyle = '#38bdf8';
-            ctx.fillText(`CARRETA: ${(this.trailerLoad || 0).toFixed(1)}/30t (${loadPct}%)`, 120, 28);
+            ctx.fillText(`CARRETA: ${(this.trailerLoad || 0).toFixed(1)}/30t (${loadPct}%)`, 115, 28);
 
             ctx.fillStyle = '#facc15';
-            ctx.fillText('TRANSBORDO', 360, 28);
+            ctx.fillText(`CAMINHÃO: ${this.currentTruckIndex || 1}/4`, 335, 28);
+            ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
         } else if (this.currentPhase === 4) {
             // Speedometer
             const spd = Math.round(this.speedKmh || 0);
