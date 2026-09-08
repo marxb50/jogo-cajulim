@@ -382,16 +382,16 @@ class Game {
                 if ((getParam('instant')) === '1') {
                     this.cutscene.textProgress = 999;
                 }
-            } else if ((getParam('cutscene')) === 'phase5_to_6') {
-                this.switchPhase(5);
+            } else if ((getParam('cutscene')) === 'phase5_to_6' || (getParam('cutscene')) === 'phase6_to_7') {
+                this.switchPhase(6);
                 const step = parseInt((getParam('step')) || '0', 10);
-                this.startCutscene('PHASE5_TO_6');
+                this.startCutscene('PHASE6_TO_7');
                 this.cutscene.step = step;
                 if ((getParam('instant')) === '1') {
                     this.cutscene.textProgress = 999;
                 }
             } else if ((getParam('cutscene')) === 'ending') {
-                this.switchPhase(6);
+                this.switchPhase(7);
                 const step = parseInt((getParam('step')) || '0', 10);
                 this.startCutscene('GRAND_ENDING');
                 this.cutscene.step = step;
@@ -8752,11 +8752,11 @@ class Game {
     getCutsceneRequiredAsset() {
         if (this.cutscene.type === 'INTRO') return 'cs_intro_father';
         if (this.cutscene.type === 'PHASE1_CLEAR') return 'cs_phase1_clear';
-        if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_phase2_clear';
+        if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_intro_mission';
         if (this.cutscene.type === 'PHASE3_CLEAR') return 'cs_phase2_clear';
         if (this.cutscene.type === 'PHASE4_CLEAR') return 'cs_phase3_clear';
         if (this.cutscene.type === 'PHASE5_CLEAR') return 'cs_phase4_clear';
-        if (this.cutscene.type === 'PHASE6_TO_7') {
+        if (this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
             return this.cutscene.step === 0 ? 'cs_landfill_aerial' : 'cs_villain_mecha';
         }
         if (this.cutscene.type === 'GRAND_ENDING') {
@@ -8835,7 +8835,7 @@ class Game {
             audioFile = 'assets/audio/cutscene_phase1_clear.mp3';
             spokenText = 'Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!';
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
-            audioFile = 'assets/audio/cutscene_phase1_clear.mp3';
+            audioFile = 'assets/audio/cutscene_phase2_bairros.mp3';
             spokenText = 'Coleta nos bairros concluída com sucesso! Todos os 10 sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!';
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
             audioFile = 'assets/audio/cutscene_phase2_clear.mp3';
@@ -8867,7 +8867,7 @@ class Game {
             }
         }
 
-        const isBoss = (this.cutscene.type === 'PHASE5_TO_6' && this.cutscene.step === 1);
+        const isBoss = ((this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') && this.cutscene.step === 1);
         const voiceHint = isBoss ? 'antonio' : 'thalita';
         if (window.soundManager && window.soundManager.playNarration) {
             window.soundManager.playNarration(audioFile, spokenText, voiceHint);
@@ -9099,9 +9099,13 @@ class Game {
             this.cutscene.active = false;
             this.switchPhase(5);
             this.startGame();
-        } else if (this.cutscene.type === 'PHASE5_TO_6') {
+        } else if (this.cutscene.type === 'PHASE5_CLEAR') {
             this.cutscene.active = false;
             this.switchPhase(6);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
+            this.cutscene.active = false;
+            this.switchPhase(7);
             this.startGame();
         } else if (this.cutscene.type === 'GRAND_ENDING') {
             if (this.cutscene.step < 2) {
@@ -9155,15 +9159,17 @@ class Game {
         if (this.cutscene.type === 'INTRO') {
             this.renderCutsceneIntro(ctx);
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'ETAPA 1 CONCLUÍDA • COLETA SELETIVA DE PARNAMIRIM');
+            this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'ETAPA 1 CONCLUÍDA • COLETA SELETIVA RESIDENCIAL');
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase2_clear', 'ETAPA 2 CONCLUÍDA • CHEGADA AO TRANSBORDO');
+            this.renderCutscenePhaseClear(ctx, 'cs_intro_mission', 'ETAPA 2 CONCLUÍDA • ROTA DO CAMINHÃO NOS BAIRROS');
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase3_clear', 'ETAPA 3 CONCLUÍDA • CARGA DA CARRETA DE 30 TONELADAS');
+            this.renderCutscenePhaseClear(ctx, 'cs_phase2_clear', 'ETAPA 3 CONCLUÍDA • CHEGADA À ESTAÇÃO DE TRANSBORDO');
         } else if (this.cutscene.type === 'PHASE4_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase4_clear', 'ETAPA 4 CONCLUÍDA • BALANÇA OFICIAL DO ATERRO (30.000 KG)');
-        } else if (this.cutscene.type === 'PHASE5_TO_6') {
-            this.renderCutscenePhase5To6(ctx);
+            this.renderCutscenePhaseClear(ctx, 'cs_phase3_clear', 'ETAPA 4 CONCLUÍDA • CARGA DA CARRETA DE 30 TONELADAS');
+        } else if (this.cutscene.type === 'PHASE5_CLEAR') {
+            this.renderCutscenePhaseClear(ctx, 'cs_phase4_clear', 'ETAPA 5 CONCLUÍDA • BALANÇA RODOVIÁRIA OFICIAL (30.000 KG)');
+        } else if (this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
+            this.renderCutscenePhase6To7(ctx);
         } else {
             this.renderCutsceneEnding(ctx);
         }
@@ -9340,12 +9346,16 @@ class Game {
         this.renderCutsceneDialogBox(ctx, 'MAPA DA GRANDE MISSÃO SUSTENTÁVEL', currentText, 'INICIAR FASE 1 🚀 [ESPAÇO]', 'blue');
     }
 
-    renderCutscenePhase5To6(ctx) {
+    renderCutscenePhase6To7(ctx) {
         if (this.cutscene.step === 0) {
             this.renderCutsceneAerialLandfill(ctx);
         } else {
-        this.renderCutsceneVillainReveal(ctx);
+            this.renderCutsceneVillainReveal(ctx);
         }
+    }
+
+    renderCutscenePhase5To6(ctx) {
+        this.renderCutscenePhase6To7(ctx);
     }
 
     renderCutsceneAerialLandfill(ctx) {

@@ -27,6 +27,12 @@ NARRATIONS = [
         "text": "Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!"
     },
     {
+        "filename": "cutscene_phase2_bairros.mp3",
+        "voice": VOICE_THALITA,
+        "rate": "+2%",
+        "text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!"
+    },
+    {
         "filename": "cutscene_phase2_clear.mp3",
         "voice": VOICE_THALITA,
         "rate": "+2%",
