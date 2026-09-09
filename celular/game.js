@@ -247,7 +247,7 @@ class Game {
         keys.forEach(key => {
             const img = new Image();
             this.assets[key] = img;
-            img.src = imageList[key] + '?v=4.2';
+            img.src = imageList[key] + '?v=7.1';
             img.onload = () => {
                 this.loadedCount++;
                 if (this.loadedCount >= this.totalAssets) this.onAllAssetsLoaded();
