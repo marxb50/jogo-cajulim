@@ -118,6 +118,13 @@ class Game {
         this.transbordoFacility = null;
         this.lives = this.currentPhase === 7 ? 5 : 3;
 
+        // Initialize the direct-test boss state before the first animation
+        // frame. This prevents the update loop from seeing undefined hazard
+        // arrays while the image bundle is still loading.
+        if (hasDirectPhase && this.currentPhase === 7) {
+            this.initLevel();
+        }
+
         this.lastTime = performance.now();
 
         this.loadAssets();
@@ -207,6 +214,8 @@ class Game {
             'sc_trator_compactador': 'assets/scenery/trator_compactador.png',
             'sc_biogas_plant': 'assets/scenery/biogas_plant.png',
             'sc_lagoa_aerador': 'assets/scenery/lagoa_aerador.png',
+            // Phase 7 Test Asset (isolated boss sprite; original assets remain untouched)
+            'sc_mecha_boss_pixel': 'assets/phase7/mecha-trator-boss-pixel.png',
             'p_portrait': 'assets/player/cajulim_portrait.png',
             'p_sheet': 'assets/player/cajulim_sheet.png',
             'item_trash_bag_raw': 'assets/items/trash_bag.png',
@@ -3423,6 +3432,7 @@ class Game {
         // 4. Fighting State: Update Player
         if (!p.isDead) {
             if (p.invulnerableTimer > 0) p.invulnerableTimer -= dt;
+            if (p.bossBounceTimer > 0) p.bossBounceTimer = Math.max(0, p.bossBounceTimer - dt);
 
             // Player Horizontal Movement
             let moveDir = 0;
@@ -3755,14 +3765,24 @@ class Game {
 
         // --- COLLISION: Cajulim vs Boss ---
         if (!p.isDead && boss.state !== 'DEFEATED') {
-            const domeX1 = boss.x + 35;
-            const domeX2 = boss.x + 125;
+            // A faixa do capô acompanha melhor a largura visível da cabine.
+            // A antiga área de 90 px era estreita demais para o sprite novo.
+            const domeX1 = boss.x + 15;
+            const domeX2 = boss.x + boss.w - 15;
             const domeY1 = boss.y - 15;
             const domeY2 = boss.y + 45;
+            const playerBottom = p.y + p.h;
+            const previousBottom = playerBottom - p.vy * dt;
 
-            // Weak Spot Hit: Player falling from above onto the dome/hood
-            if (p.vy > 0 && p.x + p.w > domeX1 && p.x < domeX2 &&
-                p.y + p.h >= domeY1 && p.y + p.h <= domeY2) {
+            // Weak Spot Hit: Player falling from above onto the dome/hood.
+            // When the boss is flashing or hurt, the hood is still a solid
+            // landing surface; this prevents Cajulim from falling through the
+            // top of the tractor while its damage immunity is active.
+            const crossedDomeTop = (previousBottom <= domeY1 + 6 && playerBottom >= domeY1) ||
+                (playerBottom >= domeY1 && playerBottom <= domeY2);
+            const overDome = p.vy >= 0 && p.x + p.w > domeX1 && p.x < domeX2 &&
+                crossedDomeTop && p.y < domeY2;
+            if (overDome) {
                 if (boss.invulnerableTimer <= 0 && boss.state !== 'HURT') {
                     // HIT!
                     boss.hp -= 1;
@@ -3777,6 +3797,10 @@ class Game {
                     p.y = domeY1 - p.h;
                     p.vy = -560; // Big Sonic-style bounce!
                     p.grounded = false;
+                    // Protege somente a saída do próprio golpe. Sem esta
+                    // janela curta, a cabine detectava o Cajulim no quadro
+                    // seguinte e ele perdia vida enquanto quicava para cima.
+                    p.bossBounceTimer = 0.32;
 
                     this.score += 800;
                     this.spawnSparkles(boss.x + boss.w / 2, boss.y + 20, 25);
@@ -3799,20 +3823,53 @@ class Game {
                     }
                     return;
                 }
+
+                p.y = domeY1 - p.h;
+                p.vy = 0;
+                p.grounded = true;
+                p.animState = 'idle';
+                return;
             }
 
-            // Body collision: Player touches tracks or shovel without dropping on top
-            const bodyX1 = boss.x + 10;
-            const bodyX2 = boss.x + boss.w - 10;
-            const bodyY1 = boss.y + 40;
+            // Solid visual envelope: the generated sprite is taller and wider
+            // than the old logical body.  The previous collider started at
+            // boss.y + 40, leaving the cabin and upper shovel pass-through,
+            // which made the tractor look like a ghost when Cajulim jumped.
+            const bodyX1 = boss.x - 42;
+            const bodyX2 = boss.x + boss.w + 42;
+            const bodyY1 = boss.y - 58;
             const bodyY2 = boss.y + boss.h;
 
-            if (p.invulnerableTimer <= 0 &&
-                p.x + p.w > bodyX1 && p.x < bodyX2 &&
+            // Quem vem de cima precisa alcançar o capô antes de encontrar o
+            // envelope lateral. Sem esta exceção, a cabine sólida afastava o
+            // jogador ainda no ar e tornava impossível machucar o vilão.
+            const descendingTowardHood = p.vy >= 0 && previousBottom <= domeY1 + 6 &&
+                p.y < domeY1 && p.x + p.w > domeX1 && p.x < domeX2;
+            if (descendingTowardHood) return;
+
+            // Depois de um acerto válido, permita que Cajulim termine o
+            // impulso para cima e saia da cabine sem receber o mesmo contato
+            // como dano. Pneus, entulho e óleo continuam perigosos.
+            if (p.bossBounceTimer > 0 && p.vy < 0) return;
+
+            if (p.x + p.w > bodyX1 && p.x < bodyX2 &&
                 p.y + p.h > bodyY1 && p.y < bodyY2) {
-                this.hurtPlayer(1, 'O Mecha-Trator te atingiu! Pule por cima!');
-                p.vx = -boss.facing * 300;
-                p.vy = -240;
+                // Push sideways out of the envelope before applying damage.
+                // This keeps the player from being carried through the boss
+                // during a fast DRIVE/RAMMING step, including while invulnerable.
+                const playerCenter = p.x + p.w / 2;
+                const bossCenter = (bodyX1 + bodyX2) / 2;
+                if (playerCenter < bossCenter) {
+                    p.x = bodyX1 - p.w - 1;
+                    p.vx = Math.min(p.vx, -180);
+                } else {
+                    p.x = bodyX2 + 1;
+                    p.vx = Math.max(p.vx, 180);
+                }
+                if (p.invulnerableTimer <= 0) {
+                    this.hurtPlayer(1, 'O Mecha-Trator te atingiu! Pule por cima!');
+                    p.vy = -240;
+                }
             }
         }
     }
@@ -6864,6 +6921,81 @@ ctx.restore();
 
             ctx.restore();
         }
+    }
+
+    // Isolated Fase 7 boss presentation: the sprite carries the Barão's
+    // identity while the canvas overlay makes the tracked wheels visibly turn.
+    renderPhase7BossSprite(ctx, boss) {
+        const sprite = this.assets['sc_mecha_boss_pixel'];
+        if (!sprite || !sprite.complete || !(sprite.naturalWidth || sprite.width)) return false;
+
+        const spriteW = 270;
+        const spriteH = 180;
+        const bob = boss.state === 'DRIVE' ? Math.sin((this.gameTime || 0) * 5) * 1.2 : 0;
+        const shakeX = (boss.state === 'RAM_PREP' || boss.state === 'HURT') ? (Math.random() - 0.5) * 5 : 0;
+        const shakeY = (boss.state === 'RAM_PREP' || boss.state === 'HURT') ? (Math.random() - 0.5) * 3 : 0;
+
+        ctx.save();
+        ctx.translate(boss.x + boss.w / 2 + shakeX, boss.y + boss.h + shakeY - bob);
+        ctx.scale(boss.facing || 1, 1);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(sprite, -spriteW / 2, -spriteH, spriteW, spriteH);
+
+        // Two large sprocket hubs sit over the sprite's track artwork. Their
+        // rotating spokes remain legible at the 960x540 game resolution.
+        const wheelAngle = (boss.wheel || 0) * 0.18;
+        const wheels = [
+            { x: -82, y: -41, r: 10 },
+            { x: 2, y: -41, r: 10 }
+        ];
+        wheels.forEach((wheel, index) => {
+            ctx.save();
+            ctx.translate(wheel.x, wheel.y);
+            ctx.fillStyle = 'rgba(20, 24, 35, 0.94)';
+            ctx.beginPath();
+            ctx.arc(0, 0, wheel.r + 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = index === 0 ? '#c7831a' : '#dda32a';
+            ctx.beginPath();
+            ctx.arc(0, 0, wheel.r - 1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#f4cf67';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, wheel.r - 3, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.rotate(wheelAngle + index * 0.35);
+            ctx.strokeStyle = '#5b3a1d';
+            ctx.lineWidth = 1.5;
+            for (let spoke = 0; spoke < 4; spoke++) {
+                ctx.rotate(Math.PI / 2);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(wheel.r - 3, 0);
+                ctx.stroke();
+            }
+            ctx.fillStyle = '#d9e1e8';
+            ctx.fillRect(-2, -2, 4, 4);
+            ctx.restore();
+        });
+
+        // Moving tread glints communicate forward/reverse motion between
+        // the larger hubs without hiding the generated pixel clusters.
+        const treadOffset = ((boss.wheel || 0) % 14 + 14) % 14;
+        ctx.fillStyle = 'rgba(245, 194, 61, 0.8)';
+        for (let tx = -112 + treadOffset; tx < 27; tx += 28) {
+            ctx.fillRect(tx, -8, 7, 2);
+        }
+        ctx.restore();
+
+        if (boss.invulnerableTimer <= 0 && boss.state !== 'HURT') {
+            const arrowY = boss.y - 30 + Math.sin((this.gameTime || 0) * 5.5) * 5;
+            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            ctx.fillStyle = '#f43f5e';
+            ctx.textAlign = 'center';
+            ctx.fillText('▼ PULE NO CAPÔ! ▼', boss.x + boss.w / 2, arrowY);
+        }
+        return true;
     }
 
     renderPhase6Boss(ctx) {
