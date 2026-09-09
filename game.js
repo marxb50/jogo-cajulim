@@ -169,6 +169,7 @@ class Game {
             'sc_cloud': 'assets/scenery/cloud.png',
             'sc_signpost': 'assets/scenery/signpost.png',
             'sc_truck': 'assets/scenery/truck.png',
+            'sc_parnamirim_centro': 'assets/scenery/parnamirim-centro-pixel.png',
 
             // Phase 2 Assets (Road, Obstacles & Transbordo)
             'tile_road': 'assets/scenery/tile_road.png',
@@ -929,6 +930,13 @@ class Game {
             this.platforms.push({ x: seg.x1, y: GROUND_Y, w: seg.x2 - seg.x1, h: 80, type: 'ground' });
         });
 
+        // Tutorial bridge for the enlarged Cajulim. The first pit starts right
+        // after the spawn sign; a short jump used to miss it by a few pixels
+        // because the 80x120 hitbox needs more air time. Keep the later pits as
+        // the real challenge, while this flush bridge prevents an unexpected
+        // death in the opening seconds of the phase.
+        this.platforms.push({ x: 760, y: GROUND_Y, w: 160, h: 20, type: 'tutorial_bridge' });
+
         // Stepping stone platforms across pits
         this.platforms.push({ x: 1710, y: 380, w: 140, h: 32, type: 'floating' });
         this.platforms.push({ x: 2690, y: 380, w: 120, h: 32, type: 'floating' });
@@ -952,20 +960,26 @@ class Game {
         this.platforms.push({ x: 5660, y: 360, w: 96, h: 32, type: 'floating' });
         this.platforms.push({ x: 5770, y: 310, w: 96, h: 32, type: 'floating' });
 
-        // Interactive blocks (centered textures)
+        // Interactive blocks (centered textures).
+        // Cajulim is 80x120 in this test build, so his standing top is
+        // GROUND_Y - 120 = 340. Keep 22px of headroom below every ground-row
+        // block so the enlarged character can walk underneath without getting
+        // caught by the AABB collision. The previous row at y=310 ended at
+        // y=358 and overlapped his hitbox by 18px.
+        const BLOCK_ROW_Y = GROUND_Y - 190;
         this.blocks = [
-            { x: 260, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'soda_can' },
-            { x: 308, y: 310, w: 48, h: 48, type: 'brick', hit: false },
-            { x: 356, y: 310, w: 48, h: 48, type: 'question', hit: false, content: 'star' },
-            { x: 404, y: 310, w: 48, h: 48, type: 'brick', hit: false },
-            { x: 1040, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'pet_bottle' },
-            { x: 1088, y: 310, w: 48, h: 48, type: 'brick', hit: false },
-            { x: 2040, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'paper_box' },
+            { x: 260, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'recycle', hit: false, content: 'soda_can' },
+            { x: 308, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'brick', hit: false },
+            { x: 356, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'question', hit: false, content: 'star' },
+            { x: 404, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'brick', hit: false },
+            { x: 1040, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'recycle', hit: false, content: 'pet_bottle' },
+            { x: 1088, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'brick', hit: false },
+            { x: 2040, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'recycle', hit: false, content: 'paper_box' },
             { x: 2280, y: 220, w: 48, h: 48, type: 'recycle', hit: false, content: 'glass_bottle' },
-            { x: 4520, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'soda_can' },
-            { x: 4568, y: 310, w: 48, h: 48, type: 'brick', hit: false },
+            { x: 4520, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'recycle', hit: false, content: 'soda_can' },
+            { x: 4568, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'brick', hit: false },
             { x: 4720, y: 220, w: 48, h: 48, type: 'question', hit: false, content: 'star' },
-            { x: 5100, y: 310, w: 48, h: 48, type: 'recycle', hit: false, content: 'pet_bottle' }
+            { x: 5100, y: BLOCK_ROW_Y, w: 48, h: 48, type: 'recycle', hit: false, content: 'pet_bottle' }
         ];
 
         // Garbage Bags
@@ -1044,12 +1058,16 @@ class Game {
         this.thunderTimer = 2.0;
         this.lightningFlash = 0;
 
+        // Cajulim keeps the 2:3 portrait proportion used by Faze 0 (80x120).
+        // The larger body makes the hero read clearly against the new pixel-art landmark.
         this.player.x = 80;
-        this.player.y = 350;
-        this.player.w = 48;
-        this.player.h = 76;
+        this.player.w = 80;
+        this.player.h = 120;
+        this.player.y = GROUND_Y - this.player.h;
         this.player.vx = 0;
         this.player.vy = 0;
+        this.player.grounded = true;
+        this.player.coyoteTimer = 0.12;
         this.player.isDead = false;
         this.player.animState = 'idle';
 
@@ -2205,6 +2223,15 @@ class Game {
 
     update(dt) {
         this.pollGamepad();
+
+        // Direct phase links set state to PLAYING before images finish loading.
+        // Hold the simulation until onAllAssetsLoaded() has populated the map;
+        // otherwise the default player falls through an empty platform list.
+        if (!this.assetsReady) {
+            this.actionJustPressed = false;
+            return;
+        }
+
         if (this.state === 'PLAYING') {
             this.updateTimer(dt);
             if (this.player && this.player.invulnerableTimer > 0) {
@@ -4398,7 +4425,7 @@ class Game {
         setTimeout(() => {
             if (this.lives > 0) {
                 p.x = Math.max(80, p.x - 260);
-                p.y = 350;
+                p.y = this.currentPhase === 1 ? 340 : 350;
                 p.vx = 0;
                 p.vy = 0;
                 p.isDead = false;
@@ -7280,6 +7307,23 @@ ctx.restore();
                 ctx.drawImage(cloudImg, cloudX2 - 100, 90, 170, 85);
                 ctx.drawImage(cloudImg, cloudX3 - 100, 50, 130, 65);
             }
+
+            // Centro de Parnamirim landmark panorama. The generated pixel-art plate
+            // adds a recognizable church/square silhouette while the level remains
+            // fully playable on its original platforms and collision map.
+            const centroImg = this.assets['sc_parnamirim_centro'];
+            if (centroImg && centroImg.complete !== false) {
+                // This is a complete 16:9 panorama, not a tile. Repeating it at
+                // every 960px made the left and right edges meet in the middle
+                // of the viewport as soon as the camera moved. Draw one slightly
+                // wider plate and clamp its small parallax range instead, so the
+                // church, trees and road stay continuous with no hard vertical cut.
+                const bgW = Math.round(VIRTUAL_WIDTH * 1.12);
+                const bgH = VIRTUAL_HEIGHT;
+                const maxPan = bgW - VIRTUAL_WIDTH;
+                const parallax = -Math.min(maxPan, Math.max(0, (this.camera.x || 0) * 0.15));
+                ctx.drawImage(centroImg, Math.floor(parallax), 0, bgW, bgH);
+            }
         } else if (this.currentPhase === 2) {
             // Phase 2: Neighborhood Collection Route - Bright Parnamirim Morning Sky
             const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
@@ -7781,8 +7825,9 @@ ctx.restore();
         else key = `p_idle_${Math.abs(p.animFrame || 0) % 4}`;
 
         const img = this.assets[key] || this.assets['p_idle_0'] || this.assets['p_walk_0'];
-        const drawW = 56;
-        const drawH = 80;
+        const isPhase1Hero = this.currentPhase === 1;
+        const drawW = isPhase1Hero ? 80 : 56;
+        const drawH = isPhase1Hero ? 120 : 80;
 
         if (img) {
             ctx.drawImage(img, -drawW / 2, -drawH, drawW, drawH);
