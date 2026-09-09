@@ -7159,6 +7159,11 @@ ctx.restore();
             return; // Rapid blink
         }
 
+        // The test copy uses the new transparent pixel-art sprite. Keep the
+        // original canvas construction below as a safe fallback if an asset
+        // is unavailable while loading.
+        if (this.renderPhase7BossSprite(ctx, boss)) return;
+
         ctx.save();
         ctx.translate(boss.x + boss.w / 2, boss.y + boss.h);
         ctx.scale(boss.facing, 1);
