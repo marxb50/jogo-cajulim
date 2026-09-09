@@ -247,7 +247,7 @@ class Game {
         keys.forEach(key => {
             const img = new Image();
             this.assets[key] = img;
-            img.src = imageList[key] + '?v=7.1';
+            img.src = imageList[key] + '?v=7.2';
             img.onload = () => {
                 this.loadedCount++;
                 if (this.loadedCount >= this.totalAssets) this.onAllAssetsLoaded();
@@ -2137,7 +2137,8 @@ class Game {
 
         // Mecha-Trator Poluidor 9000 & Barão do Entulho
         this.boss = {
-            x: 920,
+            // Start fully inside camera view
+            x: 700,
             y: 350,
             w: 160,
             h: 110,
@@ -2156,6 +2157,7 @@ class Game {
             debrisCooldown: 2.5,
             oilCooldown: 4.0,
             tireCooldown: 3.5,
+            wheel: 0,
             exhaustPuffs: [],
             sparks: []
         };
@@ -3568,9 +3570,10 @@ class Game {
                 this.bossDebris.splice(i, 1);
                 continue;
             }
+            // Hitbox justa e precisa (compatível com o tamanho do sprite do entulho)
             if (p.invulnerableTimer <= 0 && !p.isDead &&
-                p.x + p.w > d.x - 14 && p.x < d.x + 14 &&
-                p.y + p.h > d.y - 14 && p.y < d.y + 14) {
+                p.x + p.w > d.x - 8 && p.x < d.x + 8 &&
+                p.y + p.h > d.y - 8 && p.y < d.y + 8) {
                 this.hurtPlayer(1, 'O entulho do Barão te atingiu!');
                 this.bossDebris.splice(i, 1);
             }
@@ -3594,9 +3597,24 @@ class Game {
                     continue;
                 }
             }
+            const playerBottom = p.y + p.h;
+            // Se o jogador pular em cima do pneu, esmaga o pneu e quica para cima sem dano!
+            if (p.vy > 0 && p.x + p.w > t.x - 14 && p.x < t.x + 14 &&
+                playerBottom >= t.y - 16 && playerBottom <= t.y + 8) {
+                p.y = t.y - 16 - p.h;
+                p.vy = -480;
+                p.grounded = false;
+                this.spawnSparkles(t.x, t.y, 12);
+                this.addFloatingText(t.x, t.y - 20, '💥 PNEU DESTRUÍDO!', '#22c55e');
+                if (window.soundManager && window.soundManager.playJump) window.soundManager.playJump();
+                this.bossTires.splice(i, 1);
+                continue;
+            }
+
+            // Hitbox lateral justa para o pneu
             if (p.invulnerableTimer <= 0 && !p.isDead &&
-                p.x + p.w > t.x - 18 && p.x < t.x + 18 &&
-                p.y + p.h > t.y - 18 && p.y < t.y + 18) {
+                p.x + p.w > t.x - 10 && p.x < t.x + 10 &&
+                p.y + p.h > t.y - 10 && p.y < t.y + 10) {
                 this.hurtPlayer(1, 'Cuidado com os pneus quicando!');
                 this.bossTires.splice(i, 1);
             }
@@ -3765,46 +3783,43 @@ class Game {
 
         // --- COLLISION: Cajulim vs Boss ---
         if (!p.isDead && boss.state !== 'DEFEATED') {
-            // A faixa do capô acompanha melhor a largura visível da cabine.
-            // A antiga área de 90 px era estreita demais para o sprite novo.
-            const domeX1 = boss.x + 15;
-            const domeX2 = boss.x + boss.w - 15;
-            const domeY1 = boss.y - 15;
-            const domeY2 = boss.y + 45;
             const playerBottom = p.y + p.h;
-            const previousBottom = playerBottom - p.vy * dt;
+            const playerCenter = p.x + p.w / 2;
 
-            // Weak Spot Hit: Player falling from above onto the dome/hood.
-            // When the boss is flashing or hurt, the hood is still a solid
-            // landing surface; this prevents Cajulim from falling through the
-            // top of the tractor while its damage immunity is active.
-            const crossedDomeTop = (previousBottom <= domeY1 + 6 && playerBottom >= domeY1) ||
-                (playerBottom >= domeY1 && playerBottom <= domeY2);
-            const overDome = p.vy >= 0 && p.x + p.w > domeX1 && p.x < domeX2 &&
-                crossedDomeTop && p.y < domeY2;
-            if (overDome) {
+            // 1. WEAK SPOT: CAPÔ E TOPO DO MECHA-TRATOR
+            // Cobre generosamente a extensão superior visível do trator
+            const hoodLeft = boss.x - 15;
+            const hoodRight = boss.x + boss.w + 15;
+            const hoodTop = boss.y - 40;
+            const hoodBottom = boss.y + 45;
+
+            // Jogador caindo ou no topo sobre a área do capô
+            const isHorizontallyOverHood = (p.x + p.w > hoodLeft && p.x < hoodRight);
+            const isVerticallyHittingHood = (playerBottom >= hoodTop && playerBottom <= hoodBottom && p.y < hoodBottom);
+            const isFallingOrApex = p.vy >= -80; // Caindo ou no topo do arco do pulo
+
+            if (isHorizontallyOverHood && isVerticallyHittingHood && isFallingOrApex) {
                 if (boss.invulnerableTimer <= 0 && boss.state !== 'HURT') {
-                    // HIT!
+                    // HIT VÁLIDO NO CHEFÃO!
                     boss.hp -= 1;
                     if (boss.hp >= 3) boss.phase = 1;
-        else if (boss.hp === 2) boss.phase = 2;
-        else if (boss.hp === 1) boss.phase = 3;
+                    else if (boss.hp === 2) boss.phase = 2;
+                    else if (boss.hp === 1) boss.phase = 3;
                     else boss.phase = 0;
-                    boss.hurtTimer = 1.2;
-                    boss.invulnerableTimer = 1.6;
+
+                    boss.hurtTimer = 1.3;
+                    boss.invulnerableTimer = 1.8;
                     boss.state = 'HURT';
 
-                    p.y = domeY1 - p.h;
-                    p.vy = -560; // Big Sonic-style bounce!
+                    // Quique espetacular para cima (estilo Sonic / Mario)
+                    p.y = hoodTop - p.h + 10;
+                    p.vy = -620;
                     p.grounded = false;
-                    // Protege somente a saída do próprio golpe. Sem esta
-                    // janela curta, a cabine detectava o Cajulim no quadro
-                    // seguinte e ele perdia vida enquanto quicava para cima.
-                    p.bossBounceTimer = 0.32;
+                    p.bossBounceTimer = 0.45; // Imunidade generosa durante a saída do quique
 
                     this.score += 800;
-                    this.spawnSparkles(boss.x + boss.w / 2, boss.y + 20, 25);
-                    this.addFloatingText(boss.x + boss.w / 2, boss.y - 30, `💥 ACERTOU O CAPÔ! (${boss.hp}/4 HP)`, '#facc15');
+                    this.spawnSparkles(boss.x + boss.w / 2, boss.y + 10, 30);
+                    this.addFloatingText(boss.x + boss.w / 2, boss.y - 40, `💥 ACERTOU O CAPÔ! (${boss.hp}/4 HP)`, '#facc15');
 
                     if (window.soundManager && window.soundManager.playHorn) {
                         window.soundManager.playHorn();
@@ -3812,69 +3827,63 @@ class Game {
 
                     if (boss.hp === 1) {
                         boss.state = 'STUNNED';
-                        boss.stateTimer = 3.0;
-                        this.showTip('⭐ MECHA-TRATOR ATORDOADO! Suba na torre central e dê o salto final!', 3.5);
+                        boss.stateTimer = 3.5;
+                        this.showTip('⭐ MECHA-TRATOR ATORDOADO! Suba na torre central e dê o salto final!', 4.0);
                     } else if (boss.hp <= 0) {
                         boss.state = 'DEFEATED';
                         this.phase6State = 'BOSS_DEFEATED';
                         this.bossDefeatTimer = 0;
                         this.score += 5000;
-                        this.showTip('💥 O MECHA-TRATOR FOI DESARMADO! VITÓRIA!', 3.5);
+                        this.showTip('💥 O MECHA-TRATOR FOI DESARMADO! VITÓRIA!', 4.0);
                     }
                     return;
+                } else {
+                    // Se o chefe já estiver piscando de um golpe anterior, o jogador
+                    // aterra ou quica suavemente com segurança! NUNCA leva dano por pular no trator!
+                    p.y = hoodTop - p.h + 10;
+                    p.vy = -380; // Quique suave de recuo
+                    p.grounded = false;
+                    p.bossBounceTimer = 0.35;
+                    return;
                 }
-
-                p.y = domeY1 - p.h;
-                p.vy = 0;
-                p.grounded = true;
-                p.animState = 'idle';
-                return;
             }
 
-            // Solid visual envelope: the generated sprite is taller and wider
-            // than the old logical body.  The previous collider started at
-            // boss.y + 40, leaving the cabin and upper shovel pass-through,
-            // which made the tractor look like a ghost when Cajulim jumped.
-            const bodyX1 = boss.x - 42;
-            const bodyX2 = boss.x + boss.w + 42;
-            const bodyY1 = boss.y - 58;
-            const bodyY2 = boss.y + boss.h;
+            // Se o jogador estiver quicando para cima após acerto, fica imune ao trator
+            if (p.bossBounceTimer > 0) return;
 
-            // Quem vem de cima precisa alcançar o capô antes de encontrar o
-            // envelope lateral. Sem esta exceção, a cabine sólida afastava o
-            // jogador ainda no ar e tornava impossível machucar o vilão.
-            const descendingTowardHood = p.vy >= 0 && previousBottom <= domeY1 + 6 &&
-                p.y < domeY1 && p.x + p.w > domeX1 && p.x < domeX2;
-            if (descendingTowardHood) return;
+            // 2. CORPO DO TRATOR (ATROPELAMENTO NO NÍVEL DO CHÃO)
+            // REGRA FUNDAMENTAL: Se o jogador estiver em um andaime elevado (playerBottom <= 365),
+            // ele NUNCA toma dano do trator que passa por baixo no chão!
+            const isAtGroundLevel = playerBottom > boss.y + 40; // Apenas no nível do chão (y > 390px)
 
-            // Depois de um acerto válido, permita que Cajulim termine o
-            // impulso para cima e saia da cabine sem receber o mesmo contato
-            // como dano. Pneus, entulho e óleo continuam perigosos.
-            if (p.bossBounceTimer > 0 && p.vy < 0) return;
+            if (isAtGroundLevel) {
+                // Hitbox lateral justo acompanhando a pá frontal e a esteira
+                const bodyX1 = boss.facing > 0 ? boss.x : boss.x - 18;
+                const bodyX2 = boss.facing > 0 ? boss.x + boss.w + 18 : boss.x + boss.w;
+                const bodyY1 = boss.y + 35; // Apenas a parte baixa (pá e esteiras)
+                const bodyY2 = boss.y + boss.h;
 
-            if (p.x + p.w > bodyX1 && p.x < bodyX2 &&
-                p.y + p.h > bodyY1 && p.y < bodyY2) {
-                // Push sideways out of the envelope before applying damage.
-                // This keeps the player from being carried through the boss
-                // during a fast DRIVE/RAMMING step, including while invulnerable.
-                const playerCenter = p.x + p.w / 2;
-                const bossCenter = (bodyX1 + bodyX2) / 2;
-                if (playerCenter < bossCenter) {
-                    p.x = bodyX1 - p.w - 1;
-                    p.vx = Math.min(p.vx, -180);
-                } else {
-                    p.x = bodyX2 + 1;
-                    p.vx = Math.max(p.vx, 180);
-                }
-                if (p.invulnerableTimer <= 0) {
-                    this.hurtPlayer(1, 'O Mecha-Trator te atingiu! Pule por cima!');
-                    p.vy = -240;
+                if (p.x + p.w > bodyX1 && p.x < bodyX2 && playerBottom > bodyY1 && p.y < bodyY2) {
+                    // Empurra lateralmente para não prender o jogador
+                    const bossCenter = (bodyX1 + bodyX2) / 2;
+                    if (playerCenter < bossCenter) {
+                        p.x = bodyX1 - p.w - 2;
+                        p.vx = Math.min(p.vx, -200);
+                    } else {
+                        p.x = bodyX2 + 2;
+                        p.vx = Math.max(p.vx, 200);
+                    }
+
+                    if (p.invulnerableTimer <= 0) {
+                        this.hurtPlayer(1, 'O Mecha-Trator te atingiu! Pule por cima!');
+                        p.vy = -240;
+                    }
                 }
             }
         }
     }
 
-    hurtPlayer(damage = 1, reason = 'Você levou dano!') {
+        hurtPlayer(damage = 1, reason = 'Você levou dano!') {
         const p = this.player;
         if (p.invulnerableTimer > 0 || p.isDead) return;
         this.lives -= damage;
