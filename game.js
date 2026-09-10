@@ -5797,8 +5797,17 @@ ctx.restore();
         ctx.translate(centerX, groundY);
         ctx.rotate(slope + t.sway);
         ctx.imageSmoothingEnabled = false;
-        if (truckImg) {
+        const imageReady = truckImg && truckImg.complete !== false && (
+            (typeof truckImg.naturalWidth === 'number' && truckImg.naturalWidth > 0) ||
+            (typeof truckImg.naturalWidth === 'undefined' && (truckImg.width || 0) > 0)
+        );
+        if (imageReady) {
             ctx.drawImage(truckImg, -t.w / 2, drawTop, t.w, drawH);
+        } else {
+            // A carreta não pode desaparecer quando a textura magenta falha
+            // ou ainda está baixando. O fallback mantém o veículo jogável e
+            // deixa a câmera acompanhar o progresso normalmente.
+            this.drawPhase5TruckFallback(ctx, t, drawTop);
         }
 
         // Centros medidos no sprite: a animação fica contida dentro dos cubos originais.
@@ -5815,6 +5824,49 @@ ctx.restore();
             ctx.textAlign = "center";
             ctx.fillText("TRAÇÃO 6x4", 144, -139);
         }
+        ctx.restore();
+    }
+
+    drawPhase5TruckFallback(ctx, t, drawTop = -167) {
+        const left = -t.w / 2;
+        ctx.save();
+        // Baú azul da carreta
+        ctx.fillStyle = '#123f68';
+        ctx.fillRect(left + 18, drawTop + 30, 355, 93);
+        ctx.fillStyle = '#1d6f98';
+        ctx.fillRect(left + 28, drawTop + 42, 335, 70);
+        ctx.strokeStyle = '#09283e';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(left + 18, drawTop + 30, 355, 93);
+        // Faixa refletiva e identificação municipal
+        ctx.fillStyle = '#f0d35f';
+        ctx.fillRect(left + 20, drawTop + 108, 350, 9);
+        ctx.fillStyle = '#e4edf0';
+        ctx.fillRect(left + 34, drawTop + 111, 55, 5);
+        ctx.fillRect(left + 118, drawTop + 111, 55, 5);
+        ctx.fillRect(left + 202, drawTop + 111, 55, 5);
+        ctx.fillStyle = '#f7d85c';
+        ctx.fillRect(left + 150, drawTop + 55, 112, 37);
+        ctx.fillStyle = '#174d6d';
+        ctx.font = '900 12px "Nunito", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('PARNAMIRIM', left + 206, drawTop + 78);
+        // Cabine azul à direita
+        ctx.fillStyle = '#1b5d88';
+        ctx.fillRect(left + 374, drawTop + 55, 112, 68);
+        ctx.fillStyle = '#8bd0df';
+        ctx.fillRect(left + 390, drawTop + 67, 43, 28);
+        ctx.fillRect(left + 441, drawTop + 67, 31, 28);
+        ctx.strokeStyle = '#09283e';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(left + 374, drawTop + 55, 112, 68);
+        ctx.fillStyle = '#f1c84f';
+        ctx.fillRect(left + 464, drawTop + 105, 23, 11);
+        // Chassi e para-choque
+        ctx.fillStyle = '#263b47';
+        ctx.fillRect(left + 10, drawTop + 120, 490, 13);
+        ctx.fillStyle = '#d9e2df';
+        ctx.fillRect(left + 474, drawTop + 122, 28, 8);
         ctx.restore();
     }
 

@@ -69,6 +69,22 @@ try {
     phase2.renderBlocks(phase2.ctx);
     assert.ok(fallbackBlocks >= 4, 'Os blocos devem continuar desenhados durante uma falha de textura');
 
+    // A Fase 6 nunca pode deixar a carreta invisível quando a textura falhar.
+    global.window.location.search = '?fase=6';
+    requested.length = 0;
+    deferredTimers.length = 0;
+    delete require.cache[gamePath];
+    const { Game: Phase6Game } = require(gamePath);
+    const phase6 = new Phase6Game();
+    assert.ok(requested.some(url => url.includes('carreta_16bit_magenta.png')), 'A carreta deve ser priorizada na Fase 6');
+    phase6.assets.sc_carreta_cutout = null;
+    phase6.assets.sc_carreta_magenta.complete = true;
+    phase6.assets.sc_carreta_magenta.naturalWidth = 0;
+    const fallbackTruckRects = [];
+    phase6.ctx.fillRect = (...args) => fallbackTruckRects.push(args);
+    phase6.drawPhase5Truck(phase6.ctx);
+    assert.ok(fallbackTruckRects.some(args => args[2] === 355 && args[3] === 93), 'A carreta deve continuar visível com fallback quando a textura falhar');
+
     global.window.location.search = '?fase=7';
     requested.length = 0;
     deferredTimers.length = 0;
