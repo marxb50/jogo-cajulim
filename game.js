@@ -100,6 +100,7 @@ class Game {
             animTime: 0,
             cloudX: 0
         };
+        this.credits = null;
 
         this.player = {
             x: 80, y: 350, vx: 0, vy: 0, w: 48, h: 76,
@@ -351,6 +352,7 @@ class Game {
             const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
             const getParam = (key) => searchParams.get(key) || hashParams.get(key);
             const targetPhase = getParam('fase') || getParam('phase') || (this.hasDirectPhase ? String(this.currentPhase) : null);
+            const creditsRequested = getParam('creditos') === '1' || getParam('credits') === '1';
 
             if (targetPhase) {
                 this.cutscene.active = false;
@@ -601,11 +603,12 @@ class Game {
                 }
             }
 
-            if (!targetPhase && !getParam('cutscene')) {
+            if (!targetPhase && !getParam('cutscene') && !creditsRequested) {
                 this.currentPhase = 1;
                 this.state = 'TITLE';
                 this.initLevel();
             }
+            if (creditsRequested) this.startCredits();
         }
     }
 
@@ -671,6 +674,16 @@ class Game {
             if (window.soundManager) window.soundManager.resume();
             if (e.repeat) return;
 
+            if (this.state === 'CREDITS') {
+                if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+                    this.finishCredits();
+                    return;
+                }
+                if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+                    this.keys.down = true;
+                    return;
+                }
+            }
             if (this.state === 'CUTSCENE') {
                 if (e.code === 'Space' || e.code === 'Enter') {
                     this.advanceCutscene();
@@ -794,6 +807,10 @@ class Game {
                 } else {
                     this.startCutscene('INTRO');
                 }
+                return;
+            }
+            if (this.state === 'CREDITS') {
+                this.finishCredits();
                 return;
             }
             if (this.state === 'LEVEL_CLEAR') {
@@ -2365,9 +2382,11 @@ class Game {
             }
         } else if (this.state === 'CUTSCENE') {
             this.updateCutscene(dt);
+        } else if (this.state === 'CREDITS') {
+            this.updateCredits(dt);
         }
 
-        if (this.state === 'CUTSCENE' || this.currentPhase === 1 || this.currentPhase === 5) {
+        if (this.state === 'CUTSCENE' || this.state === 'CREDITS' || this.currentPhase === 1 || this.currentPhase === 5) {
             this.camera.x = 0;
             this.camera.y = 0;
         } else {
@@ -4743,6 +4762,11 @@ class Game {
 
         if (!this.assetsReady) {
             this.renderLoadingScreen(ctx);
+            return;
+        }
+
+        if (this.state === 'CREDITS') {
+            this.renderCredits(ctx);
             return;
         }
 
@@ -8811,6 +8835,191 @@ ctx.restore();
         }
     }
 
+    startCredits() {
+        if (typeof window !== 'undefined' && window.soundManager) {
+            if (window.soundManager.stopNarration) window.soundManager.stopNarration();
+            if (window.soundManager.stopMusic) window.soundManager.stopMusic();
+            if (window.soundManager.playFanfare) window.soundManager.playFanfare();
+        }
+        this.cutscene.active = false;
+        this.state = 'CREDITS';
+        this.camera.x = 0;
+        this.camera.y = 0;
+        this.credits = {
+            elapsed: 0,
+            scroll: 0,
+            maxScroll: 2260,
+            complete: false
+        };
+    }
+
+    finishCredits() {
+        this.credits = null;
+        this.switchPhase(1);
+        this.state = 'TITLE';
+    }
+
+    updateCredits(dt) {
+        if (!this.credits) this.startCredits();
+        const credits = this.credits;
+        credits.elapsed += dt;
+        const speed = this.keys.down ? 130 : 38;
+        credits.scroll = Math.min(credits.maxScroll, credits.scroll + dt * speed);
+        credits.complete = credits.scroll >= credits.maxScroll;
+    }
+
+    renderCredits(ctx) {
+        const credits = this.credits || { elapsed: 0, scroll: 0, maxScroll: 2260, complete: false };
+        const baseY = 42 - credits.scroll;
+
+        ctx.save();
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+        // Pontos de luz lentos dão profundidade sem tirar o aspecto preto e branco.
+        for (let index = 0; index < 34; index++) {
+            const x = (index * 83 + 29) % VIRTUAL_WIDTH;
+            const y = (index * 149 + Math.floor(credits.elapsed * (5 + index % 4))) % VIRTUAL_HEIGHT;
+            const alpha = 0.14 + (index % 4) * 0.07;
+            ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+            ctx.fillRect(x, y, index % 5 === 0 ? 2 : 1, index % 5 === 0 ? 2 : 1);
+        }
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(24, 20, VIRTUAL_WIDTH - 48, VIRTUAL_HEIGHT - 40);
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+        ctx.strokeRect(30, 26, VIRTUAL_WIDTH - 60, VIRTUAL_HEIGHT - 52);
+
+        const visibility = (y) => Math.max(0, Math.min(1, (y + 70) / 90, (VIRTUAL_HEIGHT + 70 - y) / 90));
+        const line = (text, offsetY, size = 11, options = {}) => {
+            const y = baseY + offsetY;
+            if (y < -80 || y > VIRTUAL_HEIGHT + 80) return;
+            ctx.save();
+            ctx.globalAlpha = visibility(y);
+            const weight = options.weight || 'bold';
+            const family = options.family || '"Press Start 2P", monospace, sans-serif';
+            ctx.font = `${weight} ${size}px ${family}`;
+            ctx.fillStyle = options.color || '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, VIRTUAL_WIDTH / 2, y);
+            ctx.restore();
+        };
+        const divider = (offsetY, width = 310) => {
+            const y = baseY + offsetY;
+            if (y < -30 || y > VIRTUAL_HEIGHT + 30) return;
+            ctx.save();
+            ctx.globalAlpha = visibility(y) * 0.65;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(VIRTUAL_WIDTH / 2 - width / 2, y);
+            ctx.lineTo(VIRTUAL_WIDTH / 2 + width / 2, y);
+            ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(VIRTUAL_WIDTH / 2 - 2, y - 2, 4, 4);
+            ctx.restore();
+        };
+
+        const logoY = baseY;
+        const logo = this.assets['ui_parnamirim_logo'];
+        if (logoY > -90 && logoY < VIRTUAL_HEIGHT + 40) {
+            ctx.save();
+            ctx.globalAlpha = visibility(logoY + 30);
+            if (logo && logo.complete !== false && (logo.naturalWidth === undefined || logo.naturalWidth > 0)) {
+                ctx.drawImage(logo, VIRTUAL_WIDTH / 2 - 155, logoY, 310, 59);
+            } else {
+                line('PREFEITURA DE PARNAMIRIM', 32, 13);
+            }
+            ctx.restore();
+        }
+
+        line('FIM', 115, 40);
+        line('VOCÊ CONSEGUIU!', 170, 22);
+        line('Obrigado por jogar!', 212, 18, { family: '"Fredoka", sans-serif', weight: '600' });
+        line('★  ★  ★', 254, 18);
+        divider(302, 360);
+
+        line('REALIZAÇÃO', 350, 14);
+        line('PREFEITURA DE PARNAMIRIM', 394, 16);
+        line('PREFEITA', 466, 9, { color: '#d1d5db' });
+        line('PROFESSORA NILDA', 500, 15);
+        line('SECRETARIA MUNICIPAL', 568, 12);
+        line('DE LIMPEZA URBANA', 602, 12);
+        line('SECRETÁRIA', 670, 9, { color: '#d1d5db' });
+        line('ROSEANE PAIVA', 704, 15);
+        line('E EQUIPE', 738, 11);
+        line('NOMES DA EQUIPE SERÃO ADICIONADOS', 786, 8, { color: '#d1d5db' });
+        line('POSTERIORMENTE', 810, 8, { color: '#d1d5db' });
+        divider(860, 420);
+
+        line('CRÉDITOS', 910, 22);
+        line('GAME', 970, 9, { color: '#d1d5db' });
+        line('TURMA DO CAJULIM', 1004, 16);
+
+        line('CRIADO POR', 1072, 9, { color: '#d1d5db' });
+        line('MARX BRUNO', 1104, 14);
+        line('PROGRAMAÇÃO', 1172, 9, { color: '#d1d5db' });
+        line('MARX BRUNO', 1204, 14);
+        line('ARTE', 1272, 9, { color: '#d1d5db' });
+        line('MARX BRUNO', 1304, 14);
+        line('MÚSICA', 1372, 9, { color: '#d1d5db' });
+        line('MARX BRUNO', 1404, 14);
+        line('EFEITOS SONOROS', 1472, 9, { color: '#d1d5db' });
+        line('MARX BRUNO', 1504, 14);
+        line('DESIGN DE FASES', 1572, 9, { color: '#d1d5db' });
+        line('MARX BRUNO', 1604, 14);
+        line('HISTÓRIA', 1672, 9, { color: '#d1d5db' });
+        line('MARX BRUNO', 1704, 14);
+        divider(1754, 360);
+
+        line('SUPORTE COM INTELIGÊNCIA ARTIFICIAL', 1804, 11);
+        line('UTILIZADAS APENAS COMO SUPORTE', 1840, 8, { color: '#d1d5db' });
+        line('GPT-5.6 LUNA', 1892, 13);
+        line('GEMINI 3.8', 1928, 13);
+        divider(1978, 360);
+
+        line('AGRADECIMENTOS', 2028, 17);
+        line('A TODOS QUE JOGARAM', 2080, 11);
+        line('E APOIARAM O PROJETO.', 2112, 11);
+        line('UM AGRADECIMENTO ESPECIAL A', 2180, 10, { color: '#d1d5db' });
+        line('PREFEITURA DE PARNAMIRIM', 2222, 12);
+        line('SECRETARIA MUNICIPAL DE LIMPEZA URBANA', 2260, 9);
+        divider(2310, 420);
+
+        line('OBRIGADO POR JOGAR!', 2370, 21);
+        line('♥  ♥  ♥', 2422, 19);
+        line('ATÉ A PRÓXIMA AVENTURA!', 2472, 12);
+
+        const topFade = ctx.createLinearGradient(0, 0, 0, 78);
+        topFade.addColorStop(0, 'rgba(0,0,0,1)');
+        topFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = topFade;
+        ctx.fillRect(31, 27, VIRTUAL_WIDTH - 62, 60);
+
+        const bottomFade = ctx.createLinearGradient(0, VIRTUAL_HEIGHT - 92, 0, VIRTUAL_HEIGHT);
+        bottomFade.addColorStop(0, 'rgba(0,0,0,0)');
+        bottomFade.addColorStop(1, 'rgba(0,0,0,1)');
+        ctx.fillStyle = bottomFade;
+        ctx.fillRect(31, VIRTUAL_HEIGHT - 92, VIRTUAL_WIDTH - 62, 65);
+
+        ctx.fillStyle = 'rgba(0,0,0,0.94)';
+        ctx.fillRect(32, VIRTUAL_HEIGHT - 48, VIRTUAL_WIDTH - 64, 20);
+        ctx.font = 'bold 7.5px "Press Start 2P", monospace, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        const hint = credits.complete
+            ? 'FIM DOS CRÉDITOS  •  ESPAÇO / A OU TOQUE: MENU'
+            : '↓ ACELERAR  •  ESPAÇO / A OU TOQUE: VOLTAR AO MENU';
+        ctx.fillText(hint, VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT - 34);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(32, VIRTUAL_HEIGHT - 25, VIRTUAL_WIDTH - 64, 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(32, VIRTUAL_HEIGHT - 25, (VIRTUAL_WIDTH - 64) * Math.min(1, credits.scroll / credits.maxScroll), 2);
+        ctx.restore();
+    }
+
     startCutscene(type) {
         this.state = 'CUTSCENE';
         this.cutscene.active = true;
@@ -9111,12 +9320,7 @@ ctx.restore();
                 if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
                 this.triggerCutsceneNarration();
             } else {
-                if (window.soundManager && window.soundManager.stopNarration) {
-                    window.soundManager.stopNarration();
-                }
-                this.cutscene.active = false;
-                this.switchPhase(1);
-                this.state = 'TITLE';
+                this.startCredits();
             }
         }
     }
@@ -9163,9 +9367,7 @@ ctx.restore();
                 this.cutscene.textProgress = 999;
                 this.triggerCutsceneNarration();
             } else {
-                this.cutscene.active = false;
-                this.switchPhase(1);
-                this.state = 'TITLE';
+                this.startCredits();
             }
         }
     }
@@ -10915,7 +11117,9 @@ ctx.restore();
             if (this.player) this.player.jumpBuffer = 0.2;
             if ((this.currentPhase === 3 || this.currentPhase === 4) && window.soundManager) window.soundManager.playHorn();
 
-            if (this.state === 'TITLE') {
+            if (this.state === 'CREDITS') {
+                this.finishCredits();
+            } else if (this.state === 'TITLE') {
                 if (this.currentPhase > 1) {
                     this.switchPhase(this.currentPhase);
                     this.startGame();
@@ -10940,6 +11144,10 @@ ctx.restore();
         });
 
         bindBtn('btnTouchB', () => {
+            if (this.state === 'CREDITS') {
+                this.finishCredits();
+                return;
+            }
             this.keys.down = true;
             this.keys.action = true;
             this.actionJustPressed = true;

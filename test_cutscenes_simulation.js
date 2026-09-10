@@ -69,6 +69,43 @@ for (let step = 0; step < 3; step++) {
     game.cutscene.textProgress = game.getCutsceneFullText().length;
     game.advanceCutscene();
 }
+assert.strictEqual(game.state, 'CREDITS', 'O final precisa abrir os créditos antes de voltar ao menu');
+assert.ok(game.credits, 'A rolagem dos créditos precisa ser inicializada');
+assert.strictEqual(game.currentPhase, 8);
+
+const creditsText = [];
+const creditImages = [];
+game.ctx.fillText = text => creditsText.push(String(text));
+game.ctx.drawImage = image => creditImages.push(image);
+for (const scroll of [0, 650, 1200, 1700, 2260]) {
+    game.credits.scroll = scroll;
+    game.renderCredits(game.ctx);
+}
+assert.ok(creditImages.includes(game.assets.ui_parnamirim_logo), 'A logo da Prefeitura precisa abrir os créditos');
+for (const requiredText of [
+    'FIM',
+    'VOCÊ CONSEGUIU!',
+    'Obrigado por jogar!',
+    'PREFEITURA DE PARNAMIRIM',
+    'PROFESSORA NILDA',
+    'ROSEANE PAIVA',
+    'MARX BRUNO',
+    'GPT-5.6 LUNA',
+    'GEMINI 3.8',
+    'OBRIGADO POR JOGAR!'
+]) {
+    assert.ok(creditsText.includes(requiredText), `Crédito ausente: ${requiredText}`);
+}
+for (const role of ['CRIADO POR', 'PROGRAMAÇÃO', 'ARTE', 'MÚSICA', 'EFEITOS SONOROS', 'DESIGN DE FASES', 'HISTÓRIA']) {
+    assert.ok(creditsText.includes(role), `Função ausente nos créditos: ${role}`);
+}
+
+game.credits.scroll = 0;
+game.keys.down = true;
+game.updateCredits(1);
+assert.strictEqual(game.credits.scroll, 130, 'A seta para baixo precisa acelerar os créditos');
+game.keys.down = false;
+game.finishCredits();
 assert.strictEqual(game.state, 'TITLE');
 assert.strictEqual(game.currentPhase, 1);
 
