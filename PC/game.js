@@ -6420,20 +6420,19 @@ ctx.restore();
             }
         });
 
-        // Passarela exatamente sob os pés do Cajulim, acima da água.
-        ctx.fillStyle = '#744b2b';
+        // Piso técnico contínuo, sem a antiga ponte marrom e sem corrimão
+        // atravessando a foto. A faixa continua sendo o piso jogável acima
+        // dos tanques para não alterar a movimentação do Cajulim.
+        ctx.fillStyle = '#718486';
         ctx.fillRect(3010, FLOOR, 1570, 24);
-        ctx.fillStyle = '#302218';
+        ctx.fillStyle = '#c4d0c4';
+        ctx.fillRect(3010, FLOOR, 1570, 6);
+        ctx.fillStyle = '#263a40';
         ctx.fillRect(3010, FLOOR + 19, 1570, 5);
-        ctx.fillStyle = '#d8aa5e';
-        for (let x = 3020; x < 4570; x += 42) ctx.fillRect(x, FLOOR + 2, 32, 4);
-        // Safety handrail
-        ctx.strokeStyle = '#183a42';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(3020, FLOOR - 34); ctx.lineTo(4570, FLOOR - 34);
-        ctx.stroke();
-        for (let x = 3030; x < 4580; x += 80) ctx.fillRect(x, FLOOR - 34, 5, 34);
+        ctx.fillStyle = '#9cb2a7';
+        for (let x = 3022; x < 4570; x += 84) ctx.fillRect(x, FLOOR + 8, 42, 4);
+        ctx.fillStyle = '#53686c';
+        for (let x = 3060; x < 4570; x += 170) ctx.fillRect(x, FLOOR - 3, 10, 3);
 
         ctx.restore();
     }
