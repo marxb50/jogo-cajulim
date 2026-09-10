@@ -11102,13 +11102,86 @@ ctx.restore();
             el.addEventListener('mouseleave', end);
         };
 
-        bindBtn('btnTouchLeft', () => { this.keys.left = true; }, () => { this.keys.left = false; });
-        bindBtn('btnTouchRight', () => { this.keys.right = true; }, () => { this.keys.right = false; });
-        bindBtn('btnTouchUp', () => { this.keys.up = true; }, () => { this.keys.up = false; });
-        bindBtn('btnTouchDown', () => { this.keys.down = true; }, () => { this.keys.down = false; });
+        const joystickDirections = { left: false, right: false, up: false, down: false };
+        const syncTouchDirections = () => {
+            this.keys.left = joystickDirections.left;
+            this.keys.right = joystickDirections.right;
+            this.keys.up = joystickDirections.up;
+            this.keys.down = joystickDirections.down;
+        };
+
+        const joystickBase = document.getElementById('joystickBase');
+        const joystickKnob = document.getElementById('joystickKnob');
+        if (joystickBase && joystickKnob) {
+            let activePointerId = null;
+            const deadZone = 0.24;
+
+            const moveJoystick = (clientX, clientY) => {
+                const rect = joystickBase.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const knobRadius = joystickKnob.offsetWidth / 2;
+                const maxTravel = Math.max(1, rect.width / 2 - knobRadius - 5);
+                const rawX = clientX - centerX;
+                const rawY = clientY - centerY;
+                const distance = Math.hypot(rawX, rawY);
+                const limit = distance > maxTravel ? maxTravel / distance : 1;
+                const visualX = rawX * limit;
+                const visualY = rawY * limit;
+                const axisX = visualX / maxTravel;
+                const axisY = visualY / maxTravel;
+
+                joystickKnob.style.transform = `translate(calc(-50% + ${visualX.toFixed(1)}px), calc(-50% + ${visualY.toFixed(1)}px))`;
+                joystickDirections.left = axisX < -deadZone;
+                joystickDirections.right = axisX > deadZone;
+                joystickDirections.up = axisY < -deadZone;
+                joystickDirections.down = axisY > deadZone;
+                syncTouchDirections();
+            };
+
+            const releaseJoystick = (event) => {
+                if (activePointerId === null || (event && event.pointerId !== activePointerId)) return;
+                activePointerId = null;
+                joystickDirections.left = false;
+                joystickDirections.right = false;
+                joystickDirections.up = false;
+                joystickDirections.down = false;
+                syncTouchDirections();
+                joystickBase.classList.remove('active');
+                joystickKnob.style.transform = 'translate(-50%, -50%)';
+            };
+
+            joystickBase.addEventListener('pointerdown', (event) => {
+                if (activePointerId !== null) return;
+                if (event.cancelable) event.preventDefault();
+                event.stopPropagation();
+                activePointerId = event.pointerId;
+                joystickBase.classList.add('active');
+                if (joystickBase.setPointerCapture) joystickBase.setPointerCapture(event.pointerId);
+                if (window.soundManager) window.soundManager.resume();
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    try { navigator.vibrate(10); } catch (err) {}
+                }
+                moveJoystick(event.clientX, event.clientY);
+            });
+            joystickBase.addEventListener('pointermove', (event) => {
+                if (event.pointerId !== activePointerId) return;
+                if (event.cancelable) event.preventDefault();
+                moveJoystick(event.clientX, event.clientY);
+            });
+            joystickBase.addEventListener('pointerup', releaseJoystick);
+            joystickBase.addEventListener('pointercancel', releaseJoystick);
+            joystickBase.addEventListener('lostpointercapture', releaseJoystick);
+
+            this.mobileJoystick = {
+                directions: joystickDirections,
+                moveTo: moveJoystick,
+                release: () => releaseJoystick({ pointerId: activePointerId })
+            };
+        }
 
         bindBtn('btnTouchA', () => {
-            this.keys.up = true;
+            syncTouchDirections();
             this.keys.jump = true;
             this.keys.jumpHeld = true;
             this.keys.action = true;
@@ -11134,26 +11207,13 @@ ctx.restore();
                 this.restartLevel();
             }
         }, () => {
-            this.keys.up = false;
+            syncTouchDirections();
             this.keys.action = false;
             this.keyboardJumpHeld = false;
             if (!this.gamepadJumpHeld) {
                 this.keys.jump = false;
                 this.keys.jumpHeld = false;
             }
-        });
-
-        bindBtn('btnTouchB', () => {
-            if (this.state === 'CREDITS') {
-                this.finishCredits();
-                return;
-            }
-            this.keys.down = true;
-            this.keys.action = true;
-            this.actionJustPressed = true;
-        }, () => {
-            this.keys.down = false;
-            this.keys.action = false;
         });
 
         const soundBtn = document.getElementById('btnMobileSound');

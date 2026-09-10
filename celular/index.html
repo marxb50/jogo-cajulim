@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Turma do Cajulim - Edição Celular</title>
     <link rel="icon" type="image/png" href="assets/ui/parnamirim_logo.png">
-    <link rel="stylesheet" href="style.css?v=8.0">
+    <link rel="stylesheet" href="style.css?v=8.7">
     <script>
         // Anti-scroll / anti-zoom guard for mobile touch
         document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
@@ -73,34 +73,32 @@
 
         <!-- Controles Virtuais Semi-Transparentes na Tela -->
         <div class="touch-controls-layer" id="touchControlsLayer">
-            <!-- Lado Esquerdo: Direcionais D-Pad -->
-            <div class="dpad-zone" id="dpadZone">
-                <div class="dpad-grid">
-                    <button class="dpad-btn btn-up" id="btnTouchUp" aria-label="Cima">▲</button>
-                    <button class="dpad-btn btn-left" id="btnTouchLeft" aria-label="Esquerda">◀</button>
-                    <div class="dpad-center"></div>
-                    <button class="dpad-btn btn-right" id="btnTouchRight" aria-label="Direita">▶</button>
-                    <button class="dpad-btn btn-down" id="btnTouchDown" aria-label="Baixo / Freio">▼</button>
+            <!-- Lado esquerdo: analógico para oito direções -->
+            <div class="joystick-zone" id="joystickZone">
+                <div class="joystick-base" id="joystickBase" role="application" aria-label="Controle analógico: arraste a bola para andar em qualquer direção">
+                    <span class="joystick-direction direction-up" aria-hidden="true"></span>
+                    <span class="joystick-direction direction-right" aria-hidden="true"></span>
+                    <span class="joystick-direction direction-down" aria-hidden="true"></span>
+                    <span class="joystick-direction direction-left" aria-hidden="true"></span>
+                    <div class="joystick-knob" id="joystickKnob" aria-hidden="true">
+                        <span class="joystick-shine"></span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Lado Direito: Botões de Ação A e B -->
+            <!-- Lado direito: único botão usado pelo jogo -->
             <div class="actions-zone" id="actionsZone">
-                <button class="action-btn btn-b" id="btnTouchB" aria-label="Botão B: Ação / Freio / Turbo">
-                    <span class="btn-main">B</span>
-                    <span class="btn-sub">AÇÃO</span>
-                </button>
-                <button class="action-btn btn-a" id="btnTouchA" aria-label="Botão A: Pulo / Avançar">
+                <button class="action-btn btn-a" id="btnTouchA" aria-label="Botão A: Pular, agir ou avançar">
                     <span class="btn-main">A</span>
-                    <span class="btn-sub">PULO</span>
+                    <span class="btn-sub">AÇÃO</span>
                 </button>
             </div>
         </div>
     </main>
 
     <!-- Scripts do Jogo -->
-    <script src="narrations.js?v=8.6"></script>
-    <script src="audio.js?v=8.6"></script>
-    <script src="game.js?v=8.6"></script>
+    <script src="narrations.js?v=8.7"></script>
+    <script src="audio.js?v=8.7"></script>
+    <script src="game.js?v=8.7"></script>
 </body>
 </html>
