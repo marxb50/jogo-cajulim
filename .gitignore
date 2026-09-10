@@ -15,7 +15,7 @@ pickup_crops/
 /*.jpeg
 /*.mp4
 /*.pdf
-/*.bat
+*.bat
 /*.ps1
 /*.mp3
 /*.py

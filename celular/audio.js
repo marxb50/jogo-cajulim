@@ -675,13 +675,15 @@ class SoundManager {
                 utter.rate = 1.0;
                 utter.pitch = 0.95;
             } else {
-                const thalitaVoice = voices.find(v => 
+                const antoniaVoice = voices.find(v => 
+                    v.name.includes('Antonia') || 
+                    v.name.includes('Antônia') || 
                     v.name.includes('Thalita') || 
                     (v.lang === 'pt-BR' && (v.name.includes('Female') || v.name.includes('Francisca') || v.name.includes('Natural'))) ||
                     v.lang === 'pt-BR' ||
                     v.lang.startsWith('pt')
                 );
-                if (thalitaVoice) utter.voice = thalitaVoice;
+                if (antoniaVoice) utter.voice = antoniaVoice;
                 utter.rate = 1.02;
                 utter.pitch = 1.02;
             }

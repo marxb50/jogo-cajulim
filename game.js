@@ -40,7 +40,7 @@ class Game {
             const targetPhase = getParam('fase') || getParam('phase');
             if (targetPhase) {
                 const parsed = parseInt(targetPhase, 10);
-                if (parsed >= 1 && parsed <= 7) {
+                if (parsed >= 1 && parsed <= 8) {
                     initialPhase = parsed;
                     hasDirectPhase = true;
                 }
@@ -116,12 +116,12 @@ class Game {
         this.hazards = []; // cones, oil slicks
         this.truck = null;
         this.transbordoFacility = null;
-        this.lives = this.currentPhase === 7 ? 5 : 3;
+        this.lives = this.currentPhase === 8 ? 5 : 3;
 
         // Initialize the direct-test boss state before the first animation
         // frame. This prevents the update loop from seeing undefined hazard
         // arrays while the image bundle is still loading.
-        if (hasDirectPhase && this.currentPhase === 7) {
+        if (hasDirectPhase && this.currentPhase === 8) {
             this.initLevel();
         }
 
@@ -155,6 +155,31 @@ class Game {
             'p_collect_0': 'assets/player/collect_0.png',
             'p_collect_1': 'assets/player/collect_1.png',
             'p_win': 'assets/player/win.png',
+
+            // Casa Viva (Fase 1)
+            'cv_service': 'assets/casa-viva/rooms/area-servico-pixel.png',
+            'cv_kitchen': 'assets/casa-viva/rooms/cozinha-pixel.png',
+            'cv_living': 'assets/casa-viva/rooms/sala-pixel.png',
+            'cv_apple_hold': 'assets/casa-viva/player/holding/apple-hold.png',
+            'cv_apple_walk': 'assets/casa-viva/player/holding/apple-walk.png',
+            'cv_banana_hold': 'assets/casa-viva/player/holding/banana-hold.png',
+            'cv_banana_walk': 'assets/casa-viva/player/holding/banana-walk.png',
+            'cv_bottle_hold': 'assets/casa-viva/player/holding/bottle-hold.png',
+            'cv_bottle_walk': 'assets/casa-viva/player/holding/bottle-walk.png',
+            'cv_box_hold': 'assets/casa-viva/player/holding/box-hold.png',
+            'cv_box_walk': 'assets/casa-viva/player/holding/box-walk.png',
+            'cv_can_hold': 'assets/casa-viva/player/holding/can-hold.png',
+            'cv_can_walk': 'assets/casa-viva/player/holding/can-walk.png',
+            'cv_coffee_hold': 'assets/casa-viva/player/holding/coffee-hold.png',
+            'cv_coffee_walk': 'assets/casa-viva/player/holding/coffee-walk.png',
+            'cv_jar_hold': 'assets/casa-viva/player/holding/jar-hold.png',
+            'cv_jar_walk': 'assets/casa-viva/player/holding/jar-walk.png',
+            'cv_orange_hold': 'assets/casa-viva/player/holding/orange-hold.png',
+            'cv_orange_walk': 'assets/casa-viva/player/holding/orange-walk.png',
+            'cv_paper_hold': 'assets/casa-viva/player/holding/paper-hold.png',
+            'cv_paper_walk': 'assets/casa-viva/player/holding/paper-walk.png',
+            'cv_yogurt_hold': 'assets/casa-viva/player/holding/yogurt-hold.png',
+            'cv_yogurt_walk': 'assets/casa-viva/player/holding/yogurt-walk.png',
 
             // Phase 1 Items & Blocks
             'item_trash_bag': 'assets/items/trash_bag_pixel.png',
@@ -325,6 +350,31 @@ class Game {
             } else if (targetPhase === '3') {
                 this.switchPhase(3);
                 this.startGame();
+                if (getParam('pos')) {
+                    this.player.x = parseFloat(getParam('pos'));
+                    this.camera.x = Math.max(0, this.player.x - 200);
+                }
+            } else if (targetPhase === '4') {
+                this.switchPhase(4);
+                this.startGame();
+                if (getParam('pos')) {
+                    this.player.x = parseFloat(getParam('pos'));
+                    this.camera.x = Math.max(0, this.player.x - 280);
+                    if (this.trafficLights) {
+                        this.trafficLights.forEach(tl => {
+                            if (tl.x < this.player.x) {
+                                tl.passed = true;
+                                tl.state = 'GREEN';
+                            }
+                        });
+                    }
+                }
+                if (getParam('speed')) {
+                    this.speedKmh = parseFloat(getParam('speed'));
+                }
+            } else if (targetPhase === '5') {
+                this.switchPhase(5);
+                this.startGame();
                 if (getParam('truck')) {
                     this.currentTruckIndex = parseInt(getParam('truck'), 10) || 1;
                 }
@@ -359,26 +409,15 @@ class Game {
                         this.currentTruckIndex = 4;
                     }
                 }
-            } else if (targetPhase === '4') {
-                this.switchPhase(4);
+            } else if (targetPhase === '6') {
+                this.switchPhase(6);
                 this.startGame();
                 if (getParam('pos')) {
                     this.player.x = parseFloat(getParam('pos'));
-                    this.camera.x = Math.max(0, this.player.x - 280);
-                    if (this.trafficLights) {
-                        this.trafficLights.forEach(tl => {
-                            if (tl.x < this.player.x) {
-                                tl.passed = true;
-                                tl.state = 'GREEN';
-                            }
-                        });
-                    }
+                    this.camera.x = Math.max(0, this.player.x - 300);
                 }
-                if (getParam('speed')) {
-                    this.speedKmh = parseFloat(getParam('speed'));
-                }
-            } else if (targetPhase === '5') {
-                this.switchPhase(5);
+            } else if (targetPhase === '7') {
+                this.switchPhase(7);
                 this.startGame();
                 const stage = getParam('stage') || getParam('state');
                 const mode = getParam('mode');
@@ -420,14 +459,20 @@ class Game {
                 if (mode) {
                     this.phase5Mode = mode;
                 }
-            } else if (targetPhase === '6') {
-                this.switchPhase(6);
+            } else if (targetPhase === '8') {
+                this.switchPhase(8);
                 this.startGame();
                 if (getParam('state')) {
-                    this.phase6State = getParam('state');
+                    this.phase7State = getParam('state');
                 }
                 if (getParam('hp') && this.boss) {
                     this.boss.hp = parseInt(getParam('hp'), 10);
+                }
+            } else if (targetPhase) {
+                const parsedPhase = parseInt(targetPhase, 10);
+                if (parsedPhase >= 1 && parsedPhase <= 8) {
+                    this.switchPhase(parsedPhase);
+                    this.startGame();
                 }
             }
 
@@ -438,16 +483,16 @@ class Game {
                 if ((getParam('instant')) === '1') {
                     this.cutscene.textProgress = 999;
                 }
-            } else if ((getParam('cutscene')) === 'phase5_to_6' || (getParam('cutscene')) === 'phase6_to_7') {
-                this.switchPhase(6);
+            } else if ((getParam('cutscene')) === 'phase5_to_6' || (getParam('cutscene')) === 'phase6_to_7' || (getParam('cutscene')) === 'phase7_to_8') {
+                this.switchPhase(7);
                 const step = parseInt((getParam('step')) || '0', 10);
-                this.startCutscene('PHASE6_TO_7');
+                this.startCutscene('PHASE7_TO_8');
                 this.cutscene.step = step;
                 if ((getParam('instant')) === '1') {
                     this.cutscene.textProgress = 999;
                 }
             } else if ((getParam('cutscene')) === 'ending') {
-                this.switchPhase(7);
+                this.switchPhase(8);
                 const step = parseInt((getParam('step')) || '0', 10);
                 this.startCutscene('GRAND_ENDING');
                 this.cutscene.step = step;
@@ -460,14 +505,14 @@ class Game {
             }
             if ((getParam('autowin')) === '1') {
                 this.startGame();
-                if (this.currentPhase === 7) {
+                if (this.currentPhase === 8) {
                     if (this.boss) {
                         this.boss.hp = 0;
                         this.boss.state = 'DEFEATED';
                     }
                     this.score = 15000;
                     this.levelClear();
-                } else if (this.currentPhase === 6) {
+                } else if (this.currentPhase === 7) {
                     this.compactionProgress = 100;
                     if (this.compactionZones) this.compactionZones.forEach(z => z.comp = 100);
                     this.soilCoverProgress = 100;
@@ -476,7 +521,7 @@ class Game {
                     this.labSampleTested = true;
                     this.score = 8500;
                     this.levelClear();
-                } else if (this.currentPhase === 5) {
+                } else if (this.currentPhase === 6) {
                     this.phase5Stability = 95;
                     this.cargoStability = 95;
                     this.cargoWeight = 30000;
@@ -485,27 +530,33 @@ class Game {
                     this.player.x = 6300;
                     this.camera.x = Math.max(0, (6300 - 1280 * 0.43) * 0.75);
                     this.levelClear();
-                } else if (this.currentPhase === 4) {
+                } else if (this.currentPhase === 5) {
                     this.trailerLoad = 30.0;
                     this.currentTruckIndex = 4;
                     this.dumpProgress = 100;
                     this.levelClear();
-                } else if (this.currentPhase === 3) {
+                } else if (this.currentPhase === 4) {
                     this.biodieselCollected = this.totalBiodiesel;
                     this.wrenchesCollected = this.totalWrenches;
                     this.player.x = 3900;
                     this.levelClear();
-                } else if (this.currentPhase === 2) {
+                } else if (this.currentPhase === 3) {
                     if (this.phase2Stops) this.phase2Stops.forEach(s => { s.complete = true; s.collected = s.bags; });
                     this.phase2Collected = this.phase2TotalBags;
                     if (this.phase2Truck) this.phase2Truck.x = this.phase2DestinationX;
                     this.levelClear();
-                } else {
+                } else if (this.currentPhase === 2) {
                     this.trashCollected = this.totalTrash;
                     this.recyclablesCollected = 6;
                     this.score = 2600;
                     this.camera.x = 3100;
                     this.player.x = 3680;
+                    this.levelClear();
+                } else {
+                    if (this.casaViva) {
+                        this.casaViva.items.forEach(it => { it.state = 'deposited'; it.fallT = 1; });
+                        this.casaViva.completed = true;
+                    }
                     this.levelClear();
                 }
             } else if (getParam('autostart') === '1') {
@@ -649,7 +700,7 @@ class Game {
                     this.keyboardJumpHeld = true;
                     this.actionJustPressed = true;
                     this.player.jumpBuffer = 0.15;
-                    if ((this.currentPhase === 2 || this.currentPhase === 3) && window.soundManager) window.soundManager.playHorn();
+                    if ((this.currentPhase === 3 || this.currentPhase === 4) && window.soundManager) window.soundManager.playHorn();
                     break;
                 case 'KeyF':
                     this.toggleFullscreen();
@@ -709,7 +760,7 @@ class Game {
             // In-Game Phase Selection via Top Sub-Banner (y between 48 and 72)
             if (this.state === 'PLAYING' && clickY >= 48 && clickY <= 72) {
                 const targetClickedPhase = Math.floor(clickX / (VIRTUAL_WIDTH / 7)) + 1;
-                if (targetClickedPhase >= 1 && targetClickedPhase <= 7 && targetClickedPhase !== this.currentPhase) {
+                if (targetClickedPhase >= 1 && targetClickedPhase <= 8 && targetClickedPhase !== this.currentPhase) {
                     this.switchPhase(targetClickedPhase);
                     this.startGame();
                     return;
@@ -748,7 +799,7 @@ class Game {
                 }
                 return;
             }
-            if (this.currentPhase === 6 && this.state === 'PLAYING') {
+            if (this.currentPhase === 7 && this.state === 'PLAYING') {
                 this.handlePhase5Click(e);
             }
         });
@@ -790,7 +841,7 @@ class Game {
                 if (keyName === 'jump') {
                     this.keys.jump = true; this.keys.jumpHeld = true;
                     this.player.jumpBuffer = 0.15;
-                    if ((this.currentPhase === 2 || this.currentPhase === 3) && window.soundManager) window.soundManager.playHorn();
+                    if ((this.currentPhase === 3 || this.currentPhase === 4) && window.soundManager) window.soundManager.playHorn();
                 } else { this.keys[keyName] = true; }
             };
             const end = (e) => {
@@ -851,18 +902,8 @@ class Game {
     }
 
     nextPhase() {
-        if (this.currentPhase === 1) {
-            this.switchPhase(2);
-        } else if (this.currentPhase === 2) {
-            this.switchPhase(3);
-        } else if (this.currentPhase === 3) {
-            this.switchPhase(4);
-        } else if (this.currentPhase === 4) {
-            this.switchPhase(5);
-        } else if (this.currentPhase === 5) {
-            this.switchPhase(6);
-        } else if (this.currentPhase === 6) {
-            this.switchPhase(7);
+        if (this.currentPhase >= 1 && this.currentPhase <= 7) {
+            this.switchPhase(this.currentPhase + 1);
         } else {
             this.restartLevel();
         }
@@ -871,22 +912,24 @@ class Game {
     startGame() {
         this.state = 'PLAYING';
         if (window.soundManager) {
-            window.soundManager.startMusic(this.currentPhase === 7 ? 'boss' : 'stage');
+            window.soundManager.startMusic(this.currentPhase === 8 ? 'boss' : 'stage');
         }
         if (this.currentPhase === 1) {
-            this.showTip('Fase 1: Pega o Lixo! Colete os sacos e recicláveis até o caminhão!', 4.0);
+            this.showTip('Fase 1: Casa Viva do Cajulim! Separe os lixos secos (azul) e molhados (marrom)!', 4.5);
         } else if (this.currentPhase === 2) {
-            this.showTip('Fase 2: Rota do Caminhão Coletor! Dirija pelos bairros e apoie o Cajulim na coleta dos sacos!', 4.5);
+            this.showTip('Fase 2: Pega o Lixo! Colete os sacos e recicláveis nas ruas até o caminhão!', 4.0);
         } else if (this.currentPhase === 3) {
-            this.showTip('Fase 3: Rodovia ao Transbordo! Dirija com cuidado até a Estação de Transbordo!', 4.5);
+            this.showTip('Fase 3: Rota do Caminhão Coletor! Dirija pelos bairros e apoie o Cajulim na coleta dos sacos!', 4.5);
         } else if (this.currentPhase === 4) {
-            this.showTip('Fase 4: Joga na Carreta! Manobre até a doca e acione o pistão para descarregar!', 4.5);
+            this.showTip('Fase 4: Rodovia ao Transbordo! Dirija com cuidado até a Estação de Transbordo!', 4.5);
         } else if (this.currentPhase === 5) {
-            this.showTip('Fase 5: Carreta ao Aterro! Conduza a carreta de 30t pelas dunas e passe na Balança ANTT!', 5.0);
+            this.showTip('Fase 5: Joga na Carreta! Manobre até a doca e acione o pistão para descarregar!', 4.5);
         } else if (this.currentPhase === 6) {
-            this.showTip('Fase 6: Aterro Sanitário & Usina Verde! Compacte os resíduos, ligue o biogás e trate o chorume!', 5.0);
+            this.showTip('Fase 6: Carreta ao Aterro! Conduza a carreta de 30t pelas dunas e passe na Balança ANTT!', 5.0);
         } else if (this.currentPhase === 7) {
-            this.showTip('Fase 7: O Grande Chefão! Suba nos andaimes e derrote o Mecha-Trator do Barão do Entulho!', 5.5);
+            this.showTip('Fase 7: Aterro Sanitário & Usina Verde! Compacte os resíduos, ligue o biogás e trate o chorume!', 5.0);
+        } else if (this.currentPhase === 8) {
+            this.showTip('Fase 8: O Confronto Final! Suba nos andaimes e derrote o Mecha-Trator do Barão do Entulho!', 5.5);
         }
     }
 
@@ -898,7 +941,7 @@ class Game {
         this.hazards = [];
         this.truck = null;
         this.transbordoFacility = null;
-        this.lives = this.currentPhase === 7 ? 5 : 3;
+        this.lives = this.currentPhase === 8 ? 5 : 3;
         this.player.invulnerableTimer = 0;
 
         if (this.currentPhase === 1) {
@@ -915,6 +958,8 @@ class Game {
             this.initPhase6();
         } else if (this.currentPhase === 7) {
             this.initPhase7();
+        } else if (this.currentPhase === 8) {
+            this.initPhase8();
         }
 
         const vm = document.getElementById('victoryModal');
@@ -923,7 +968,7 @@ class Game {
         if (gm) gm.classList.add('hidden');
     }
 
-    initPhase1() {
+    initPhase2() {
         const GROUND_Y = 460;
         this.levelWidth = 6450;
 
@@ -1089,7 +1134,7 @@ class Game {
         this.timerAccumulator = 0;
     }
 
-    initPhase2() {
+    initPhase3() {
         const FLOOR = 448;
         this.levelWidth = 4900;
         this.phase2Floor = FLOOR;
@@ -1205,7 +1250,7 @@ class Game {
             if (window.soundManager) window.soundManager.playVictory();
             this.showTip("ROTA CONCLUÍDA! O caminhão entrou na Rodovia rumo ao Transbordo!", 5.0);
             setTimeout(() => {
-                if (this.currentPhase === 2) this.levelClear();
+                if (this.currentPhase === 3) this.levelClear();
             }, 900);
         }
 
@@ -1764,7 +1809,7 @@ class Game {
         ctx.closePath();
     }
 
-    initPhase3() {
+    initPhase4() {
         const ROAD_Y = 460;
         this.levelWidth = 4600;
 
@@ -1848,7 +1893,7 @@ class Game {
         this.timerAccumulator = 0;
     }
 
-    initPhase4() {
+    initPhase5() {
         this.levelWidth = 960;
         this.camera.x = 0;
         this.camera.y = 0;
@@ -1962,7 +2007,7 @@ class Game {
         return Math.atan2(front - rear, t.w - 145);
     }
 
-    initPhase5() {
+    initPhase6() {
         this.levelWidth = 7100;
         this.phase5WorldW = 7100;
         this.phase5ScaleX = 4200;
@@ -2009,7 +2054,7 @@ class Game {
         this.timerAccumulator = 0;
     }
 
-    initPhase6() {
+    initPhase7() {
         this.levelWidth = 5200;
         this.levelHeight = 540;
         this.camera = { x: 0, y: 0 };
@@ -2085,7 +2130,7 @@ class Game {
         this.timerAccumulator = 0;
     }
 
-    initPhase7() {
+    initPhase8() {
         this.levelWidth = 1400;
         this.levelHeight = 540;
         this.camera = { x: 0, y: 0 };
@@ -2250,36 +2295,38 @@ class Game {
                 this.player.invulnerableTimer = Math.max(0, this.player.invulnerableTimer - dt);
             }
             if (this.currentPhase === 1) {
+                this.updateCasaViva(dt);
+            } else if (this.currentPhase === 2) {
                 this.updatePlayer(dt);
                 this.updatePhase1Weather(dt);
                 this.updateBlocks(dt);
                 this.updateItems(dt);
                 this.checkSignposts();
                 this.checkGoal();
-            } else if (this.currentPhase === 2) {
-                this.updatePhase2(dt);
             } else if (this.currentPhase === 3) {
+                this.updatePhase3(dt);
+            } else if (this.currentPhase === 4) {
                 this.updateTruckPlayer(dt);
                 this.updateHazards(dt);
                 this.updateTrafficLights(dt);
                 this.updateItems(dt);
                 this.checkSignposts();
                 this.checkGoal();
-            } else if (this.currentPhase === 4) {
-                this.updatePhase4(dt);
             } else if (this.currentPhase === 5) {
                 this.updatePhase5(dt);
             } else if (this.currentPhase === 6) {
                 this.updatePhase6(dt);
             } else if (this.currentPhase === 7) {
                 this.updatePhase7(dt);
+            } else if (this.currentPhase === 8) {
+                this.updatePhase8(dt);
             }
             this.updateParticles(dt);
             this.updateFloatingTexts(dt);
         } else if (this.state === 'LEVEL_CLEAR') {
             this.updateParticles(dt);
             this.updateFloatingTexts(dt);
-            if (this.currentPhase === 1) {
+            if (this.currentPhase === 2) {
                 this.player.animState = 'win';
                 this.player.animFrame = 0;
             }
@@ -2296,7 +2343,7 @@ class Game {
             this.updateCutscene(dt);
         }
 
-        if (this.state === 'CUTSCENE' || this.currentPhase === 4) {
+        if (this.state === 'CUTSCENE' || this.currentPhase === 1 || this.currentPhase === 5) {
             this.camera.x = 0;
             this.camera.y = 0;
         } else {
@@ -4145,7 +4192,7 @@ class Game {
     }
 
     updateTrafficLights(dt) {
-        if (this.currentPhase !== 3 || !this.trafficLights) return;
+        if (this.currentPhase !== 4 || !this.trafficLights) return;
         const p = this.player;
         if (p.isDead) return;
 
@@ -4408,8 +4455,8 @@ class Game {
         }
 
         if (this.currentPhase === 1) {
-            if (this.truck) this.spawnSparkles(this.truck.x + 160, this.truck.y + 80, 50);
-            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 1 COMPLETA!', '#00ff88');
+            this.spawnSparkles(this.player.x || 480, this.player.y || 300, 50);
+            this.addFloatingText(this.player.x || 480, (this.player.y || 300) - 30, 'CASA LIMPA! SEPARAÇÃO NOTA 10!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -4418,9 +4465,8 @@ class Game {
                 this.startCutscene('PHASE1_CLEAR');
             }, 500);
         } else if (this.currentPhase === 2) {
-            const sparklesX = this.phase2Truck ? (this.phase2Truck.x + 130) : 4400;
-            this.spawnSparkles(sparklesX, 360, 60);
-            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 2 COMPLETA! ACESSO À RODOVIA!', '#00ff88');
+            if (this.truck) this.spawnSparkles(this.truck.x + 160, this.truck.y + 80, 50);
+            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 2 COMPLETA! COLETA CONCLUÍDA!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -4429,8 +4475,9 @@ class Game {
                 this.startCutscene('PHASE2_CLEAR');
             }, 500);
         } else if (this.currentPhase === 3) {
-            if (this.transbordoFacility) this.spawnSparkles(this.transbordoFacility.x + 150, this.transbordoFacility.y + 100, 60);
-            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 3 COMPLETA! TRANSBORDO ALCANÇADO!', '#00ff88');
+            const sparklesX = this.phase2Truck ? (this.phase2Truck.x + 130) : 4400;
+            this.spawnSparkles(sparklesX, 360, 60);
+            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 3 COMPLETA! ACESSO À RODOVIA!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -4439,8 +4486,8 @@ class Game {
                 this.startCutscene('PHASE3_CLEAR');
             }, 500);
         } else if (this.currentPhase === 4) {
-            this.spawnSparkles(700, 360, 60);
-            this.addFloatingText(480, 220, 'FASE 4 COMPLETA! TRANSBORDO REALIZADO!', '#00ff88');
+            if (this.transbordoFacility) this.spawnSparkles(this.transbordoFacility.x + 150, this.transbordoFacility.y + 100, 60);
+            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 4 COMPLETA! TRANSBORDO ALCANÇADO!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -4449,8 +4496,8 @@ class Game {
                 this.startCutscene('PHASE4_CLEAR');
             }, 500);
         } else if (this.currentPhase === 5) {
-            this.spawnSparkles(4200, 320, 70);
-            this.addFloatingText(this.player.x, this.player.y - 40, 'FASE 5 COMPLETA! PESAGEM APROVADA!', '#00ff88');
+            this.spawnSparkles(700, 360, 60);
+            this.addFloatingText(480, 220, 'FASE 5 COMPLETA! TRANSBORDO REALIZADO!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -4459,16 +4506,26 @@ class Game {
                 this.startCutscene('PHASE5_CLEAR');
             }, 500);
         } else if (this.currentPhase === 6) {
-            this.spawnSparkles(this.player.x, this.player.y - 40, 80);
-            this.addFloatingText(this.player.x, this.player.y - 50, 'FASE 6 COMPLETA! USINA VERDE CERTIFICADA!', '#00ff88');
+            this.spawnSparkles(4200, 320, 70);
+            this.addFloatingText(this.player.x, this.player.y - 40, 'FASE 6 COMPLETA! PESAGEM APROVADA!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
 
             setTimeout(() => {
-                this.startCutscene('PHASE6_TO_7');
+                this.startCutscene('PHASE6_CLEAR');
             }, 500);
         } else if (this.currentPhase === 7) {
+            this.spawnSparkles(this.player.x, this.player.y - 40, 80);
+            this.addFloatingText(this.player.x, this.player.y - 50, 'FASE 7 COMPLETA! USINA VERDE CERTIFICADA!', '#00ff88');
+
+            const modal = document.getElementById('victoryModal');
+            if (modal) modal.classList.add('hidden');
+
+            setTimeout(() => {
+                this.startCutscene('PHASE7_TO_8');
+            }, 500);
+        } else if (this.currentPhase === 8) {
             this.spawnSparkles(this.player.x, this.player.y - 40, 100);
             this.addFloatingText(this.player.x, this.player.y - 50, '🎉 CIDADE SALVA! O BARÃO FOI DERROTADO! 🎉', '#facc15');
 
@@ -4658,15 +4715,17 @@ class Game {
         ctx.translate(-Math.floor(this.camera.x), -Math.floor(this.camera.y || 0));
 
         if (this.currentPhase === 1) {
+            this.renderCasaViva(ctx);
+        } else if (this.currentPhase === 2) {
             this.renderDecorations(ctx);
             this.renderTruck(ctx);
             this.renderPlatforms(ctx);
             this.renderBlocks(ctx);
             this.renderItems(ctx);
             this.renderPlayer(ctx);
-        } else if (this.currentPhase === 2) {
-            this.renderPhase2(ctx);
         } else if (this.currentPhase === 3) {
+            this.renderPhase3(ctx);
+        } else if (this.currentPhase === 4) {
             this.renderPhase3Decorations(ctx);
             this.renderTransbordoFacility(ctx);
             this.renderRoadPlatforms(ctx);
@@ -4674,14 +4733,14 @@ class Game {
             this.renderTrafficLights(ctx);
             this.renderItems(ctx);
             this.renderTruckPlayer(ctx);
-        } else if (this.currentPhase === 4) {
-            this.renderPhase4(ctx);
         } else if (this.currentPhase === 5) {
             this.renderPhase5(ctx);
         } else if (this.currentPhase === 6) {
             this.renderPhase6(ctx);
         } else if (this.currentPhase === 7) {
             this.renderPhase7(ctx);
+        } else if (this.currentPhase === 8) {
+            this.renderPhase8(ctx);
         }
 
         this.renderParticles(ctx);
@@ -4689,7 +4748,7 @@ class Game {
 
         ctx.restore();
 
-        if (this.currentPhase === 1 && this.isRaining) {
+        if (this.currentPhase === 2 && this.isRaining) {
             this.renderRain(ctx);
         }
 
@@ -4701,9 +4760,11 @@ class Game {
         }
 
         if (this.state !== 'CUTSCENE' && this.state !== 'TITLE') {
-            this.renderHUD(ctx);
+            if (this.currentPhase !== 1) {
+                this.renderHUD(ctx);
+            }
             this.renderTip(ctx);
-            if (this.currentPhase === 5) {
+            if (this.currentPhase === 7) {
                 this.drawPhase5Message(ctx);
             }
         }
@@ -7471,8 +7532,8 @@ ctx.restore();
                 const parallax = -Math.min(maxPan, Math.max(0, (this.camera.x || 0) * 0.15));
                 ctx.drawImage(centroImg, Math.floor(parallax), 0, bgW, bgH);
             }
-        } else if (this.currentPhase === 2) {
-            // Phase 2: Neighborhood Collection Route - Bright Parnamirim Morning Sky
+        } else if (this.currentPhase === 3) {
+            // Phase 3: Neighborhood Collection Route - Bright Parnamirim Morning Sky
             const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
             skyGrad.addColorStop(0, '#4fc5ed');
             skyGrad.addColorStop(0.55, '#d9f2cc');
@@ -7777,7 +7838,7 @@ ctx.restore();
     }
 
     renderTrafficLights(ctx) {
-        if (this.currentPhase !== 3 || !this.trafficLights) return;
+        if (this.currentPhase !== 4 || !this.trafficLights) return;
 
         for (const tl of this.trafficLights) {
             if (tl.x + tl.w < this.camera.x - 50 || tl.x > this.camera.x + VIRTUAL_WIDTH + 50) continue;
@@ -8084,7 +8145,7 @@ ctx.restore();
 
             ctx.fillStyle = '#facc15';
             ctx.fillText(`RECICLÁVEIS: ${this.recyclablesCollected}/${this.totalRecyclables}`, 272, 28);
-        } else if (this.currentPhase === 2) {
+        } else if (this.currentPhase === 3) {
             const trashIcon = this.assets['item_trash_bag'];
             if (trashIcon) ctx.drawImage(trashIcon, 116, 10, 20, 26);
             ctx.fillStyle = '#22c55e';
@@ -8099,7 +8160,7 @@ ctx.restore();
             ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
             ctx.fillText(gap > 260 ? 'ESPERE!' : 'CAJULIM ✓', 382, 28);
             ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
-        } else if (this.currentPhase === 3) {
+        } else if (this.currentPhase === 4) {
             const bioIcon = this.assets['item_biodiesel'];
             if (bioIcon) ctx.drawImage(bioIcon, 118, 10, 20, 26);
             ctx.fillStyle = '#22c55e';
@@ -8107,7 +8168,7 @@ ctx.restore();
 
             ctx.fillStyle = '#38bdf8';
             ctx.fillText(`REPAROS: ${this.wrenchesCollected}/${this.totalWrenches}`, 320, 28);
-        } else if (this.currentPhase === 4) {
+        } else if (this.currentPhase === 5) {
             ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
             const loadPct = Math.min(100, Math.round(this.dumpProgress || 0));
             ctx.fillStyle = '#38bdf8';
@@ -8116,7 +8177,7 @@ ctx.restore();
             ctx.fillStyle = '#facc15';
             ctx.fillText(`CAMINHÃO: ${this.currentTruckIndex || 1}/4`, 335, 28);
             ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
-        } else if (this.currentPhase === 5) {
+        } else if (this.currentPhase === 6) {
             // Speedometer
             const spd = Math.round(this.speedKmh || 0);
             if (spd > 78) ctx.fillStyle = '#ef4444';
@@ -8149,7 +8210,7 @@ ctx.restore();
             ctx.fillStyle = '#38bdf8';
             ctx.fillText(`ROTA: ${distPct}%`, 382, 28);
             ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
-        } else if (this.currentPhase === 6) {
+        } else if (this.currentPhase === 7) {
             const info = this.getPhase5StageInfo();
             ctx.fillStyle = '#86efac';
             ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
@@ -8157,7 +8218,7 @@ ctx.restore();
             ctx.fillStyle = '#facc15';
             ctx.fillText(info[3], 340, 28);
             ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
-        } else if (this.currentPhase === 7) {
+        } else if (this.currentPhase === 8) {
             const hp = this.boss ? Math.max(0, this.boss.hp) : 0;
             ctx.fillStyle = '#ef4444';
             ctx.fillText('BARÃO:', 115, 28);
@@ -8397,19 +8458,21 @@ ctx.restore();
         ctx.font = 'bold 14px "Press Start 2P", monospace, sans-serif';
         ctx.fillStyle = '#00ff88';
         if (this.currentPhase === 1) {
-            ctx.fillText('FASE 1: A GRANDE COLETA DE LIXO', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 1: CASA VIVA DO CAJULIM 🏠', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 2) {
-            ctx.fillText('FASE 2: ROTA DO CAMINHÃO COLETOR', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 2: COLETA SELETIVA NO CENTRO', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 3) {
-            ctx.fillText('FASE 3: RODOVIA AO TRANSBORDO', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 3: ROTA DO CAMINHÃO COLETOR', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 4) {
-            ctx.fillText('FASE 4: JOGA NA CARRETA', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 4: RODOVIA AO TRANSBORDO', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 5) {
-            ctx.fillText('FASE 5: CARRETA AO ATERRO', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 5: JOGA NA CARRETA (TRANSBORDO)', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 6) {
-            ctx.fillText('FASE 6: ATERRO & USINA VERDE 🌱⚡', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 6: CARRETA AO ATERRO & BALANÇA', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 7) {
-            ctx.fillText('FASE 7: O GRANDE CHEFÃO FINAL 👾', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 7: ATERRO & USINA VERDE 🌱⚡', VIRTUAL_WIDTH / 2, 370);
+        } else if (this.currentPhase === 8) {
+            ctx.fillText('FASE 8: O CONFRONTO FINAL (CHEFÃO) 👾', VIRTUAL_WIDTH / 2, 370);
         }
 
         ctx.font = '11px "Press Start 2P", monospace, sans-serif';
@@ -8457,15 +8520,14 @@ ctx.restore();
     }
 
     getCutsceneRequiredAsset() {
-        if (this.cutscene.type === 'INTRO') {
-            return this.cutscene.step === 0 ? 'cs_intro_casa' : 'cs_intro_father';
-        }
-        if (this.cutscene.type === 'PHASE1_CLEAR') return 'cs_phase1_clear';
-        if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_phase2_bairros';
-        if (this.cutscene.type === 'PHASE3_CLEAR') return 'cs_phase2_clear';
-        if (this.cutscene.type === 'PHASE4_CLEAR') return 'cs_phase3_clear';
-        if (this.cutscene.type === 'PHASE5_CLEAR') return 'cs_phase4_clear';
-        if (this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
+        if (this.cutscene.type === 'INTRO') return 'cs_intro_casa';
+        if (this.cutscene.type === 'PHASE1_CLEAR') return 'cs_intro_father';
+        if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_phase1_clear';
+        if (this.cutscene.type === 'PHASE3_CLEAR') return 'cs_phase2_bairros';
+        if (this.cutscene.type === 'PHASE4_CLEAR') return 'cs_phase2_clear';
+        if (this.cutscene.type === 'PHASE5_CLEAR') return 'cs_phase3_clear';
+        if (this.cutscene.type === 'PHASE6_CLEAR') return 'cs_phase4_clear';
+        if (this.cutscene.type === 'PHASE7_TO_8' || this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
             return this.cutscene.step === 0 ? 'cs_landfill_aerial' : 'cs_villain_mecha';
         }
         if (this.cutscene.type === 'GRAND_ENDING') {
@@ -8538,29 +8600,27 @@ ctx.restore();
         let spokenText = '';
 
         if (this.cutscene.type === 'INTRO') {
-            if (this.cutscene.step === 0) {
-                audioFile = 'assets/audio/cutscene_intro_step0.mp3';
-                spokenText = 'Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo seco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então partiu pra rua que a grande missão começou!';
-            } else {
-                audioFile = 'assets/audio/cutscene_intro_step1.mp3';
-                spokenText = 'Olha o caminhão da coleta chegando! Meu pai já tá no volante da limpeza municipal! Parnamirim não pode parar! Vamos colocar os sacos no caminhão e deixar nosso bairro brilhando! Bora lá!';
-            }
+            audioFile = 'assets/audio/cutscene_intro_step0.mp3';
+            spokenText = 'Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo seco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então vamos organizar nossa casa antes de ir pra rua!';
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
+            audioFile = 'assets/audio/cutscene_intro_step1.mp3';
+            spokenText = 'Olha o caminhão da coleta chegando! Meu pai já tá no volante da limpeza municipal! Parnamirim não pode parar! Vamos recolher os sacos bem fechados nas calçadas e deixar nosso bairro brilhando! Bora lá!';
+        } else if (this.cutscene.type === 'PHASE2_CLEAR') {
             audioFile = 'assets/audio/cutscene_phase1_clear.mp3';
             spokenText = 'Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!';
-        } else if (this.cutscene.type === 'PHASE2_CLEAR') {
+        } else if (this.cutscene.type === 'PHASE3_CLEAR') {
             audioFile = 'assets/audio/cutscene_phase2_bairros.mp3';
             spokenText = 'Coleta nos bairros concluída com sucesso! Todos os 10 sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!';
-        } else if (this.cutscene.type === 'PHASE3_CLEAR') {
+        } else if (this.cutscene.type === 'PHASE4_CLEAR') {
             audioFile = 'assets/audio/cutscene_phase2_clear.mp3';
             spokenText = 'Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbordo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!';
-        } else if (this.cutscene.type === 'PHASE4_CLEAR') {
+        } else if (this.cutscene.type === 'PHASE5_CLEAR') {
             audioFile = 'assets/audio/cutscene_phase3_clear.mp3';
             spokenText = 'Manobra perfeita! A carreta foi totalmente carregada com 30 toneladas de resíduos e coberta com a lona protetora na doca do transbordo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!';
-        } else if (this.cutscene.type === 'PHASE5_CLEAR') {
+        } else if (this.cutscene.type === 'PHASE6_CLEAR') {
             audioFile = 'assets/audio/cutscene_phase4_clear.mp3';
             spokenText = 'Pesagem concluída com sucesso! A carreta de 30.000 quilos passou pela balança rodoviária oficial e entrou no moderno aterro sanitário de Parnamirim! Carga conferida e aprovada para o tratamento e reciclagem energética!';
-        } else if (this.cutscene.type === 'PHASE6_TO_7') {
+        } else if (this.cutscene.type === 'PHASE7_TO_8' || this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
             if (this.cutscene.step === 0) {
                 audioFile = 'assets/audio/cutscene_phase5_step0.mp3';
                 spokenText = 'Cidade limpa, serviço cumprido! O aterro sanitário e a usina verde funcionam com perfeição. O chorume está 100% purificado e a energia limpa ilumina milhares de lares... Mas espera aí... Que barulho horrível é aquele na praça?!';
@@ -8581,8 +8641,8 @@ ctx.restore();
             }
         }
 
-        const isBoss = ((this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') && this.cutscene.step === 1);
-        const voiceHint = isBoss ? 'antonio' : 'thalita';
+        const isBoss = ((this.cutscene.type === 'PHASE7_TO_8' || this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') && this.cutscene.step === 1);
+        const voiceHint = isBoss ? 'antonio' : 'antonia';
         if (window.soundManager && window.soundManager.playNarration) {
             window.soundManager.playNarration(audioFile, spokenText, voiceHint);
         }
@@ -8590,22 +8650,20 @@ ctx.restore();
 
     getCutsceneFullText() {
         if (this.cutscene.type === 'INTRO') {
-            if (this.cutscene.step === 0) {
-                return 'BOM DIA, TURMA! A SUSTENTABILIDADE COMECA DENTRO DE CASA! LIXO SECO NA LIXEIRA AZUL: PLASTICO, PAPELAO E LATINHA LIMPA! E LIXO MOLHADO NA LIXEIRA MARROM: CASCA DE FRUTA E RESTO DE COMIDA! SEPAROU CERTINHO? ENTAO PARTIU PRA RUA QUE A GRANDE MISSAO COMECOU!';
-            } else {
-                return 'OLHA O CAMINHAO DA COLETA CHEGANDO! MEU PAI JA ESTA NO VOLANTE DA LIMPEZA MUNICIPAL! PARNAMIRIM NAO PODE PARAR! VAMOS RECOLHER OS SACOS BEM FECHADOS NAS CALCADAS E DEIXAR NOSSO BAIRRO BRILHANDO! BORA NESSA!';
-            }
+            return 'BOM DIA, TURMA! A SUSTENTABILIDADE COMECA DENTRO DE CASA! LIXO SECO NA LIXEIRA AZUL: PLASTICO, PAPELAO E LATINHA LIMPA! E LIXO MOLHADO NA LIXEIRA MARROM: CASCA DE FRUTA E RESTO DE COMIDA! SEPAROU CERTINHO? ENTAO BORA ORGANIZAR A NOSSA CASA!';
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
-            return 'PARABENS! VOCE COMPLETOU A COLETA RESIDENCIAL EM PARNAMIRIM! TODOS OS SACOS DE LIXO E MATERIAIS RECICLAVEIS FORAM RECOLHIDOS DAS RUAS COM SUCESSO. A CIDADE ESTA LIMPA E O CAMINHAO MUNICIPAL ESTA PRONTO PARA A PROXIMA ETAPA!';
+            return 'OLHA O CAMINHAO DA COLETA CHEGANDO! MEU PAI JA ESTA NO VOLANTE DA LIMPEZA MUNICIPAL! PARNAMIRIM NAO PODE PARAR! VAMOS RECOLHER OS SACOS BEM FECHADOS NAS CALCADAS E DEIXAR NOSSO BAIRRO BRILHANDO! BORA NESSA!';
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
-            return 'COLETA NOS BAIRROS CONCLUIDA COM SUCESSO! TODOS OS 10 SACOS DE LIXO FORAM RECOLHIDOS PELA EQUIPE DO CAJULIM. AGORA O CAMINHAO COLETOR ENTRA NA RODOVIA A CAMINHO DA ESTACAO DE TRANSBORDO!';
+            return 'PARABENS! VOCE COMPLETOU A COLETA RESIDENCIAL EM PARNAMIRIM! TODOS OS SACOS DE LIXO E MATERIAIS RECICLAVEIS FORAM RECOLHIDOS DAS RUAS COM SUCESSO. A CIDADE ESTA LIMPA E O CAMINHAO MUNICIPAL ESTA PRONTO PARA A PROXIMA ETAPA!';
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
-            return 'EXCELENTE VIAGEM! O CAMINHAO CHEGOU EM SEGURANCA A ESTACAO DE TRANSBORDO DE PARNAMIRIM! TODA A CARGA DE RESIDUOS DA CIDADE FOI TRANSPORTADA SEM DEIXAR NADA PELO CAMINHO. AGORA E HORA DE PREPARAR A CARRETA PESADA!';
+            return 'COLETA NOS BAIRROS CONCLUIDA COM SUCESSO! TODOS OS 10 SACOS DE LIXO FORAM RECOLHIDOS PELA EQUIPE DO CAJULIM. AGORA O CAMINHAO COLETOR ENTRA NA RODOVIA A CAMINHO DA ESTACAO DE TRANSBORDO!';
         } else if (this.cutscene.type === 'PHASE4_CLEAR') {
-            return 'MANOBRA PERFEITA! A CARRETA FOI TOTALMENTE CARREGADA COM 30 TONELADAS DE RESIDUOS E COBERTA COM A LONA PROTETORA NA DOCA DO TRANSBORDO! O PROCESSO DE TRANSFERENCIA FOI UM SUCESSO TOTAL E O TRANSPORTE RODOVIARIO VAI COMECAR!';
+            return 'EXCELENTE VIAGEM! O CAMINHAO CHEGOU EM SEGURANCA A ESTACAO DE TRANSBORDO DE PARNAMIRIM! TODA A CARGA DE RESIDUOS DA CIDADE FOI TRANSPORTADA SEM DEIXAR NADA PELO CAMINHO. AGORA E HORA DE PREPARAR A CARRETA PESADA!';
         } else if (this.cutscene.type === 'PHASE5_CLEAR') {
+            return 'MANOBRA PERFEITA! A CARRETA FOI TOTALMENTE CARREGADA COM 30 TONELADAS DE RESIDUOS E COBERTA COM A LONA PROTETORA NA DOCA DO TRANSBORDO! O PROCESSO DE TRANSFERENCIA FOI UM SUCESSO TOTAL E O TRANSPORTE RODOVIARIO VAI COMECAR!';
+        } else if (this.cutscene.type === 'PHASE6_CLEAR') {
             return 'PESAGEM CONCLUIDA COM SUCESSO! A CARRETA DE 30.000 KG PASSOU PELA BALANCA RODOVIARIA OFICIAL E ENTROU NO ATERRO SANITARIO DE PARNAMIRIM! CARGA 100% CONFERIDA E APROVADA PARA O TRATAMENTO E RECICLAGEM ENERGETICA!';
-        } else if (this.cutscene.type === 'PHASE6_TO_7') {
+        } else if (this.cutscene.type === 'PHASE7_TO_8' || this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
             if (this.cutscene.step === 0) {
                 return 'CIDADE LIMPA, SERVICO CUMPRIDO! O ATERRO SANITARIO E A USINA VERDE FUNCIONAM COM PERFEICAO. O CHORUME ESTA 100% PURIFICADO E A ENERGIA LIMPA ILUMINA MILHARES DE LARES... MAS ESPERA AI... QUE BARULHO HORRIVEL E AQUELE NA PRACA?!';
             } else {
@@ -8683,29 +8741,12 @@ ctx.restore();
         this.cutscene.autoAdvanceTimer = 0;
 
         if (this.cutscene.type === 'INTRO') {
-            if (this.cutscene.step === 0) {
-                if (window.soundManager && window.soundManager.stopNarration) {
-                    window.soundManager.stopNarration();
-                }
-                this.cutscene.step = 1;
-                this.cutscene.textProgress = 0;
-                this.cutscene.flashTimer = 0.35;
-                if (this.isCutsceneAssetReady()) {
-                    this.triggerCutsceneNarration();
-                } else {
-                    this.waitForCutsceneAsset(() => {
-                        this.triggerCutsceneNarration();
-                    });
-                }
-                return;
-            } else {
-                if (window.soundManager && window.soundManager.stopNarration) {
-                    window.soundManager.stopNarration();
-                }
-                this.cutscene.active = false;
-                this.switchPhase(1);
-                this.startGame();
+            if (window.soundManager && window.soundManager.stopNarration) {
+                window.soundManager.stopNarration();
             }
+            this.cutscene.active = false;
+            this.switchPhase(1);
+            this.startGame();
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
             if (window.soundManager && window.soundManager.stopNarration) {
                 window.soundManager.stopNarration();
@@ -8741,7 +8782,14 @@ ctx.restore();
             this.cutscene.active = false;
             this.switchPhase(6);
             this.startGame();
-        } else if (this.cutscene.type === 'PHASE6_TO_7') {
+        } else if (this.cutscene.type === 'PHASE6_CLEAR') {
+            if (window.soundManager && window.soundManager.stopNarration) {
+                window.soundManager.stopNarration();
+            }
+            this.cutscene.active = false;
+            this.switchPhase(7);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE7_TO_8' || this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
             if (this.cutscene.step === 0) {
                 if (window.soundManager && window.soundManager.stopNarration) {
                     window.soundManager.stopNarration();
@@ -8770,7 +8818,7 @@ ctx.restore();
                     window.soundManager.stopNarration();
                 }
                 this.cutscene.active = false;
-                this.switchPhase(7);
+                this.switchPhase(8);
                 this.startGame();
             }
         } else if (this.cutscene.type === 'GRAND_ENDING') {
@@ -8835,9 +8883,13 @@ ctx.restore();
             this.cutscene.active = false;
             this.switchPhase(6);
             this.startGame();
-        } else if (this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
+        } else if (this.cutscene.type === 'PHASE6_CLEAR') {
             this.cutscene.active = false;
             this.switchPhase(7);
+            this.startGame();
+        } else if (this.cutscene.type === 'PHASE7_TO_8' || this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
+            this.cutscene.active = false;
+            this.switchPhase(8);
             this.startGame();
         } else if (this.cutscene.type === 'GRAND_ENDING') {
             if (this.cutscene.step < 2) {
@@ -8889,19 +8941,21 @@ ctx.restore();
         }
 
         if (this.cutscene.type === 'INTRO') {
-            this.renderCutsceneIntro(ctx);
+            this.renderCutsceneIntroCasa(ctx);
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'ETAPA 1 CONCLUÍDA • COLETA SELETIVA RESIDENCIAL');
+            this.renderCutscenePhaseClear(ctx, 'cs_intro_father', 'FASE 1 CONCLUÍDA • O CAMINHÃO DA COLETA CHEGOU');
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase2_bairros', 'ETAPA 2 CONCLUÍDA • ROTA DO CAMINHÃO NOS BAIRROS');
+            this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'FASE 2 CONCLUÍDA • COLETA SELETIVA RESIDENCIAL');
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase2_clear', 'ETAPA 3 CONCLUÍDA • CHEGADA À ESTAÇÃO DE TRANSBORDO');
+            this.renderCutscenePhaseClear(ctx, 'cs_phase2_bairros', 'FASE 3 CONCLUÍDA • ROTA DO CAMINHÃO NOS BAIRROS');
         } else if (this.cutscene.type === 'PHASE4_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase3_clear', 'ETAPA 4 CONCLUÍDA • CARGA DA CARRETA DE 30 TONELADAS');
+            this.renderCutscenePhaseClear(ctx, 'cs_phase2_clear', 'FASE 4 CONCLUÍDA • CHEGADA À ESTAÇÃO DE TRANSBORDO');
         } else if (this.cutscene.type === 'PHASE5_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase4_clear', 'ETAPA 5 CONCLUÍDA • BALANÇA RODOVIÁRIA OFICIAL (30.000 KG)');
-        } else if (this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
-            this.renderCutscenePhase6To7(ctx);
+            this.renderCutscenePhaseClear(ctx, 'cs_phase3_clear', 'FASE 5 CONCLUÍDA • CARGA DA CARRETA DE 30 TONELADAS');
+        } else if (this.cutscene.type === 'PHASE6_CLEAR') {
+            this.renderCutscenePhaseClear(ctx, 'cs_phase4_clear', 'FASE 6 CONCLUÍDA • BALANÇA RODOVIÁRIA OFICIAL (30.000 KG)');
+        } else if (this.cutscene.type === 'PHASE7_TO_8' || this.cutscene.type === 'PHASE6_TO_7' || this.cutscene.type === 'PHASE5_TO_6') {
+            this.renderCutscenePhase7To8(ctx);
         } else {
             this.renderCutsceneEnding(ctx);
         }
@@ -8971,6 +9025,45 @@ ctx.restore();
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
         this.renderCutsceneDialogBox(ctx, title, currentText, 'AUTOMÁTICO ⏱ [ESPAÇO P/ AVANÇAR]', 'green');
+    }
+
+    
+    renderCutsceneIntroCasa(ctx) {
+        const t = this.cutscene.animTime;
+        const img = this.assets['cs_intro_casa'];
+
+        if (img && img.complete && img.naturalWidth > 0) {
+            ctx.save();
+            const zoom = 1.03 + 0.015 * Math.sin(t * 0.22);
+            const panX = Math.sin(t * 0.18) * 12;
+            const panY = Math.cos(t * 0.14) * 6;
+            ctx.translate(VIRTUAL_WIDTH / 2 + panX, 210 + panY);
+            ctx.scale(zoom, zoom);
+            ctx.drawImage(img, -VIRTUAL_WIDTH / 2, -210, VIRTUAL_WIDTH, 540);
+            ctx.restore();
+        } else {
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, 540);
+            bgGrad.addColorStop(0, '#064e3b');
+            bgGrad.addColorStop(0.5, '#042f2e');
+            bgGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, VIRTUAL_WIDTH, 540);
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(10, 10, VIRTUAL_WIDTH - 20, 520);
+        }
+
+        const fullText = this.getCutsceneFullText();
+        const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
+        this.renderCutsceneDialogBox(ctx, 'CASA DO CAJULIM • SEPARAÇÃO DOMÉSTICA: SECO E MOLHADO', currentText, 'COMEÇAR A FASE 1 🏠 [ESPAÇO P/ PULAR]', 'green');
+    }
+
+    renderCutscenePhase7To8(ctx) {
+        if (this.cutscene.step === 0) {
+            this.renderCutsceneAerialLandfill(ctx);
+        } else {
+            this.renderCutsceneVillainReveal(ctx);
+        }
     }
 
     renderCutsceneIntroFather(ctx) {
@@ -10548,7 +10641,7 @@ ctx.restore();
             this.actionJustPressed = true;
             this.keyboardJumpHeld = true;
             if (this.player) this.player.jumpBuffer = 0.2;
-            if ((this.currentPhase === 2 || this.currentPhase === 3) && window.soundManager) window.soundManager.playHorn();
+            if ((this.currentPhase === 3 || this.currentPhase === 4) && window.soundManager) window.soundManager.playHorn();
 
             if (this.state === 'TITLE') {
                 if (this.currentPhase > 1) {
@@ -10605,6 +10698,937 @@ ctx.restore();
             fsBtn.addEventListener('click', toggleFs);
             fsBtn.addEventListener('touchstart', toggleFs, { passive: false });
         }
+    }
+
+
+    // =========================================================================
+    // FASE 1: CASA VIVA DO CAJULIM (SEPARAÇÃO DOMÉSTICA: SECO vs MOLHADO)
+    // =========================================================================
+
+    roundedRect(context, x, y, width, height, radius) {
+        const r = Math.min(radius, width / 2, height / 2);
+        context.beginPath();
+        context.moveTo(x + r, y);
+        context.arcTo(x + width, y, x + width, y + height, r);
+        context.arcTo(x + width, y + height, x, y + height, r);
+        context.arcTo(x, y + height, x, y, r);
+        context.arcTo(x, y, x + width, y, r);
+        context.closePath();
+    }
+
+    initPhase1() {
+        this.casaVivaRooms = {
+            service: {
+                title: "ÁREA DE SERVIÇO",
+                subtitle: "Cada coisa no seu lugar",
+                image: "cv_service",
+                bounds: { left: 92, right: 1188, top: 392, bottom: 654 },
+                obstacles: [
+                    { x: 92, y: 392, w: 350, h: 84 },
+                    { x: 1020, y: 392, w: 168, h: 72 },
+                    { x: 455, y: 400, w: 176, h: 150 },
+                    { x: 785, y: 400, w: 176, h: 150 }
+                ],
+                doors: [
+                    { side: "left", target: "kitchen", label: "COZINHA", minY: 420, maxY: 640, exitX: 96, spawn: { x: 1110, y: 536, facing: -1 } },
+                    { side: "right", target: "living", label: "SALA", minY: 410, maxY: 640, exitX: 1184, spawn: { x: 170, y: 532, facing: 1 } }
+                ]
+            },
+            kitchen: {
+                title: "COZINHA",
+                subtitle: "O lanche acabou",
+                image: "cv_kitchen",
+                bounds: { left: 112, right: 1175, top: 372, bottom: 652 },
+                obstacles: [
+                    { x: 224, y: 432, w: 380, h: 205 },
+                    { x: 112, y: 372, w: 720, h: 60 }
+                ],
+                doors: [
+                    { side: "right", target: "service", label: "ÁREA DE SERVIÇO", minY: 400, maxY: 640, exitX: 1168, spawn: { x: 188, y: 530, facing: 1 } }
+                ]
+            },
+            living: {
+                title: "SALA",
+                subtitle: "Oficina de imaginação",
+                image: "cv_living",
+                bounds: { left: 104, right: 1180, top: 382, bottom: 650 },
+                obstacles: [
+                    { x: 272, y: 468, w: 228, h: 103 },
+                    { x: 563, y: 390, w: 300, h: 142 },
+                    { x: 1002, y: 385, w: 178, h: 90 }
+                ],
+                doors: [
+                    { side: "left", target: "service", label: "ÁREA DE SERVIÇO", minY: 400, maxY: 640, exitX: 110, spawn: { x: 1090, y: 532, facing: -1 } }
+                ]
+            }
+        };
+
+        this.casaVivaBins = [
+            { id: "dry", kind: "dry", label: "SECO", color: "#247bd0", dark: "#164c8a", x: 455, y: 400, w: 176, h: 150, interactX: 543, interactY: 574, rimY: 414 },
+            { id: "wet", kind: "wet", label: "MOLHADO", color: "#4da950", dark: "#27652d", x: 785, y: 400, w: 176, h: 150, interactX: 873, interactY: 574, rimY: 414 }
+        ];
+
+        this.casaViva = {
+            room: 'service',
+            roomVisits: new Set(['service']),
+            items: [
+                { id: "orange", kind: "orange", name: "casca de laranja", label: "CASCA DE LARANJA", category: "wet", room: "service", x: 400, y: 547, approach: { x: 390, y: 601 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "can", kind: "can", name: "lata vazia", label: "LATA VAZIA", category: "dry", room: "service", x: 1120, y: 552, approach: { x: 1110, y: 608 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "coffee", kind: "coffee", name: "borra de café", label: "BORRA DE CAFÉ", category: "wet", room: "service", x: 280, y: 563, approach: { x: 280, y: 614 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "jar", kind: "jar", name: "pote de vidro vazio", label: "POTE DE VIDRO", category: "dry", room: "service", x: 1035, y: 562, approach: { x: 1035, y: 614 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "bottle", kind: "bottle", name: "garrafa PET vazia", label: "GARRAFA PET", category: "dry", room: "kitchen", x: 758, y: 250, approach: { x: 790, y: 472 }, surface: "counter", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "banana", kind: "banana", name: "casca de banana", label: "CASCA DE BANANA", category: "wet", room: "kitchen", x: 996, y: 568, approach: { x: 984, y: 619 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "yogurt", kind: "yogurt", name: "pote de iogurte usado", label: "POTE DE IOGURTE", category: "wet", room: "kitchen", x: 1100, y: 568, approach: { x: 1090, y: 619 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "box", kind: "box", name: "caixa de papelão limpa", label: "CAIXA DE PAPELÃO", category: "dry", room: "living", x: 423, y: 445, approach: { x: 565, y: 600 }, surface: "table", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "apple", kind: "apple", name: "miolo de maçã", label: "MIOLO DE MAÇÃ", category: "wet", room: "living", x: 920, y: 533, approach: { x: 914, y: 592 }, surface: "floor", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "paper", kind: "paper", name: "papel ou carta limpa", label: "PAPEL / CARTA", category: "dry", room: "living", x: 1075, y: 577, approach: { x: 1058, y: 624 }, surface: "floor", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null }
+            ],
+            particles: [],
+            transition: null,
+            tutorialStep: 0,
+            message: '',
+            messageTime: 0,
+            wrongFlashTime: 0,
+            completed: false,
+            victoryTime: 0,
+            player: {
+                x: 955,
+                y: 610,
+                facing: -1,
+                state: 'free',
+                moving: false,
+                animTime: 0,
+                actionTime: 0,
+                actionItem: null,
+                held: null,
+                actionBin: null,
+                originX: 0,
+                originY: 0
+            }
+        };
+        this.camera.x = 0;
+        this.camera.y = 0;
+    }
+
+    casaVivaPointBlocked(x, y) {
+        const cv = this.casaViva;
+        const roomData = this.casaVivaRooms[cv.room];
+        const radius = 28;
+        return roomData.obstacles.some(rect =>
+            x > rect.x - radius && x < rect.x + rect.w + radius && y > rect.y - 18 && y < rect.y + rect.h + 22
+        );
+    }
+
+    moveCasaVivaPlayer(dx, dy, dt) {
+        const cv = this.casaViva;
+        const p = cv.player;
+        const data = this.casaVivaRooms[cv.room];
+        const magnitude = Math.hypot(dx, dy);
+        if (!magnitude) {
+            p.moving = false;
+            return;
+        }
+
+        dx /= magnitude;
+        dy /= magnitude;
+        const speed = p.held ? 210 : 240;
+        const nextX = Math.max(data.bounds.left, Math.min(data.bounds.right, p.x + dx * speed * dt));
+        const nextY = Math.max(data.bounds.top, Math.min(data.bounds.bottom, p.y + dy * speed * dt));
+        const previousX = p.x;
+        const previousY = p.y;
+
+        if (!this.casaVivaPointBlocked(nextX, p.y)) p.x = nextX;
+        if (!this.casaVivaPointBlocked(p.x, nextY)) p.y = nextY;
+        p.moving = Math.hypot(p.x - previousX, p.y - previousY) > 0.05;
+        if (Math.abs(dx) > 0.12) p.facing = dx < 0 ? -1 : 1;
+
+        this.checkCasaVivaDoor(dx);
+    }
+
+    checkCasaVivaDoor(horizontalDirection) {
+        const cv = this.casaViva;
+        const p = cv.player;
+        if (cv.transition || (p.state !== "free" && p.state !== "carrying")) return;
+        for (const door of this.casaVivaRooms[cv.room].doors) {
+            const insideY = p.y >= door.minY && p.y <= door.maxY;
+            const crosses = door.side === "left"
+                ? p.x <= door.exitX && horizontalDirection < 0
+                : p.x >= door.exitX && horizontalDirection > 0;
+            if (insideY && crosses) {
+                cv.transition = { from: cv.room, to: door.target, spawn: door.spawn, time: 0, switched: false };
+                p.moving = false;
+                return;
+            }
+        }
+    }
+
+    currentCasaVivaItem() {
+        const cv = this.casaViva;
+        const p = cv.player;
+        const selected = cv.items.find(item => item.id === p.held && item.state === "held");
+        if (selected) return selected;
+        const held = cv.items.find(item => item.state === "held") || null;
+        if (held && p.held !== held.id) p.held = held.id;
+        if (!held && p.held) p.held = null;
+        return held;
+    }
+
+    nearestCasaVivaItem() {
+        const cv = this.casaViva;
+        const p = cv.player;
+        return cv.items
+            .filter(item => item.room === cv.room && item.state === "onSurface")
+            .map(item => ({ item, dist: Math.hypot(p.x - item.approach.x, p.y - item.approach.y) }))
+            .filter(entry => entry.dist < 155)
+            .sort((a, b) => a.dist - b.dist || a.item.id.localeCompare(b.item.id))[0]?.item || null;
+    }
+
+    nearestCasaVivaBin() {
+        const cv = this.casaViva;
+        const p = cv.player;
+        if (cv.room !== "service") return null;
+        return this.casaVivaBins
+            .map(bin => {
+                const left = bin.x - 80;
+                const right = bin.x + bin.w + 80;
+                const horizontalGap = p.x < left ? left - p.x : p.x > right ? p.x - right : 0;
+                const verticalGap = Math.abs(p.y - bin.interactY);
+                return {
+                    bin,
+                    insideX: horizontalGap === 0,
+                    centerDistance: Math.abs(p.x - bin.interactX),
+                    score: Math.hypot(horizontalGap * 1.4, verticalGap)
+                };
+            })
+            .filter(entry => entry.insideX && entry.score < 125)
+            .sort((a, b) => a.centerDistance - b.centerDistance)[0]?.bin || null;
+    }
+
+    startCasaVivaPickup(item) {
+        const cv = this.casaViva;
+        const p = cv.player;
+        const held = this.currentCasaVivaItem();
+        const reserved = cv.items.find(c => c.state === "reserved");
+        if (held || p.held || reserved || item.state !== "onSurface") {
+            const carried = held || reserved;
+            const target = carried?.category === "dry" ? "SECO" : "MOLHADO";
+            cv.message = carried
+                ? `Primeiro jogue ${carried.name} no recipiente ${target}.`
+                : "Primeiro coloque o objeto que está nas mãos.";
+            cv.messageTime = 2.4;
+            return false;
+        }
+        p.state = "reaching";
+        p.actionTime = 0;
+        p.actionItem = item.id;
+        p.originX = p.x;
+        p.originY = p.y;
+        item.state = "reserved";
+        cv.message = "";
+        return true;
+    }
+
+    startCasaVivaDeposit(bin, item) {
+        const cv = this.casaViva;
+        const p = cv.player;
+        if (bin.kind !== item.category) {
+            p.state = "wrong";
+            p.actionTime = 0;
+            p.actionBin = bin.id;
+            const answer = item.category === "dry" ? "seco" : "molhado";
+            cv.message = `ERROU! ${item.name.toUpperCase()} vai no recipiente ${answer.toUpperCase()}.`;
+            cv.messageTime = 2.8;
+            cv.wrongFlashTime = 0.72;
+            if (window.soundManager && window.soundManager.playHurt) window.soundManager.playHurt();
+            return;
+        }
+        p.state = "depositing";
+        p.actionTime = 0;
+        p.actionBin = bin.id;
+        p.originX = p.x;
+        p.originY = p.y;
+        cv.message = "";
+    }
+
+    handleCasaVivaAction() {
+        const cv = this.casaViva;
+        if (!cv) return;
+        const p = cv.player;
+        if (cv.completed || cv.transition || (p.state !== "free" && p.state !== "carrying")) return;
+
+        const held = this.currentCasaVivaItem();
+        if (held) {
+            const bin = this.nearestCasaVivaBin();
+            if (bin) this.startCasaVivaDeposit(bin, held);
+            else {
+                const target = held.category === "dry" ? "SECO" : "MOLHADO";
+                cv.message = cv.room === "service"
+                    ? `Primeiro jogue ${held.name} no recipiente ${target}.`
+                    : `Você já está com ${held.name}. Leve até a área de serviço.`;
+                cv.messageTime = 2.5;
+            }
+            return;
+        }
+
+        const stranded = cv.items.find(item => item.state === "held" || item.state === "reserved");
+        if (stranded) {
+            p.held = stranded.state === "held" ? stranded.id : p.held;
+            cv.message = `Primeiro coloque ${stranded.name} no recipiente certo.`;
+            cv.messageTime = 2.4;
+            return;
+        }
+
+        const item = this.nearestCasaVivaItem();
+        if (item) this.startCasaVivaPickup(item);
+        else {
+            cv.message = "Chegue mais perto de um resíduo.";
+            cv.messageTime = 1.7;
+        }
+    }
+
+    updateCasaVivaAction(dt) {
+        const cv = this.casaViva;
+        const p = cv.player;
+        p.actionTime += dt;
+        const item = cv.items.find(c => c.id === p.actionItem);
+
+        const easeVal = (t) => t * t * (3 - 2 * t);
+        const lerpVal = (a, b, t) => a + (b - a) * t;
+        const clampVal = (v, min, max) => Math.max(min, Math.min(max, v));
+
+        if (p.state === "reaching") {
+            if (!item) { p.state = "free"; return; }
+            const target = item.approach;
+            const settle = easeVal(clampVal(p.actionTime / 0.24, 0, 1));
+            p.x = lerpVal(p.originX, target.x, settle);
+            p.y = lerpVal(p.originY, target.y, settle);
+            p.facing = item.x < p.x ? -1 : 1;
+            if (p.actionTime >= 0.38 && item.state === "reserved") {
+                item.state = "held";
+                p.held = item.id;
+                if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('coin');
+                this.spawnCasaVivaSparkles(item.x, item.y, item.category === "dry" ? "#63c9ff" : "#80db83", 8);
+            }
+            if (p.actionTime >= 0.72) {
+                p.state = "carrying";
+                p.actionItem = null;
+                p.actionTime = 0;
+                if (cv.tutorialStep === 0) cv.tutorialStep = 1;
+                cv.message = `${item.name.toUpperCase()} nas mãos.`;
+                cv.messageTime = 1.5;
+            }
+            return;
+        }
+
+        if (p.state === "wrong") {
+            if (p.actionTime >= 0.74) {
+                p.state = "carrying";
+                p.actionBin = null;
+                p.actionTime = 0;
+            }
+            return;
+        }
+
+        if (p.state === "depositing") {
+            const held = this.currentCasaVivaItem() || cv.items.find(c => c.state === "falling" && c.targetBin === p.actionBin);
+            const bin = this.casaVivaBins.find(c => c.id === p.actionBin);
+            if (!held || !bin) { p.state = p.held ? "carrying" : "free"; return; }
+
+            const standX = bin.interactX + (p.originX < bin.interactX ? -112 : 112);
+            const align = easeVal(clampVal(p.actionTime / 0.25, 0, 1));
+            p.x = lerpVal(p.originX, standX, align);
+            p.y = lerpVal(p.originY, bin.interactY, align);
+            p.facing = bin.interactX < p.x ? -1 : 1;
+
+            if (p.actionTime >= 0.42 && held.state === "held") {
+                held.state = "falling";
+                held.targetBin = bin.id;
+                held.fallFrom = { x: bin.x + bin.w / 2, y: bin.rimY - 53 };
+                held.fallTo = { x: bin.x + bin.w / 2, y: bin.rimY + 77 };
+                held.fallT = 0;
+                p.held = null;
+            }
+
+            if (held.state === "falling") {
+                held.fallT = clampVal((p.actionTime - 0.42) / 0.5, 0, 1);
+            }
+
+            if (p.actionTime >= 0.94 && held.state === "falling") {
+                held.state = "deposited";
+                held.fallT = 1;
+                this.score += 250;
+                if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('trash');
+                this.spawnCasaVivaSparkles(bin.x + bin.w / 2, bin.rimY + 16, bin.color, 17);
+                p.state = "free";
+                p.actionBin = null;
+                p.actionTime = 0;
+                cv.message = `${held.name.toUpperCase()} NO LUGAR CERTO!`;
+                cv.messageTime = 2;
+                if (cv.tutorialStep === 1) cv.tutorialStep = 2;
+
+                const depositedCount = cv.items.filter(it => it.state === "deposited").length;
+                if (depositedCount === cv.items.length) {
+                    cv.completed = true;
+                    p.state = "complete";
+                    this.score += 900;
+                    cv.victoryTime = 0;
+                    cv.message = "";
+                    if (window.soundManager && window.soundManager.playFanfare) window.soundManager.playFanfare();
+                    this.spawnCasaVivaSparkles(p.x, p.y - 110, "#ffd45b", 42);
+                    setTimeout(() => {
+                        this.levelClear();
+                    }, 1200);
+                }
+            }
+        }
+    }
+
+    updateCasaVivaTransition(dt) {
+        const cv = this.casaViva;
+        if (!cv.transition) return;
+        cv.transition.time += dt;
+        if (cv.transition.time >= 0.24 && !cv.transition.switched) {
+            cv.room = cv.transition.to;
+            cv.roomVisits.add(cv.room);
+            cv.player.x = cv.transition.spawn.x;
+            cv.player.y = cv.transition.spawn.y;
+            cv.player.facing = cv.transition.spawn.facing;
+            cv.transition.switched = true;
+        }
+        if (cv.transition.time >= 0.5) cv.transition = null;
+    }
+
+    spawnCasaVivaSparkles(x, y, color, count) {
+        const cv = this.casaViva;
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 35 + Math.random() * 95;
+            cv.particles.push({
+                x, y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 42,
+                life: 0.5 + Math.random() * 0.65,
+                maxLife: 1.15,
+                color,
+                size: 3 + Math.random() * 5
+            });
+        }
+    }
+
+    updateCasaViva(dt) {
+        const cv = this.casaViva;
+        if (!cv) return;
+
+        if (cv.messageTime > 0) cv.messageTime = Math.max(0, cv.messageTime - dt);
+        if (cv.wrongFlashTime > 0) cv.wrongFlashTime = Math.max(0, cv.wrongFlashTime - dt);
+
+        // Update particles
+        for (const p of cv.particles) {
+            p.life -= dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vy += 130 * dt;
+        }
+        cv.particles = cv.particles.filter(p => p.life > 0);
+
+        cv.player.animTime += dt;
+
+        if (cv.transition) {
+            this.updateCasaVivaTransition(dt);
+            return;
+        }
+
+        if (cv.completed) {
+            cv.victoryTime += dt;
+            return;
+        }
+
+        if (this.actionJustPressed || (this.keys.action && !cv.player.heldActionConsumed)) {
+            this.handleCasaVivaAction();
+            cv.player.heldActionConsumed = true;
+        }
+        if (!this.keys.action) {
+            cv.player.heldActionConsumed = false;
+        }
+
+        if (cv.player.state === "reaching" || cv.player.state === "depositing" || cv.player.state === "wrong") {
+            this.updateCasaVivaAction(dt);
+            return;
+        }
+
+        let dx = 0;
+        let dy = 0;
+        if (this.keys.left) dx -= 1;
+        if (this.keys.right) dx += 1;
+        if (this.keys.up) dy -= 1;
+        if (this.keys.down) dy += 1;
+        this.moveCasaVivaPlayer(dx, dy, dt);
+    }
+
+    // =========================================================================
+    // CASA VIVA RENDERING METHODS (1280x720 scaled to 960x540)
+    // =========================================================================
+
+    renderCasaViva(ctx) {
+        const cv = this.casaViva;
+        if (!cv) return;
+
+        const W = 1280;
+        const H = 720;
+
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(960 / 1280, 540 / 720);
+
+        // 1. Draw room background
+        const roomData = this.casaVivaRooms[cv.room];
+        const bgImg = this.assets[roomData.image];
+        if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+            ctx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 0, 0, W, H);
+        } else {
+            const grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, "#f3d59b");
+            grad.addColorStop(0.52, "#d1a065");
+            grad.addColorStop(0.53, "#a65f39");
+            grad.addColorStop(1, "#6a3928");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        const vignette = ctx.createRadialGradient(W / 2, H * 0.48, H * 0.2, W / 2, H * 0.48, W * 0.72);
+        vignette.addColorStop(0, "rgba(20,12,9,0)");
+        vignette.addColorStop(1, "rgba(20,12,9,.24)");
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, W, H);
+
+        // 2. Draw loose items in room
+        for (const item of cv.items) {
+            if (item.room !== cv.room || (item.state !== "onSurface" && item.state !== "reserved")) continue;
+            const nearest = this.nearestCasaVivaItem();
+            const selected = nearest && nearest.id === item.id && !cv.player.held;
+
+            if (selected) {
+                ctx.save();
+                ctx.globalAlpha = 0.55 + Math.sin(performance.now() / 170) * 0.18;
+                ctx.fillStyle = item.category === "dry" ? "#60d3ff" : "#8de582";
+                ctx.beginPath();
+                ctx.ellipse(item.x, item.y + 20, 33, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.fillStyle = "rgba(35,18,10,.32)";
+            ctx.beginPath();
+            ctx.ellipse(item.x, item.y + 23, 24, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            this.drawCasaVivaItem(ctx, item.kind, item.x, item.y, 0.9, 0);
+
+            // Item Arrow & Label
+            const bob = Math.sin(performance.now() / 185 + item.x * 0.01) * 5;
+            const arrowY = item.y - 45 + bob;
+            const itemLabel = item.label || item.name.toUpperCase();
+
+            ctx.save();
+            ctx.translate(Math.round(item.x), Math.round(arrowY));
+            const labelY = -72 + (item.labelLift || 0);
+            ctx.fillStyle = "rgba(35,18,10,.82)";
+            this.roundedRect(ctx, -100, labelY, 200, 26, 8);
+            ctx.fill();
+            ctx.strokeStyle = item.category === "dry" ? "#69c9ee" : "#83dc8e";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = "#fff3c3";
+            ctx.font = "900 11px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(itemLabel, 0, labelY + 13);
+            ctx.restore();
+
+            // Downward arrow
+            ctx.save();
+            ctx.translate(Math.round(item.x), Math.round(arrowY + 7));
+            const arrowScale = selected ? 1.28 : 1.18;
+            ctx.scale(arrowScale, arrowScale);
+            ctx.fillStyle = selected ? "#fff36c" : "#ffd24a";
+            ctx.strokeStyle = "#563319";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-8, -19); ctx.lineTo(8, -19); ctx.lineTo(8, 3);
+            ctx.lineTo(17, 3); ctx.lineTo(0, 22); ctx.lineTo(-17, 3); ctx.lineTo(-8, 3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 3. Draw Bins (service room)
+        if (cv.room === "service") {
+            this.casaVivaBins.forEach(bin => {
+                const x = bin.x;
+                const y = bin.y;
+                const w = bin.w;
+                const h = bin.h;
+
+                ctx.save();
+                ctx.fillStyle = "rgba(24,14,10,.28)";
+                ctx.beginPath();
+                ctx.ellipse(x + w / 2, y + h + 8, w * 0.52, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Lid
+                const lidGrad = ctx.createLinearGradient(x, y - 88, x, y + 4);
+                lidGrad.addColorStop(0, bin.color);
+                lidGrad.addColorStop(1, bin.dark);
+                ctx.fillStyle = lidGrad;
+                ctx.strokeStyle = "#17251d";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(x + 14, y + 4);
+                ctx.lineTo(x + 28, y - 80);
+                ctx.lineTo(x + w - 22, y - 91);
+                ctx.lineTo(x + w - 8, y - 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Cavity
+                ctx.fillStyle = "#13231d";
+                ctx.beginPath();
+                ctx.ellipse(x + w / 2, y + 13, w * 0.48, 24, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Deposited items inside
+                const deposited = cv.items.filter(it => it.category === bin.kind && it.state === "deposited");
+                const spacing = deposited.length > 1 ? Math.min(31, (w - 68) / (deposited.length - 1)) : 0;
+                const scale = deposited.length >= 5 ? 0.42 : 0.5;
+                deposited.forEach((it, idx) => {
+                    this.drawCasaVivaItem(ctx, it.kind, x + 34 + idx * spacing, y + 8 - (idx % 2) * 4, scale, 0);
+                });
+
+                // Body
+                const body = ctx.createLinearGradient(x, y, x + w, y + h);
+                body.addColorStop(0, bin.color);
+                body.addColorStop(1, bin.dark);
+                ctx.fillStyle = body;
+                ctx.strokeStyle = "#183024";
+                ctx.lineWidth = 5;
+                this.roundedRect(ctx, x + 9, y + 14, w - 18, h - 17, 18);
+                ctx.fill();
+                ctx.stroke();
+
+                // Label
+                const labelW = bin.kind === "dry" ? 94 : 122;
+                ctx.fillStyle = "#fff2c4";
+                this.roundedRect(ctx, x + (w - labelW) / 2, y + 57, labelW, 41, 7);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(40,28,18,.45)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = bin.dark;
+                ctx.font = `900 ${bin.kind === "dry" ? 20 : 17}px sans-serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(bin.label, x + w / 2, y + 78);
+
+                ctx.font = "900 13px sans-serif";
+                ctx.fillStyle = "#fff2c4";
+                const catCount = deposited.length;
+                const catTotal = cv.items.filter(it => it.category === bin.kind).length;
+                ctx.fillText(`${catCount}/${catTotal}`, x + w / 2, y + 120);
+                ctx.restore();
+            });
+        }
+
+        // 4. Door hints
+        for (const door of roomData.doors) {
+            const dest = `IR PARA ${door.label}`;
+            const boxW = 220;
+            const x = door.side === "left" ? 18 : W - boxW - 18;
+            const y = Math.max(210, Math.min(H - 130, (door.minY + door.maxY) / 2 - 36));
+            const dir = door.side === "left" ? -1 : 1;
+            const held = this.currentCasaVivaItem();
+            const isRouteToBins = held && door.target === "service";
+            const blinkOn = Math.floor(performance.now() / 280) % 2 === 0;
+            const accent = isRouteToBins ? "#8cf074" : "#ffd84d";
+
+            ctx.save();
+            ctx.globalAlpha = blinkOn ? 1 : 0.75;
+            ctx.fillStyle = "rgba(38,22,14,.94)";
+            this.roundedRect(ctx, x, y, boxW, 72, 13);
+            ctx.fill();
+            ctx.strokeStyle = accent;
+            ctx.lineWidth = blinkOn ? 4 : 3;
+            ctx.stroke();
+
+            ctx.fillStyle = accent;
+            ctx.font = "900 11px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(isRouteToBins ? "LEVE O RESÍDUO" : "PORTA", x + boxW / 2, y + 24);
+            ctx.fillStyle = "#fff3c8";
+            ctx.font = "900 15px sans-serif";
+            ctx.fillText(dest, x + boxW / 2, y + 49);
+            ctx.restore();
+        }
+
+        // 5. Draw Player
+        const p = cv.player;
+        const held = this.currentCasaVivaItem();
+        let frame = Math.floor(p.animTime * 10) % 8;
+        let row = p.moving ? 240 : 0;
+        if (p.state === "reaching" || p.state === "depositing" || p.state === "wrong") {
+            row = p.actionTime < 0.38 ? 720 : 0;
+            frame = row === 720 ? 0 : (p.actionTime < 0.6 ? 1 : 2);
+        }
+        if (p.state === "complete") { row = 960; frame = 0; }
+
+        ctx.save();
+        ctx.translate(Math.round(p.x), Math.round(p.y));
+        if (p.facing < 0) ctx.scale(-1, 1);
+
+        // Check held sprite
+        let spriteDrawn = false;
+        if (held && (p.state === "carrying" || p.state === "free")) {
+            const spriteKey = p.moving ? `cv_${held.id}_walk` : `cv_${held.id}_hold`;
+            const spriteImg = this.assets[spriteKey];
+            if (spriteImg && spriteImg.complete && spriteImg.naturalWidth > 0) {
+                const fw = spriteImg.naturalWidth > 128 ? spriteImg.naturalWidth / 8 : spriteImg.naturalWidth;
+                const f = p.moving ? frame : 0;
+                ctx.drawImage(spriteImg, f * fw, 0, fw, spriteImg.naturalHeight, -64, -192, 128, 192);
+                spriteDrawn = true;
+            }
+        }
+
+        if (!spriteDrawn) {
+            const sheet = this.assets['p_sheet'];
+            if (sheet && sheet.complete && sheet.naturalWidth > 0) {
+                ctx.drawImage(sheet, frame * 160, row, 160, 218, -64, -192, 128, 192);
+            } else {
+                ctx.fillStyle = "#ed8b28";
+                ctx.beginPath();
+                ctx.arc(0, -96, 36, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (held) {
+                this.drawCasaVivaItem(ctx, held.kind, 31, -49, 0.75, 0.04);
+            }
+        }
+        ctx.restore();
+
+        // 6. Draw Falling items
+        for (const item of cv.items.filter(c => c.state === "falling")) {
+            const bin = this.casaVivaBins.find(c => c.id === item.targetBin);
+            if (!bin || cv.room !== "service") continue;
+            const t = item.fallT;
+            const easeVal = t * t * (3 - 2 * t);
+            const fx = item.fallFrom.x + (item.fallTo.x - item.fallFrom.x) * easeVal;
+            const arc = Math.sin(easeVal * Math.PI) * 26;
+            const fy = item.fallFrom.y + (item.fallTo.y - item.fallFrom.y) * easeVal - arc;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(bin.x - 12, 0, bin.w + 24, bin.rimY + 7);
+            ctx.clip();
+            this.drawCasaVivaItem(ctx, item.kind, fx, fy, 0.72, easeVal * 1.8);
+            ctx.restore();
+        }
+
+        // 7. Draw Particles
+        for (const pt of cv.particles) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1, pt.life / pt.maxLife));
+            ctx.translate(pt.x, pt.y);
+            ctx.rotate(Math.PI / 4);
+            ctx.fillStyle = pt.color;
+            ctx.fillRect(-pt.size / 2, -pt.size / 2, pt.size, pt.size);
+            ctx.restore();
+        }
+
+        // 8. Draw Wrong flash
+        if (cv.wrongFlashTime > 0) {
+            const pulse = 0.16 + Math.abs(Math.sin((0.72 - cv.wrongFlashTime) * 34)) * 0.2;
+            ctx.save();
+            ctx.fillStyle = `rgba(205,24,31,${pulse})`;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // 9. Draw HUD
+        ctx.save();
+        // Top-left: Room title
+        ctx.fillStyle = "rgba(38,24,16,.9)";
+        this.roundedRect(ctx, 22, 18, 310, 67, 11);
+        ctx.fill();
+        ctx.strokeStyle = "#d69450";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#ffd45b";
+        ctx.font = "900 11px sans-serif";
+        ctx.fillText(roomData.subtitle.toUpperCase(), 42, 42);
+        ctx.fillStyle = "#fff1c5";
+        ctx.font = "bold 24px sans-serif";
+        ctx.fillText(roomData.title, 42, 69);
+
+        // Top-right: Score & Separated count
+        ctx.fillStyle = "rgba(38,24,16,.9)";
+        this.roundedRect(ctx, W - 326, 18, 304, 67, 11);
+        ctx.fill();
+        ctx.strokeStyle = "#d69450";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = "#fff1c5";
+        ctx.font = "900 15px sans-serif";
+        const depositedTotal = cv.items.filter(it => it.state === "deposited").length;
+        ctx.fillText(`SEPARADOS  ${depositedTotal}/${cv.items.length}`, W - 304, 45);
+        ctx.fillStyle = "#ffd45b";
+        ctx.fillText(`PONTOS  ${this.score.toString().padStart(4, "0")}`, W - 304, 68);
+
+        // Held item info
+        if (held) {
+            const itemText = `NAS MÃOS: ${held.name.toUpperCase()}`;
+            const targetText = `AGORA JOGUE NO ${held.category === "dry" ? "SECO (AZUL)" : "MOLHADO (VERDE)"}`;
+            ctx.fillStyle = "rgba(38,24,16,.92)";
+            this.roundedRect(ctx, W / 2 - 200, 16, 400, 58, 11);
+            ctx.fill();
+            ctx.strokeStyle = held.category === "dry" ? "#58bde8" : "#78d07b";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = "#fff2c7";
+            ctx.font = "900 13px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(itemText, W / 2, 39);
+            ctx.fillStyle = held.category === "dry" ? "#6bd3ff" : "#91ed91";
+            ctx.font = "900 12px sans-serif";
+            ctx.fillText(targetText, W / 2, 60);
+        }
+
+        // Bottom prompt
+        let promptText = cv.messageTime > 0 ? cv.message : "";
+        if (!promptText) {
+            if (held) {
+                const bin = this.nearestCasaVivaBin();
+                const target = held.category === "dry" ? "SECO" : "MOLHADO";
+                if (bin?.kind === held.category) promptText = `ESPAÇO / BOTÃO A · JOGAR ${held.name.toUpperCase()} NO ${target}`;
+                else if (bin) promptText = `${held.name.toUpperCase()} É ${target} · PROCURE O RECIPIENTE ${target}`;
+                else promptText = cv.room === "service"
+                    ? `LEVE AO RECIPIENTE ${target}`
+                    : `LEVE ATÉ A ÁREA DE SERVIÇO`;
+            } else {
+                const item = this.nearestCasaVivaItem();
+                if (item) promptText = `ESPAÇO / BOTÃO A · PEGAR ${item.name.toUpperCase()}`;
+                else promptText = "EXPLORE OS CÔMODOS PARA ENCONTRAR RESÍDUOS";
+            }
+        }
+
+        if (promptText) {
+            ctx.fillStyle = "rgba(36,22,14,.91)";
+            this.roundedRect(ctx, W / 2 - 280, H - 64, 560, 44, 11);
+            ctx.fill();
+            ctx.strokeStyle = "#f0c25b";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#fff2c7";
+            ctx.font = "900 14px sans-serif";
+            ctx.fillText(promptText, W / 2, H - 37);
+        }
+
+        // Transition fade
+        if (cv.transition) {
+            const t = cv.transition.time;
+            const alpha = t < 0.25 ? t / 0.25 : (0.5 - t) / 0.25;
+            ctx.fillStyle = `rgba(28,18,13,${Math.max(0, Math.min(1, alpha))})`;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        ctx.restore();
+    }
+
+    drawCasaVivaItem(ctx, kind, x, y, scale = 1, rotation = 0) {
+        ctx.save();
+        ctx.translate(Math.round(x), Math.round(y));
+        ctx.rotate(rotation);
+        ctx.scale(scale, scale);
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+
+        if (kind === "bottle") {
+            ctx.fillStyle = "rgba(104,211,245,.84)";
+            ctx.strokeStyle = "#164e72";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-8, -28); ctx.lineTo(8, -28); ctx.lineTo(9, -19); ctx.quadraticCurveTo(16, -13, 14, 0); ctx.lineTo(12, 27); ctx.lineTo(-12, 27); ctx.lineTo(-14, 0); ctx.quadraticCurveTo(-16, -13, -9, -19); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#267bc4"; ctx.fillRect(-9, -34, 18, 8);
+            ctx.fillStyle = "#f4cf4f"; ctx.fillRect(-13, -4, 26, 10);
+            ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.fillRect(-7, -18, 4, 36);
+        } else if (kind === "can") {
+            ctx.fillStyle = "#e75037"; ctx.strokeStyle = "#6e271f"; ctx.lineWidth = 4;
+            this.roundedRect(ctx, -14, -20, 28, 41, 7); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#f2c64b"; ctx.fillRect(-13, -6, 26, 10);
+            ctx.strokeStyle = "#d9e2da"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.ellipse(0, -19, 11, 4, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.fillRect(-8, -15, 4, 29);
+        } else if (kind === "jar") {
+            ctx.fillStyle = "rgba(204,237,224,.88)"; ctx.strokeStyle = "#2d6853"; ctx.lineWidth = 4;
+            this.roundedRect(ctx, -19, -18, 38, 39, 8); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#d8a94a"; ctx.fillRect(-19, -23, 38, 8);
+            ctx.strokeStyle = "#fff1b0"; ctx.lineWidth = 2; ctx.strokeRect(-14, -6, 28, 14);
+            ctx.fillStyle = "#6d9d67"; ctx.fillRect(-9, -3, 18, 5);
+            ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.fillRect(-13, -15, 5, 27);
+        } else if (kind === "coffee") {
+            ctx.fillStyle = "#efe2c3"; ctx.strokeStyle = "#6f492f"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.ellipse(0, 4, 24, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#6d4527"; ctx.beginPath(); ctx.ellipse(0, 0, 18, 8, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#efe2c3"; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(22, 5, 10, -1.2, 1.2); ctx.stroke();
+            ctx.fillStyle = "#d6a04b"; ctx.fillRect(-16, 9, 32, 4);
+        } else if (kind === "yogurt") {
+            ctx.fillStyle = "#f6ebcb"; ctx.strokeStyle = "#6e4931"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(-19, -15); ctx.lineTo(19, -15); ctx.lineTo(14, 20); ctx.lineTo(-14, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#dc6d57"; ctx.fillRect(-17, -10, 34, 9);
+            ctx.fillStyle = "#75b7ce"; ctx.fillRect(-12, 3, 24, 8);
+            ctx.strokeStyle = "#f7f2df"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-16, -17); ctx.lineTo(16, -17); ctx.stroke();
+        } else if (kind === "paper") {
+            ctx.fillStyle = "#f2e7c9"; ctx.strokeStyle = "#51483c"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(-28,-17); ctx.lineTo(27,-12); ctx.lineTo(24,19); ctx.lineTo(-29,14); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#4e91b8"; ctx.fillRect(-22, -11, 18, 12);
+            ctx.fillStyle = "#d7c798"; ctx.fillRect(1, -9, 20, 4); ctx.fillRect(1, -1, 18, 3); ctx.fillRect(-22, 6, 43, 3);
+            ctx.strokeStyle = "#9a8a67"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-1,-15); ctx.lineTo(-3,16); ctx.stroke();
+        } else if (kind === "box") {
+            ctx.fillStyle = "#c58647"; ctx.strokeStyle = "#633b21"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(-30,-13); ctx.lineTo(7,-24); ctx.lineTo(31,-12); ctx.lineTo(30,20); ctx.lineTo(-8,26); ctx.lineTo(-30,13); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.strokeStyle = "#8d5a2f"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(-30,-13); ctx.lineTo(-7,0); ctx.lineTo(31,-12); ctx.moveTo(-7,0); ctx.lineTo(-8,26); ctx.stroke();
+            ctx.fillStyle = "#e5ad64"; ctx.fillRect(-4, -20, 8, 18);
+            ctx.fillStyle = "#4e8b55"; ctx.beginPath(); ctx.moveTo(8,8); ctx.lineTo(17,4); ctx.lineTo(15,13); ctx.closePath(); ctx.fill();
+        } else if (kind === "banana") {
+            ctx.strokeStyle = "#6a4a1c"; ctx.lineWidth = 17;
+            ctx.beginPath(); ctx.arc(-8, -5, 28, 0.15, 1.9); ctx.stroke();
+            ctx.strokeStyle = "#f0cc37"; ctx.lineWidth = 12; ctx.stroke();
+            ctx.fillStyle = "#75501c"; ctx.beginPath(); ctx.arc(20,0,5,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle = "#f5df57"; ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.moveTo(-15,10); ctx.lineTo(-29,24); ctx.moveTo(-8,12); ctx.lineTo(-9,29); ctx.stroke();
+        } else if (kind === "apple") {
+            ctx.fillStyle = "#f2dfac"; ctx.strokeStyle = "#743429"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(-13,-17); ctx.quadraticCurveTo(0,-25,13,-17); ctx.quadraticCurveTo(7,-4,9,3); ctx.quadraticCurveTo(12,16,0,22); ctx.quadraticCurveTo(-12,16,-9,3); ctx.quadraticCurveTo(-7,-4,-13,-17); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#d94835"; ctx.beginPath(); ctx.arc(0,-19,13,Math.PI,Math.PI*2); ctx.arc(0,18,11,0,Math.PI); ctx.fill();
+            ctx.strokeStyle = "#47351e"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0,-23); ctx.lineTo(5,-32); ctx.stroke();
+            ctx.fillStyle = "#6b9a3b"; ctx.beginPath(); ctx.ellipse(10,-29,8,4,-.4,0,Math.PI*2); ctx.fill();
+        } else {
+            ctx.strokeStyle = "#8c3a15"; ctx.lineWidth = 16;
+            ctx.beginPath(); ctx.arc(-4, -3, 22, -0.2, 2.1); ctx.stroke();
+            ctx.strokeStyle = "#ed7c25"; ctx.lineWidth = 11; ctx.stroke();
+            ctx.strokeStyle = "#f5aa42"; ctx.lineWidth = 7;
+            ctx.beginPath(); ctx.moveTo(-9,13); ctx.quadraticCurveTo(2,25,18,20); ctx.moveTo(-15,10); ctx.quadraticCurveTo(-25,20,-24,29); ctx.stroke();
+        }
+        ctx.restore();
     }
 
     start() {
