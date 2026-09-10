@@ -6210,6 +6210,19 @@ ctx.restore();
 
         // Biogas Plant Facility
         const plantImg = this.assets['sc_biogas_plant'];
+        // Marca técnica leve para separar a usina do panorama repetido ao
+        // fundo sem criar outro retângulo escuro cobrindo o cenário.
+        ctx.save();
+        ctx.fillStyle = '#365b46';
+        ctx.fillRect(1920, FLOOR - 13, 620, 13);
+        ctx.fillStyle = '#8fc66c';
+        ctx.fillRect(1920, FLOOR - 16, 620, 4);
+        ctx.strokeStyle = 'rgba(190, 236, 173, .36)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([12, 8]);
+        ctx.strokeRect(1935, FLOOR - 238, 585, 232);
+        ctx.setLineDash([]);
+        ctx.restore();
         ctx.globalAlpha = this.phase5PowerComplete ? 1.0 : 0.88;
         if (plantImg && plantImg.complete && plantImg.naturalWidth > 0) {
             ctx.drawImage(plantImg, 1960, FLOOR - 230, 520, 230);
@@ -6280,42 +6293,71 @@ ctx.restore();
     drawPhase5LagoonSector(ctx) {
         const FLOOR = this.phase5Floor || 448;
 
-        // Leachate lagoon basin with aeration ripples
+        // Complexo de tratamento: três tanques separados, com paredes de
+        // concreto, água em camadas e identificação educativa. O desenho
+        // fica acima da água e mantém a passarela livre para o jogador.
         ctx.save();
-        ctx.fillStyle = "#1e383e";
-        ctx.fillRect(3050, FLOOR - 10, 1500, 540 - (FLOOR - 10));
+        const tanks = [
+            { x: 3040, w: 350, label: '1  DECANTAÇÃO', water: '#4e7880', rim: '#8a7650' },
+            { x: 3440, w: 350, label: '2  AERAÇÃO', water: '#2e8394', rim: '#4d9eb0' },
+            { x: 3840, w: 350, label: '3  POLIMENTO', water: '#3c9c91', rim: '#6dc5a7' },
+            { x: 4240, w: 350, label: '4  ÁGUA LIMPA', water: '#4cae9e', rim: '#9ad9a0' }
+        ];
+        ctx.fillStyle = '#18363b';
+        ctx.fillRect(3000, FLOOR - 18, 1640, 160);
+        ctx.fillStyle = '#254d55';
+        ctx.fillRect(3000, FLOOR + 35, 1640, 105);
 
-        // Water surface waves
-        ctx.fillStyle = "#2f7890";
-        for (let x = 3070; x < 4530; x += 45) {
-            const wave = Math.sin((this.gameTime || 0) * 2.5 + x * 0.02) * 4;
-            ctx.fillRect(x, FLOOR + 12 + wave, 28, 3);
-            ctx.fillStyle = "#53aabd";
-            ctx.fillRect(x + 14, FLOOR + 38 - wave, 22, 2);
-            ctx.fillStyle = "#2f7890";
-        }
+        tanks.forEach((tank, index) => {
+            const top = FLOOR - 4;
+            const height = 119;
+            ctx.fillStyle = '#5f7475';
+            ctx.fillRect(tank.x, top, tank.w, height);
+            ctx.fillStyle = '#314c50';
+            ctx.fillRect(tank.x + 9, top + 12, tank.w - 18, height - 14);
+            ctx.fillStyle = tank.water;
+            ctx.fillRect(tank.x + 18, top + 28, tank.w - 36, height - 43);
+            // Faixas pixeladas de água e reflexos
+            for (let stripe = 0; stripe < 4; stripe++) {
+                const sx = tank.x + 28 + ((stripe * 57 + index * 23) % 170);
+                ctx.fillStyle = stripe % 2 ? 'rgba(190, 244, 225, .52)' : 'rgba(116, 223, 226, .5)';
+                ctx.fillRect(sx, top + 42 + stripe * 13, 48 + (stripe % 2) * 23, 3);
+            }
+            ctx.fillStyle = '#c7d3c0';
+            ctx.fillRect(tank.x - 4, top - 8, tank.w + 8, 10);
+            ctx.fillStyle = tank.rim;
+            ctx.fillRect(tank.x + 8, top - 5, tank.w - 16, 4);
+            ctx.strokeStyle = '#172d31';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(tank.x, top, tank.w, height);
 
-        // Passarela exatamente sob os pés do Cajulim, acima da água.
-        ctx.fillStyle = "#744b2b";
-        ctx.fillRect(3010, FLOOR, 1570, 24);
-        ctx.fillStyle = "#302218";
-        ctx.fillRect(3010, FLOOR + 19, 1570, 5);
-        ctx.fillStyle = "#d8aa5e";
-        for (let x = 3020; x < 4570; x += 42) {
-            ctx.fillRect(x, FLOOR + 2, 32, 4);
-        }
-        // Safety handrail
-        ctx.strokeStyle = "#183a42";
-        ctx.lineWidth = 4;
+            // Placa de cada etapa do tratamento
+            this.drawPhase5RoundedRect(ctx, tank.x + 74, top - 53, 202, 34, 6);
+            ctx.fillStyle = 'rgba(8, 30, 32, .95)';
+            ctx.fill();
+            ctx.strokeStyle = tank.rim;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = '#f1ffd0';
+            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(tank.label, tank.x + 175, top - 32);
+        });
+
+        // Tubos de transferência entre os tanques
+        ctx.strokeStyle = '#bdd3c3';
+        ctx.lineWidth = 7;
         ctx.beginPath();
-        ctx.moveTo(3020, FLOOR - 34);
-        ctx.lineTo(4570, FLOOR - 34);
+        ctx.moveTo(3389, FLOOR + 20); ctx.lineTo(3440, FLOOR + 20);
+        ctx.moveTo(3789, FLOOR + 20); ctx.lineTo(3840, FLOOR + 20);
+        ctx.moveTo(4189, FLOOR + 20); ctx.lineTo(4240, FLOOR + 20);
         ctx.stroke();
-        for (let x = 3030; x < 4580; x += 80) {
-            ctx.fillRect(x, FLOOR - 34, 5, 34);
-        }
+        ctx.strokeStyle = '#31565a';
+        ctx.lineWidth = 3;
+        ctx.stroke();
 
-        // 3 Floating Aerators
+        // Aeradores flutuantes: recorte da imagem somente na parte da máquina
+        // para não trazer a grande área azul embutida no arquivo de referência.
         const aeratorImg = this.assets['sc_lagoa_aerador'];
         const aerators = this.phase5Aerators || [];
 
@@ -6323,17 +6365,20 @@ ctx.restore();
             const bob = a.active ? Math.sin((this.gameTime || 0) * 4 + index) * 3 : 0;
             ctx.globalAlpha = a.active ? 1.0 : 0.75;
             if (aeratorImg && aeratorImg.complete && aeratorImg.naturalWidth > 0) {
-                ctx.drawImage(aeratorImg, a.x - 70, FLOOR - 130 + bob, 140, 140);
+                const sourceH = Math.floor((aeratorImg.naturalHeight || 922) * 0.68);
+                ctx.drawImage(aeratorImg, 0, 0, aeratorImg.naturalWidth || 1024, sourceH, a.x - 86, FLOOR - 164 + bob, 172, 118);
             } else {
-                // Procedural floating aerator
-                ctx.fillStyle = "#334155";
-                ctx.fillRect(a.x - 45, FLOOR - 40 + bob, 90, 32);
-                ctx.fillStyle = "#0284c7";
-                ctx.beginPath();
-                ctx.arc(a.x, FLOOR - 35 + bob, 22, 0, Math.PI * 2);
-                ctx.fill();
+                this.drawPhase5AeratorFallback(ctx, a.x, FLOOR - 164 + bob);
             }
             ctx.globalAlpha = 1.0;
+
+            // Flutuadores estreitos, alinhados com o tanque.
+            ctx.fillStyle = '#1595bf';
+            ctx.fillRect(a.x - 55, FLOOR + 12 + bob, 42, 14);
+            ctx.fillRect(a.x + 13, FLOOR + 12 + bob, 42, 14);
+            ctx.fillStyle = '#91e5e4';
+            ctx.fillRect(a.x - 48, FLOOR + 15 + bob, 27, 3);
+            ctx.fillRect(a.x + 20, FLOOR + 15 + bob, 27, 3);
 
             // Water spray & oxygen rings if active
             if (a.active) {
@@ -6347,26 +6392,77 @@ ctx.restore();
                 }
             }
 
-            // Gangway control switch post
-            this.drawPhase5RoundedRect(ctx, a.x - 38, FLOOR - 80, 76, 52, 6);
+            // Painel elevado, fora da máquina e sem círculo azul por trás.
+            const panelY = FLOOR - 215;
+            this.drawPhase5RoundedRect(ctx, a.x - 72, panelY, 144, 56, 7);
             ctx.fillStyle = a.active ? "#2cc874" : "#142d28";
             ctx.fill();
             ctx.strokeStyle = a.active ? "#bff37a" : "#f1cb58";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.strokeStyle = '#8ba9a1';
             ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(a.x, panelY + 56);
+            ctx.lineTo(a.x, FLOOR - 166);
             ctx.stroke();
 
             ctx.fillStyle = "#efffe9";
-            ctx.font = 'bold 6px "Press Start 2P", monospace, sans-serif';
+            ctx.font = 'bold 7px "Press Start 2P", monospace, sans-serif';
             ctx.textAlign = "center";
-            ctx.fillText(`PAINEL ${index + 1}`, a.x, FLOOR - 62);
+            ctx.fillText(`AERADOR ${index + 1}`, a.x, panelY + 21);
             ctx.fillStyle = a.active ? "#e3ffc9" : "#ffdf72";
-            ctx.fillText(a.active ? "LIGADO ✓" : "LIGAR", a.x, FLOOR - 44);
+            ctx.fillText(a.active ? "LIGADO ✓" : "LIGAR [ESPAÇO]", a.x, panelY + 42);
 
             if (this.phase5Stage === 'TO_LAGOONS' && !a.active && Math.abs((this.player.x + this.player.w / 2) - a.x) <= 100) {
-                this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: LIGAR AERADOR", `Ativar oxigenação #${index + 1}`, a.x, FLOOR - 110);
+                this.drawPhase5WorldPrompt(ctx, "ESPAÇO / E: LIGAR AERADOR", `Ativar oxigenação #${index + 1}`, a.x, panelY - 25);
             }
         });
 
+        // Passarela exatamente sob os pés do Cajulim, acima da água.
+        ctx.fillStyle = '#744b2b';
+        ctx.fillRect(3010, FLOOR, 1570, 24);
+        ctx.fillStyle = '#302218';
+        ctx.fillRect(3010, FLOOR + 19, 1570, 5);
+        ctx.fillStyle = '#d8aa5e';
+        for (let x = 3020; x < 4570; x += 42) ctx.fillRect(x, FLOOR + 2, 32, 4);
+        // Safety handrail
+        ctx.strokeStyle = '#183a42';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(3020, FLOOR - 34); ctx.lineTo(4570, FLOOR - 34);
+        ctx.stroke();
+        for (let x = 3030; x < 4580; x += 80) ctx.fillRect(x, FLOOR - 34, 5, 34);
+
+        ctx.restore();
+    }
+
+    drawPhase5AeratorFallback(ctx, x, y) {
+        ctx.save();
+        // Estrutura mecânica compacta em pixel art para conexões lentas.
+        ctx.fillStyle = '#163b53';
+        ctx.fillRect(x - 38, y + 35, 76, 45);
+        ctx.fillStyle = '#2b6d8c';
+        ctx.fillRect(x - 28, y + 9, 56, 34);
+        ctx.fillStyle = '#81cfe0';
+        ctx.fillRect(x - 20, y + 16, 40, 7);
+        ctx.fillStyle = '#0b2436';
+        ctx.fillRect(x - 13, y + 26, 26, 12);
+        ctx.fillStyle = '#e0b34d';
+        ctx.fillRect(x - 45, y + 49, 90, 6);
+        ctx.fillStyle = '#26a9cf';
+        ctx.fillRect(x - 61, y + 75, 43, 13);
+        ctx.fillRect(x + 18, y + 75, 43, 13);
+        ctx.fillStyle = '#9ce9ef';
+        ctx.fillRect(x - 55, y + 78, 28, 3);
+        ctx.fillRect(x + 24, y + 78, 28, 3);
+        if (this.phase5PowerComplete) {
+            ctx.fillStyle = 'rgba(180, 246, 255, .75)';
+            for (let i = 0; i < 5; i++) {
+                ctx.fillRect(x - 20 + i * 11, y - 4 - (i % 2) * 7, 4, 4);
+            }
+        }
         ctx.restore();
     }
 
