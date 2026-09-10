@@ -76,8 +76,8 @@ try {
     delete require.cache[gamePath];
     const { Game: Phase6Game } = require(gamePath);
     const phase6 = new Phase6Game();
-    assert.ok(requested.some(url => url.includes('carreta_16bit_magenta.png')), 'A carreta deve ser priorizada na Fase 6');
-    phase6.assets.sc_carreta_cutout = null;
+    assert.ok(requested.some(url => url.includes('carreta_16bit_transparente.png')), 'A carreta transparente e leve deve ser priorizada na Fase 6');
+    assert.strictEqual(phase6.getTruckCutout(), phase6.assets.sc_carreta_magenta, 'O celular deve desenhar a imagem transparente diretamente, sem recorte pesado em canvas');
     phase6.assets.sc_carreta_magenta.complete = true;
     phase6.assets.sc_carreta_magenta.naturalWidth = 0;
     const fallbackTruckRects = [];

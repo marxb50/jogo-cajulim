@@ -235,7 +235,7 @@ class Game {
 
             // Phase 5 Assets (Rota ao Aterro - Carreta 30t de fase 5 gpt)
             'sc_rota_aterro': 'assets/scenery/rota_aterro_16bit.png',
-            'sc_carreta_magenta': 'assets/scenery/carreta_16bit_magenta.png',
+            'sc_carreta_magenta': 'assets/scenery/carreta_16bit_transparente.png',
             'p_cajulim_idle': 'assets/player/cajulim_idle.png',
 
             // Phase 6 Assets (Aterro Sanitário & Usina Verde)
@@ -310,7 +310,7 @@ class Game {
             };
             img.onload = finish;
             img.onerror = finish;
-            img.src = imageList[key] + '?v=8.2';
+            img.src = imageList[key] + '?v=8.4';
         };
 
         const beginDeferredLoading = () => {
@@ -339,48 +339,13 @@ class Game {
         }
     }
 
-    makeTruckCutout(source) {
-        if (!source || !source.naturalWidth) return source;
-        try {
-            const offscreen = document.createElement("canvas");
-            offscreen.width = source.naturalWidth;
-            offscreen.height = source.naturalHeight;
-            const off = offscreen.getContext("2d", { willReadFrequently: true });
-            off.imageSmoothingEnabled = false;
-            off.drawImage(source, 0, 0);
-            const pixels = off.getImageData(0, 0, offscreen.width, offscreen.height);
-            const data = pixels.data;
-            for (let index = 0; index < data.length; index += 4) {
-                const r = data[index];
-                const g = data[index + 1];
-                const b = data[index + 2];
-                const chroma = Math.min(r, b) - g;
-                if (r > 205 && b > 180 && g < 125 && chroma > 95) {
-                    data[index + 3] = 0;
-                } else if (r > 180 && b > 150 && g < 155 && chroma > 55) {
-                    data[index + 3] = Math.round(data[index + 3] * Math.max(0, Math.min(1, 1 - (chroma - 55) / 60)));
-                }
-            }
-            off.putImageData(pixels, 0, 0);
-            return offscreen;
-        } catch (_) {
-            return source;
-        }
-    }
-
     getTruckCutout() {
-        if (!this.assets['sc_carreta_cutout'] && this.assets['sc_carreta_magenta'] && this.assets['sc_carreta_magenta'].naturalWidth) {
-            this.assets['sc_carreta_cutout'] = this.makeTruckCutout(this.assets['sc_carreta_magenta']);
-        }
-        return this.assets['sc_carreta_cutout'] || this.assets['sc_carreta_magenta'];
+        return this.assets['sc_carreta_magenta'];
     }
 
     onAllAssetsLoaded() {
         if (this.assetsReady) return;
         this.assetsReady = true;
-        if (this.assets['sc_carreta_magenta'] && this.assets['sc_carreta_magenta'].naturalWidth > 0) {
-            this.assets['sc_carreta_cutout'] = this.makeTruckCutout(this.assets['sc_carreta_magenta']);
-        }
         if (typeof window !== 'undefined' && window.location) {
             const searchParams = new URLSearchParams(window.location.search || '');
             const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
@@ -5777,7 +5742,7 @@ ctx.restore();
                 ctx.strokeRect(DESTINATION_X - 80, y - 12, 650, 92);
         ctx.setLineDash([]);
         if (this.phase5Truck && this.phase5Truck.x > DESTINATION_X - 460 && this.phase5ScaleState === "DONE") {
-            this.drawPhase5WorldPrompt(ctx, DESTINATION_X + 170, y - 266, "SEGURE ESPAÇO E PARE NA ÁREA DE RECEBIMENTO");
+            this.drawPhase5RoutePrompt(ctx, DESTINATION_X + 170, y - 266, "SEGURE ESPAÇO E PARE NA ÁREA DE RECEBIMENTO");
         }
     }
 
@@ -5804,7 +5769,7 @@ ctx.restore();
         if (imageReady) {
             ctx.drawImage(truckImg, -t.w / 2, drawTop, t.w, drawH);
         } else {
-            // A carreta não pode desaparecer quando a textura magenta falha
+            // A carreta não pode desaparecer quando a textura falha
             // ou ainda está baixando. O fallback mantém o veículo jogável e
             // deixa a câmera acompanhar o progresso normalmente.
             this.drawPhase5TruckFallback(ctx, t, drawTop);
@@ -5923,7 +5888,7 @@ ctx.restore();
         ctx.globalAlpha = 1;
     }
 
-    drawPhase5WorldPrompt(ctx, x, y, text) {
+    drawPhase5RoutePrompt(ctx, x, y, text) {
         const pulse = 0.96 + Math.sin((this.phase5Time || 0) * 6) * 0.04;
         ctx.save();
         ctx.translate(x, y);

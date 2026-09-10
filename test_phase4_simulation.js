@@ -38,6 +38,10 @@ assert.ok(truck.speed > 0, 'A seta volta a mover a carreta após a liberação')
 truck.x = game.phase5DestinationX - 79;
 truck.speed = 0;
 game.keys.right = false;
+assert.doesNotThrow(
+    () => game.renderPhase5(game.ctx),
+    'A área de recebimento precisa continuar desenhando a carreta e a instrução no celular'
+);
 game.keys.jumpHeld = true;
 game.update(0.016);
 assert.strictEqual(game.phase5Mode, 'WIN', 'A entrega precisa concluir dentro do aterro');
