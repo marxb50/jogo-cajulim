@@ -1,0 +1,74 @@
+{
+  "INTRO:0": {
+    "filename": "cutscene_intro_step0.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo seco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então vamos organizar nossa casa antes de ir pra rua!"
+  },
+  "PHASE1_CLEAR:0": {
+    "filename": "cutscene_intro_step1.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Olha o caminhão da coleta chegando! Meu pai já tá no volante da limpeza municipal! Parnamirim não pode parar! Vamos recolher os sacos bem fechados nas calçadas e deixar nosso bairro brilhando! Bora lá!"
+  },
+  "PHASE2_CLEAR:0": {
+    "filename": "cutscene_phase1_clear.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!"
+  },
+  "PHASE3_CLEAR:0": {
+    "filename": "cutscene_phase2_bairros.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!"
+  },
+  "PHASE4_CLEAR:0": {
+    "filename": "cutscene_phase2_clear.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbordo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!"
+  },
+  "PHASE5_CLEAR:0": {
+    "filename": "cutscene_phase3_clear.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbordo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!"
+  },
+  "PHASE6_CLEAR:0": {
+    "filename": "cutscene_phase4_clear.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Pesagem concluída com sucesso! A carreta de trinta mil quilos passou pela balança rodoviária oficial e entrou no moderno aterro sanitário de Parnamirim! Carga conferida e aprovada para o tratamento e reciclagem energética!"
+  },
+  "PHASE7_TO_8:0": {
+    "filename": "cutscene_phase5_step0.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Cidade limpa, serviço cumprido! O aterro sanitário e a usina verde funcionam com perfeição. O chorume está cem por cento purificado e a energia limpa ilumina milhares de lares... Mas espera aí... Que barulho horrível é aquele na praça?!"
+  },
+  "PHASE7_TO_8:1": {
+    "filename": "cutscene_phase5_step1.mp3",
+    "voice": "pt-BR-AntonioNeural",
+    "rate": "+4%",
+    "text": "Barão do Entulho: Mwahahaha! Achavam que iam manter a cidade limpinha, né, seus faxineiros?! Eu sou o Barão do Entulho! Pra que pagar caçamba de obra se eu posso despejar restos de cimento, blocos de concreto e ferro velho direto no meio da rua?! O meu Mecha-Trator nove mil vai soterrar a Praça Central de entulho! Ninguém vai me impedir! Mwahahaha!"
+  },
+  "GRAND_ENDING:0": {
+    "filename": "cutscene_ending_step0.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "A Redenção do Barão: Derrotado pelo trabalho em equipe, o Barão cumpre trezentas horas de serviço comunitário na praça! Com a vassoura na mão e o colete de gari, ele aprendeu o valor de cada trabalhador da limpeza pública: Obra de verdade usa caçamba legalizada e dá destino certo pro entulho! Cuidar da cidade é dever de todos!"
+  },
+  "GRAND_ENDING:1": {
+    "filename": "cutscene_ending_step1.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Celebração da Turma do Cajulim: A cidade está totalmente sustentável! Da nossa cozinha até a usina de biogás, mostramos que Parnamirim é nota mil em sustentabilidade! Ruas limpinhas, entulho no lugar certo e a cidade cheia de energia verde! Esse troféu é de todos nós! Parabéns, campeões!"
+  },
+  "GRAND_ENDING:2": {
+    "filename": "cutscene_ending_step2.mp3",
+    "voice": "pt-BR-ThalitaNeural",
+    "rate": "+2%",
+    "text": "Certificado de Mestre da Sustentabilidade: Parabéns por zerar o jogo! Cem por cento de consciência ecológica, dez megawatts de biogás e água cristalina devolvida à natureza. O meio ambiente agradece!"
+  }
+}

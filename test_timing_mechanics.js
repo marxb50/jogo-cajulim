@@ -79,7 +79,8 @@ global.Image = class {
 const { Game } = require('./game.js');
 
 const game = new Game();
-game.switchPhase(3);
+game.switchPhase(5);
+game.assetsReady = true;
 game.startGame();
 
 console.log("=== TEST A: VERMELHO (MISS) -> 0t despejadas, tenta de novo ===");

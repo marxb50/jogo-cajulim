@@ -13,15 +13,17 @@ Jogo de plataforma 2D educativo e arcade desenvolvido para a **Prefeitura de Par
 
 ## 🌟 Características
 - **Identidade Visual Oficial de Parnamirim**: Cores institucionais (Azul Royal e Ouro), brasão e bandeira nos caminhões e no HUD.
-- **Trilha Sonora 8-bit Chiptune**: Hino de Parnamirim em arranjo saltitante estilo Super Mario Bros (Fases 1 a 5) e tema épico de combate em Ré menor (Fase 6).
-- **Vozes Neurais de Alta Fidelidade**: Narrações narradas com a voz oficial de **Antônio Neural** (`pt-BR-AntonioNeural`).
+- **Trilha Sonora 8-bit Chiptune**: Hino de Parnamirim em arranjo retrô durante a jornada e tema próprio no confronto final.
+- **Vozes Neurais**: **Thalita Neural** (`pt-BR-ThalitaNeural`) narra toda a jornada. Apenas o Barão do Entulho usa **Antônio Neural** (`pt-BR-AntonioNeural`). As falas vêm do mesmo manifesto usado pelas legendas, mantendo áudio e texto iguais.
 - **Versão Celular**: Controles virtuais semi-transparentes na tela (D-Pad no polegar esquerdo, botões de ação A e B no direito), com suporte a multi-touch real.
 - **Versão PC**: Jogo limpo de arcade com controles no teclado (`Setas / WASD` para mover, `Espaço / Enter` para pular e avançar) e suporte a tela cheia (`F`).
 - **Fluxo Contínuo Sem Pausa**: Ao vencer uma fase, o banner de vitória exibe a pontuação e avança automaticamente em 3 segundos sem travar a experiência.
-- **Jornada em 6 Fases**:
-  1. *Pega o Lixo*: Coleta de recicláveis no bairro.
-  2. *Caminhão ao Transbordo*: Direção do caminhão azul até a estação urbana.
-  3. *Joga na Carreta*: Basculamento de 4 caminhões na carreta de 30 toneladas.
-  4. *Carreta ao Aterro*: Travessia das dunas com peso e estabilidade balanceados.
-  5. *Aterro & Usina Verde*: Compactação com trator, geração de 10.0 MW de biogás e tratamento de chorume.
-  6. *O Grande Chefão*: Batalha final contra o Barão do Entulho e seu Mecha-Trator Poluidor 9000!
+- **Jornada em 8 Fases**:
+  1. *Casa Viva*: Cajulim separa cinco resíduos secos e cinco molhados dentro de casa.
+  2. *Pega o Lixo*: Plataforma retrô com coleta de sacos e recicláveis até o caminhão.
+  3. *Rota do Coletor*: O jogador dirige e o Cajulim NPC recolhe dez sacos em cinco bairros.
+  4. *Rodovia ao Transbordo*: Direção do caminhão com semáforos, biodiesel e obstáculos.
+  5. *Joga na Carreta*: Basculamento de quatro caminhões na carreta de 30 toneladas.
+  6. *Carreta ao Aterro*: Travessia das dunas, parada automática na balança e entrega da carga.
+  7. *Aterro & Usina Verde*: Compactação, cobertura, 10 MW de biogás e tratamento de chorume.
+  8. *O Grande Chefão*: Batalha contra o Barão do Entulho e seu Mecha-Trator Poluidor 9000.

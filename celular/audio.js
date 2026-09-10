@@ -10,6 +10,8 @@ class SoundManager {
         this.musicGain = null;
         this.noiseBuffer = null;
         this.currentNarration = null;
+        this.pendingNarration = null;
+        this.pendingMusicMode = null;
         this.initialized = false;
     }
 
@@ -45,9 +47,26 @@ class SoundManager {
 
     resume() {
         this.init();
-        if (this.ctx && this.ctx.state === 'suspended') {
-            this.ctx.resume();
+        if (!this.ctx) return Promise.resolve();
+
+        const startPendingAudio = () => {
+            if (this.muted) return;
+            const musicMode = this.pendingMusicMode;
+            this.pendingMusicMode = null;
+            if (musicMode && !this.musicPlaying) this.startMusic(musicMode);
+
+            const narration = this.pendingNarration;
+            this.pendingNarration = null;
+            if (narration) {
+                this.playNarration(narration.audioPath, narration.fallbackText, narration.voiceHint, true);
+            }
+        };
+
+        if (this.ctx.state === 'suspended') {
+            return this.ctx.resume().then(startPendingAudio).catch(() => {});
         }
+        startPendingAudio();
+        return Promise.resolve();
     }
 
     toggleMute() {
@@ -629,10 +648,9 @@ class SoundManager {
         });
     }
 
-    playNarration(audioPath, fallbackText, voiceHint = 'thalita') {
+    playNarration(audioPath, fallbackText, voiceHint = 'thalita', fromUserGesture = false) {
         this.stopNarration();
         if (this.muted) return null;
-        this.resume();
 
         try {
             if (typeof Audio !== 'undefined') {
@@ -642,8 +660,13 @@ class SoundManager {
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.catch((err) => {
-                        console.warn('HTML5 Audio playback prevented, using speech synthesis fallback', err);
-                        this.playSpeechFallback(fallbackText, voiceHint);
+                        this.currentNarration = null;
+                        if (fromUserGesture) {
+                            console.warn('HTML5 Audio indisponível; usando síntese de voz.', err);
+                            this.playSpeechFallback(fallbackText, voiceHint);
+                        } else {
+                            this.pendingNarration = { audioPath, fallbackText, voiceHint };
+                        }
                     });
                 }
                 return audio;
@@ -675,15 +698,14 @@ class SoundManager {
                 utter.rate = 1.0;
                 utter.pitch = 0.95;
             } else {
-                const antoniaVoice = voices.find(v => 
-                    v.name.includes('Antonia') || 
-                    v.name.includes('Antônia') || 
-                    v.name.includes('Thalita') || 
-                    (v.lang === 'pt-BR' && (v.name.includes('Female') || v.name.includes('Francisca') || v.name.includes('Natural'))) ||
-                    v.lang === 'pt-BR' ||
-                    v.lang.startsWith('pt')
-                );
-                if (antoniaVoice) utter.voice = antoniaVoice;
+                const thalitaVoice = voices.find(v => v.name.includes('Thalita')) ||
+                    voices.find(v =>
+                        v.name.includes('Francisca') ||
+                        (v.lang === 'pt-BR' && (v.name.includes('Female') || v.name.includes('Natural'))) ||
+                        v.lang === 'pt-BR' ||
+                        v.lang.startsWith('pt')
+                    );
+                if (thalitaVoice) utter.voice = thalitaVoice;
                 utter.rate = 1.02;
                 utter.pitch = 1.02;
             }
@@ -694,6 +716,7 @@ class SoundManager {
     }
 
     stopNarration() {
+        this.pendingNarration = null;
         if (this.currentNarration) {
             try {
                 this.currentNarration.pause();
@@ -709,12 +732,16 @@ class SoundManager {
     }
 
     startMusic(mode = 'stage') {
+        this.lastMusicMode = mode;
         if (this.muted) {
-            this.lastMusicMode = mode;
             return;
         }
-        this.resume();
+        this.init();
         if (!this.ctx) return;
+        if (this.ctx.state !== 'running') {
+            this.pendingMusicMode = mode;
+            return;
+        }
 
         // If already playing the requested mode, maintain continuous loop
         if (this.musicPlaying && this.musicMode === mode) return;
@@ -726,7 +753,7 @@ class SoundManager {
 
         this.musicPlaying = true;
         this.musicMode = mode;
-        this.lastMusicMode = mode;
+        this.pendingMusicMode = null;
 
         if (this.musicGain && this.ctx) {
             try { this.musicGain.gain.setValueAtTime(0.28, this.ctx.currentTime); } catch (e) {}

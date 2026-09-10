@@ -1,135 +1,48 @@
-// Automated headless playthrough test for Fase 1: Pega o Lixo
-global.document = {
-    getElementById: (id) => {
-        if (id === 'gameCanvas') {
-            return {
-                getContext: () => ({
-                    imageSmoothingEnabled: false,
-                    clearRect: () => {},
-                    createLinearGradient: () => ({ addColorStop: () => {} }),
-                    fillRect: () => {},
-                    strokeRect: () => {},
-                    beginPath: () => {},
-                    arc: () => {},
-                    fill: () => {},
-                    drawImage: () => {},
-                    save: () => {},
-                    restore: () => {},
-                    translate: () => {},
-                    scale: () => {},
-                    fillText: () => {}
-                }),
-                addEventListener: () => {}
-            };
-        }
-        return {
-            classList: { add: () => {}, remove: () => {} },
-            textContent: '',
-            addEventListener: () => {}
-        };
-    }
-};
+const assert = require('assert');
+const { createGame } = require('./test_support.js');
 
-global.window = {
-    addEventListener: () => {},
-    soundManager: {
-        resume: () => {},
-        toggleMute: () => {},
-        startMusic: () => {},
-        stopMusic: () => {},
-        playJump: () => {},
-        playCollect: () => {},
-        playBump: () => {},
-        playHurt: () => {},
-        playVictory: () => {}
-    }
-};
+const { game } = createGame(1);
+const cv = game.casaViva;
+const dry = cv.items.filter(item => item.category === 'dry');
+const wet = cv.items.filter(item => item.category === 'wet');
+assert.strictEqual(dry.length, 5, 'A casa precisa de cinco resíduos secos');
+assert.strictEqual(wet.length, 5, 'A casa precisa de cinco resíduos molhados');
 
-global.performance = { now: () => Date.now() };
-global.requestAnimationFrame = (cb) => setTimeout(cb, 16);
-global.Image = class {
-    constructor() {
-        this.width = 64;
-        this.height = 64;
-        setTimeout(() => { if (this.onload) this.onload(); }, 5);
-    }
-};
+const item = cv.items.find(entry => entry.id === 'orange');
+cv.room = item.room;
+cv.player.x = item.approach.x;
+cv.player.y = item.approach.y;
+assert.strictEqual(game.startCasaVivaPickup(item), true);
+game.updateCasaVivaAction(0.40);
+game.updateCasaVivaAction(0.35);
+assert.strictEqual(cv.player.held, item.id, 'O objeto deve ficar preso às mãos do Cajulim');
+assert.strictEqual(cv.player.state, 'carrying');
 
-const { Game } = require('./game.js');
+const second = cv.items.find(entry => entry.id === 'can');
+assert.strictEqual(game.startCasaVivaPickup(second), false, 'Não pode trocar de objeto enquanto carrega um resíduo');
+assert.strictEqual(cv.player.held, item.id, 'A tentativa de troca não pode soltar o objeto atual');
 
-const game = new Game();
-game.initLevel();
-game.startGame();
+const wrongBin = game.casaVivaBins.find(bin => bin.kind === 'dry');
+game.startCasaVivaDeposit(wrongBin, item);
+assert.strictEqual(cv.player.state, 'wrong');
+assert.ok(cv.wrongFlashTime > 0, 'O cesto errado precisa produzir a piscada vermelha');
+assert.match(cv.message, /ERROU/);
+game.updateCasaVivaAction(0.75);
+assert.strictEqual(cv.player.held, item.id, 'O erro não pode soltar o objeto');
+assert.strictEqual(item.state, 'held');
 
-console.log("=== SIMULATING FASE 1: PEGA O LIXO ===");
-console.log(`Initial State: ${game.state}, Total Trash to collect: ${game.totalTrash}, Total Recyclables: ${game.totalRecyclables}`);
-console.log(`Starting Position: (${game.player.x.toFixed(1)}, ${game.player.y.toFixed(1)})`);
+const correctBin = game.casaVivaBins.find(bin => bin.kind === item.category);
+game.startCasaVivaDeposit(correctBin, item);
+game.updateCasaVivaAction(0.43);
+assert.strictEqual(cv.player.held, null, 'O objeto sai das mãos somente durante o depósito correto');
+game.updateCasaVivaAction(0.52);
+assert.strictEqual(item.state, 'deposited');
+assert.strictEqual(cv.player.state, 'free');
 
-let ticks = 0;
-const maxTicks = 2000;
-const dt = 1 / 60;
-
-let lastLogX = 0;
-while (ticks < maxTicks && game.state === 'PLAYING') {
-    ticks++;
-
-    // Simulated platformer controls:
-    game.keys.right = true;
-
-    // Simulated platformer controls:
-    game.keys.right = true;
-
-    // Detect if jump is needed:
-    // Jump over Pit 1 (760-920): jump around 720
-    // Jump over Pit 2 (1640-1920): jump at 1600 to land on 1720 platform, jump at 1800 to reach 1920
-    // Jump over Pit 3 (2640-3000):
-    // Plat 1: 2710..2806 (y: 390)
-    // Plat 2: 2860..2956 (y: 340)
-    // Seg 4 starts at 3000
-    const px = game.player.x;
-    let needJump = false;
-    if ((px >= 710 && px <= 745) ||
-        (px >= 1590 && px <= 1625) ||
-        (px >= 1770 && px <= 1810) ||
-        (px >= 2590 && px <= 2625) ||
-        (px >= 2730 && px <= 2770) ||
-        (px >= 2880 && px <= 2920) ||
-        (px >= 3320 && px <= 3340) ||
-        (px >= 3430 && px <= 3450) ||
-        (px >= 3540 && px <= 3560)) {
-        needJump = true;
-    }
-
-    if (needJump && (game.player.grounded || game.player.coyoteTimer > 0)) {
-        game.keys.jump = true;
-        game.keys.jumpHeld = true;
-        game.player.jumpBuffer = 0.2;
-    } else if (!game.player.grounded && game.player.vy > 0) {
-        game.keys.jump = false;
-        game.keys.jumpHeld = false;
-    }
-
-    game.update(dt);
-    game.render();
-
-    if (ticks >= 760 && ticks <= 820) {
-        console.log(`[Tick ${ticks}] px=${game.player.x.toFixed(1)} py=${game.player.y.toFixed(1)} vy=${game.player.vy.toFixed(1)} gr=${game.player.grounded} needJump=${needJump}`);
-    }
-
-    if (game.player.x - lastLogX > 400) {
-        lastLogX = game.player.x;
-        console.log(`[Tick ${ticks}] Cajulim Pos: (${game.player.x.toFixed(0)}, ${game.player.y.toFixed(0)}) | Trash: ${game.trashCollected}/${game.totalTrash} | Recyclables: ${game.recyclablesCollected} | Score: ${game.score} | Lives: ${game.lives}`);
-    }
+for (const entry of cv.items) {
+    assert.ok(entry.label && entry.name, `O objeto ${entry.id} precisa de nome visível`);
+    assert.ok(game.assets[`cv_${entry.kind}_hold`], `Falta imagem parada segurando ${entry.kind}`);
+    assert.ok(game.assets[`cv_${entry.kind}_walk`], `Falta imagem andando com ${entry.kind}`);
 }
 
-console.log(`\nSimulation Ended at Tick ${ticks}`);
-console.log(`Final State: ${game.state}`);
-console.log(`Final Position: (${game.player.x.toFixed(0)}, ${game.player.y.toFixed(0)})`);
-console.log(`Trash Collected: ${game.trashCollected}/${game.totalTrash}`);
-console.log(`Recyclables Collected: ${game.recyclablesCollected}/${game.totalRecyclables}`);
-console.log(`Score: ${game.score}`);
-console.log(`Remaining Lives: ${game.lives}`);
-
-if (game.trashCollected >= 5 && game.player.x >= 2000) {
-    console.log("SUCCESS: Player progressed through the level, jumped obstacles, and collected trash!");
-}
+console.log('✓ Fase 1: 5 secos, 5 molhados, nomes, mãos, bloqueio de troca e cestos corretos.');

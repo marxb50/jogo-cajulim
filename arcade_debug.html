@@ -35,12 +35,14 @@
 
     <!-- 5-Stage Selective Collection Roadmap -->
     <nav class="stages-nav">
-        <div class="stage-pill active" id="pillStage1" onclick="if(window.game) window.game.switchPhase(1)" style="cursor:pointer;" title="Jogar Fase 1">1. Pega o Lixo ★</div>
-        <div class="stage-pill" id="pillStage2" onclick="if(window.game) window.game.switchPhase(2)" style="cursor:pointer;" title="Jogar Fase 2">2. Caminhão ao Transbordo 🚚</div>
-        <div class="stage-pill" id="pillStage3" onclick="if(window.game) window.game.switchPhase(3)" style="cursor:pointer;" title="Jogar Fase 3">3. Joga na Carreta 🚜</div>
-        <div class="stage-pill" id="pillStage4" onclick="if(window.game) window.game.switchPhase(4)" style="cursor:pointer;" title="Jogar Fase 4">4. Carreta ao Aterro 🚛</div>
-        <div class="stage-pill" id="pillStage5" onclick="if(window.game) window.game.switchPhase(5)" style="cursor:pointer;" title="Jogar Fase 5">5. Aterro & Usina Verde 🌱⚡</div>
-        <div class="stage-pill" id="pillStage6" onclick="if(window.game) window.game.switchPhase(6)" style="cursor:pointer;" title="Jogar Fase 6: O Grande Chefão Final">6. O Chefão 👾</div>
+        <div class="stage-pill active" id="pillStage1" onclick="if(window.game) window.game.switchPhase(1)" style="cursor:pointer;" title="Jogar Fase 1">1. Casa Viva 🏠</div>
+        <div class="stage-pill" id="pillStage2" onclick="if(window.game) window.game.switchPhase(2)" style="cursor:pointer;" title="Jogar Fase 2">2. Pega o Lixo ★</div>
+        <div class="stage-pill" id="pillStage3" onclick="if(window.game) window.game.switchPhase(3)" style="cursor:pointer;" title="Jogar Fase 3">3. Rota do Coletor 🚚</div>
+        <div class="stage-pill" id="pillStage4" onclick="if(window.game) window.game.switchPhase(4)" style="cursor:pointer;" title="Jogar Fase 4">4. Rodovia 🛣️</div>
+        <div class="stage-pill" id="pillStage5" onclick="if(window.game) window.game.switchPhase(5)" style="cursor:pointer;" title="Jogar Fase 5">5. Transbordo 🚜</div>
+        <div class="stage-pill" id="pillStage6" onclick="if(window.game) window.game.switchPhase(6)" style="cursor:pointer;" title="Jogar Fase 6">6. Carreta 🚛</div>
+        <div class="stage-pill" id="pillStage7" onclick="if(window.game) window.game.switchPhase(7)" style="cursor:pointer;" title="Jogar Fase 7">7. Usina Verde 🌱</div>
+        <div class="stage-pill" id="pillStage8" onclick="if(window.game) window.game.switchPhase(8)" style="cursor:pointer;" title="Jogar Fase 8: O Grande Chefão Final">8. O Chefão 👾</div>
         <button class="stage-pill btn-top-fullscreen" id="btnTopFullscreen" onclick="if(window.game) window.game.toggleFullscreen();" title="Ativar/Desativar Tela Cheia (Tecla F ou 2x Clique no Jogo)">⛶ TELA CHEIA (F)</button>
     </nav>
 
@@ -87,7 +89,7 @@
                         <strong>🚚 Próxima Parada: Fase 2</strong><br>
                         O caminhão de lixo vai transportar os resíduos até a estação de transbordo da cidade!
                     </div>
-                    <button class="btn-primary" id="btnNextPhase" onclick="game.nextPhase()" style="margin-bottom:8px; font-size:13px;">AVANÇAR PARA FASE 2: O TRANSBORDO 🚚 ▶</button>
+                    <button class="btn-primary" id="btnNextPhase" onclick="game.nextPhase()" style="margin-bottom:8px; font-size:13px;">AVANÇAR PARA A PRÓXIMA FASE ▶</button>
                     <button class="btn-primary" style="background: #334155; color: #e2e8f0;" onclick="game.restartLevel()">JOGAR NOVAMENTE</button>
                 </div>
             </div>
@@ -165,7 +167,8 @@
     </section>
 
     <!-- Game Scripts -->
-    <script src="audio.js?v=10.0"></script>
-    <script src="game.js?v=10.0"></script>
+    <script src="narrations.js?v=8.0"></script>
+    <script src="audio.js?v=8.0"></script>
+    <script src="game.js?v=8.0"></script>
 </body>
 </html>

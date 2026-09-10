@@ -1,107 +1,87 @@
-import os
 import asyncio
-import edge_tts
+import json
+import os
 import shutil
+from pathlib import Path
 
-VOICE_THALITA = "pt-BR-ThalitaNeural"
-VOICE_ANTONIO = "pt-BR-AntonioNeural"
+import edge_tts
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+MANIFEST_PATH = BASE_DIR / "narrations.json"
 OUTPUT_DIRS = [
-    os.path.join(BASE_DIR, "assets", "audio"),
-    os.path.join(BASE_DIR, "PC", "assets", "audio"),
-    os.path.join(BASE_DIR, "celular", "assets", "audio")
+    BASE_DIR / "assets" / "audio",
+    BASE_DIR / "PC" / "assets" / "audio",
+    BASE_DIR / "celular" / "assets" / "audio",
+]
+SCRIPT_OUTPUTS = [
+    BASE_DIR / "narrations.js",
+    BASE_DIR / "PC" / "narrations.js",
+    BASE_DIR / "celular" / "narrations.js",
 ]
 
-NARRATIONS = [
-    {
-        "filename": "cutscene_intro_step0.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "A Prefeitura de Parnamirim apresenta: A Turma do Cajulim na Grande Missão da Coleta Seletiva! Ao lado do seu pai no caminhão da coleta municipal, nosso herói Cajulim se prepara para uma grande jornada para manter a nossa cidade sempre limpa, bonita e sustentável!"
-    },
-    {
-        "filename": "cutscene_phase1_clear.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!"
-    },
-    {
-        "filename": "cutscene_phase2_bairros.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!"
-    },
-    {
-        "filename": "cutscene_phase2_clear.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbordo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!"
-    },
-    {
-        "filename": "cutscene_phase3_clear.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbordo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!"
-    },
-    {
-        "filename": "cutscene_phase4_clear.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Pesagem concluída com sucesso! A carreta de trinta mil quilos passou pela balança rodoviária oficial e entrou no moderno aterro sanitário de Parnamirim! Carga conferida e aprovada para o tratamento e reciclagem energética!"
-    },
-    {
-        "filename": "cutscene_phase5_step0.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Cidade limpa, serviço cumprido! O aterro sanitário e a usina verde funcionam com perfeição. O chorume está cem por cento purificado e a energia limpa ilumina milhares de lares... Tudo parecia em perfeita harmonia, mas..."
-    },
-    {
-        "filename": "cutscene_phase5_step1.mp3",
-        "voice": VOICE_ANTONIO,
-        "rate": "+4%",
-        "text": "Barão do Entulho: Mwahahaha! Achavam que a faxina tinha terminado?! Enquanto houver entulho para lucrar, eu, o Barão do Entulho, serei o dono desta cidade! O meu Mecha-Trator Poluidor nove mil vai soterrar a Praça Central! Tente me impedir, Cajulim!"
-    },
-    {
-        "filename": "cutscene_ending_step0.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "A Redenção do Barão: Derrotado pelo trabalho em equipe, o Barão cumpre trezentas horas de serviço comunitário na praça! Com a vassoura na mão e o colete de gari, ele aprendeu o valor de cada trabalhador da limpeza pública: Cuidar da cidade é dever de todos!"
-    },
-    {
-        "filename": "cutscene_ending_step1.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Celebração da Turma do Cajulim: A cidade está totalmente sustentável! Das residências ao caminhão, do transbordo à carreta de trinta toneladas, do aterro ao combate final... Você dominou todas as etapas e protegeu o futuro do planeta!"
-    },
-    {
-        "filename": "cutscene_ending_step2.mp3",
-        "voice": VOICE_THALITA,
-        "rate": "+2%",
-        "text": "Certificado de Mestre da Sustentabilidade: Parabéns por zerar o jogo! Cem por cento de consciência ecológica, dez megawatts de biogás e água cristalina devolvida à natureza. O meio ambiente agradece!"
-    }
-]
+
+def load_manifest():
+    with MANIFEST_PATH.open("r", encoding="utf-8") as handle:
+        narrations = json.load(handle)
+
+    if len(narrations) != 12:
+        raise ValueError(f"Esperadas 12 narrações; encontradas {len(narrations)}")
+
+    boss_keys = [key for key, item in narrations.items() if "AntonioNeural" in item["voice"]]
+    if boss_keys != ["PHASE7_TO_8:1"]:
+        raise ValueError(f"Somente o chefão pode usar AntonioNeural: {boss_keys}")
+
+    non_thalita = [
+        key for key, item in narrations.items()
+        if key != "PHASE7_TO_8:1" and item["voice"] != "pt-BR-ThalitaNeural"
+    ]
+    if non_thalita:
+        raise ValueError(f"Narrações fora da voz Thalita Neural: {non_thalita}")
+    return narrations
+
+
+def build_browser_manifest(narrations):
+    payload = json.dumps(narrations, ensure_ascii=False, separators=(",", ":"))
+    return (
+        "(function (root) {\n"
+        f"    const narrations = {payload};\n"
+        "    root.CAJULIM_NARRATIONS = Object.freeze(narrations);\n"
+        "    if (typeof module !== 'undefined' && module.exports) module.exports = narrations;\n"
+        "})(typeof window !== 'undefined' ? window : globalThis);\n"
+    )
+
+
+def write_browser_manifests(narrations):
+    content = build_browser_manifest(narrations)
+    for output in SCRIPT_OUTPUTS:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(content, encoding="utf-8")
+        print(f"[OK] Manifesto do navegador: {output.relative_to(BASE_DIR)}")
+
 
 async def generate_all():
-    for d in OUTPUT_DIRS:
-        os.makedirs(d, exist_ok=True)
-    
+    narrations = load_manifest()
+    write_browser_manifests(narrations)
+
+    for directory in OUTPUT_DIRS:
+        directory.mkdir(parents=True, exist_ok=True)
+
     primary_dir = OUTPUT_DIRS[0]
-    for item in NARRATIONS:
-        out_path = os.path.join(primary_dir, item["filename"])
-        voice = item.get("voice", VOICE_THALITA)
-        rate = item.get("rate", "+2%")
-        print(f"Gerando {item['filename']} com a voz {voice}...")
-        communicate = edge_tts.Communicate(item["text"], voice, rate=rate)
-        await communicate.save(out_path)
-        size = os.path.getsize(out_path)
-        print(f"[OK] Salvo: {item['filename']} ({size} bytes)")
-        
-        # Copy to PC and celular audio directories
-        for other_dir in OUTPUT_DIRS[1:]:
-            dest_path = os.path.join(other_dir, item["filename"])
-            shutil.copy2(out_path, dest_path)
-            print(f"  -> Copiado para {dest_path}")
+    for key, item in narrations.items():
+        output_path = primary_dir / item["filename"]
+        print(f"Gerando {key} -> {item['filename']} com {item['voice']}...")
+        communicate = edge_tts.Communicate(item["text"], item["voice"], rate=item.get("rate", "+2%"))
+        await communicate.save(str(output_path))
+        if output_path.stat().st_size < 1_000:
+            raise RuntimeError(f"Áudio inválido ou vazio: {output_path}")
+        print(f"[OK] {item['filename']} ({output_path.stat().st_size} bytes)")
+
+        for mirror_dir in OUTPUT_DIRS[1:]:
+            destination = mirror_dir / item["filename"]
+            shutil.copy2(output_path, destination)
+
 
 if __name__ == "__main__":
+    os.environ.setdefault("PYTHONUTF8", "1")
     asyncio.run(generate_all())

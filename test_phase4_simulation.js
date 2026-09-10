@@ -1,248 +1,46 @@
-// Automated headless simulation test for Phase 4: Carreta ao Aterro
-global.document = {
-    fullscreenElement: null,
-    documentElement: {
-        requestFullscreen: async () => {}
-    },
-    exitFullscreen: async () => {},
-    getElementById: (id) => {
-        if (id === 'gameCanvas') {
-            return {
-                getContext: () => ({
-                    imageSmoothingEnabled: false,
-                    clearRect: () => {},
-                    createLinearGradient: () => ({ addColorStop: () => {} }),
-                    createRadialGradient: () => ({ addColorStop: () => {} }),
-                    fillRect: () => {},
-                    strokeRect: () => {},
-                    beginPath: () => {},
-                    arc: () => {},
-                    polygon: () => {},
-                    fill: () => {},
-                    stroke: () => {},
-                    moveTo: () => {},
-                    lineTo: () => {},
-                    closePath: () => {},
-                    quadraticCurveTo: () => {},
-                    setLineDash: () => {},
-                    drawImage: () => {},
-                    save: () => {},
-                    restore: () => {},
-                    translate: () => {},
-                    scale: () => {},
-                    rotate: () => {},
-                    rect: () => {},
-                    roundRect: () => {},
-                    clip: () => {},
-                    setTransform: () => {},
-                    measureText: (txt) => ({ width: (txt || '').length * 8 }),
-                    fillText: () => {}
-                }),
-                addEventListener: () => {}
-            };
-        }
-        return {
-            classList: { add: () => {}, remove: () => {}, toggle: () => {} },
-            textContent: '',
-            innerHTML: '',
-            style: {},
-            addEventListener: () => {}
-        };
-    }
-};
+const assert = require('assert');
+const { createGame } = require('./test_support.js');
 
-let soundsPlayed = [];
-global.window = {
-    addEventListener: () => {},
-    soundManager: {
-        resume: () => {},
-        toggleMute: () => {},
-        startMusic: () => {},
-        stopMusic: () => {},
-        playJump: () => { soundsPlayed.push('jump'); },
-        playCollect: () => { soundsPlayed.push('collect'); },
-        playBump: () => { soundsPlayed.push('bump'); },
-        playHurt: () => { soundsPlayed.push('hurt'); },
-        playHorn: () => { soundsPlayed.push('horn'); },
-        playTurbo: () => { soundsPlayed.push('turbo'); },
-        playVictory: () => { soundsPlayed.push('victory'); },
-        playDockBeep: () => { soundsPlayed.push('dockBeep'); },
-        playDockSuccess: () => { soundsPlayed.push('dockSuccess'); },
-        playHydraulic: () => { soundsPlayed.push('hydraulic'); },
-        playDumpRumble: () => { soundsPlayed.push('dumpRumble'); },
-        playTimingHitPerfect: () => { soundsPlayed.push('perfect'); },
-        playTimingHitGood: () => { soundsPlayed.push('good'); },
-        playTimingHitMiss: () => { soundsPlayed.push('miss'); },
-        playEngineBrake: () => { soundsPlayed.push('engineBrake'); },
-        playDuneJump: () => { soundsPlayed.push('duneJump'); },
-        playCargoRattle: () => { soundsPlayed.push('cargoRattle'); },
-        playScaleBeep: () => { soundsPlayed.push('scaleBeep'); }
-    }
-};
+const { game } = createGame(6);
+const truck = game.phase5Truck;
+assert.ok(truck);
+assert.strictEqual(game.cargoWeight, 30000);
 
-global.performance = { now: () => Date.now() };
-global.requestAnimationFrame = (cb) => setTimeout(cb, 16);
-global.Image = class {
-    constructor() {
-        this.width = 128;
-        this.height = 128;
-        setTimeout(() => { if (this.onload) this.onload(); }, 5);
-    }
-};
+const rampStartY = game.phase5RoadYAt(game.phase5ScaleX - 220);
+const scaleY = game.phase5RoadYAt(game.phase5ScaleX);
+assert.ok(rampStartY - scaleY >= 40, 'A rampa da balança precisa subir de forma visível');
 
-const { Game } = require('./game.js');
-
-console.log("=========================================");
-console.log("=== TEST: FASE 4 - CARRETA AO ATERRO ===");
-console.log("=========================================");
-
-const game = new Game();
-game.switchPhase(4);
-game.startGame();
-
-console.log(`Phase: ${game.currentPhase}`);
-console.log(`State: ${game.state}`);
-console.log(`Initial Position: Cab (${game.player.x.toFixed(0)}, ${game.player.y.toFixed(0)}), Trailer (${game.trailer.x.toFixed(0)}, ${game.trailer.y.toFixed(0)})`);
-console.log(`Cargo: ${game.cargoWeight} kg, Stability: ${game.cargoStability}%, Items: ${game.items.length}`);
-
-if (!game.trailer) {
-    console.error("FAIL: Semi-trailer is not initialized!");
-    process.exit(1);
-}
-
-// Test 1: Verify dune math and ramp elevation
-const hFlat = game.getDuneHeight(200);
-const hCrest = game.getDuneHeight(1140);
-const hRamp = game.getDuneHeight(3960);
-const hScale = game.getDuneHeight(4150);
-console.log(`Dune heights: Flat Start (x=200): ${hFlat}, Crest (x=1140): ${hCrest.toFixed(1)}, High Ramp (x=3960): ${hRamp.toFixed(1)}, Scale Platform (x=4150): ${hScale}`);
-if (hFlat !== 390 || hScale !== 330 || Math.round(hRamp) !== 360) {
-    console.error("FAIL: Ramp geometry incorrect! Expected hScale=330, hRamp=360, got hScale=" + hScale + " hRamp=" + hRamp);
-    process.exit(1);
-}
-
-// Test 2: Cargo Preservation & Articulated Trailer Follow
-console.log("\n--- Testing Cargo Preservation & Articulated Trailer Follow ---");
-game.player.x = 1000;
-game.trailer.x = 1000 - 185;
-game.speedKmh = 65;
+truck.x = game.phase5ScaleX - 339;
+truck.speed = 190;
 game.keys.right = true;
-
-for (let i = 0; i < 40; i++) {
-    game.update(1 / 60);
+for (let frame = 0; frame < 1200 && game.phase5ScaleState !== 'WEIGHING'; frame++) {
+    game.update(0.016);
 }
+assert.strictEqual(game.phase5ScaleState, 'WEIGHING', 'O controle automático deve alinhar a carreta na balança');
+assert.strictEqual(truck.speed, 0, 'A carreta deve parar mesmo com a seta pressionada');
 
-console.log(`Post-Drive Test: Stability = ${game.cargoStability}%, Weight = ${game.cargoWeight} kg, Trailer Follow Offset = ${(game.player.x - game.trailer.x).toFixed(1)}px`);
-if (game.cargoWeight !== 30000 || game.cargoStability !== 100) {
-    console.error("FAIL: 30.000 kg cargo was not preserved!");
-    process.exit(1);
-}
-console.log("PASS: 30.000 kg cargo preserved and articulated trailer tracks perfectly!");
+for (let frame = 0; frame < 170; frame++) game.update(0.016);
+assert.strictEqual(game.phase5ScaleState, 'DONE');
+assert.strictEqual(game.phase5DepartureLocked, true, 'A carreta fica bloqueada até o motorista soltar a seta');
+assert.strictEqual(truck.speed, 0);
 
-// Test 3: Freio Motor (Retarder)
-console.log("\n--- Testing Freio Motor (Retarder) ---");
+game.update(0.25);
+assert.strictEqual(game.phase5DepartureLocked, true, 'Continuar acelerando não pode furar a pesagem');
+assert.strictEqual(truck.speed, 0);
+
 game.keys.right = false;
-game.keys.down = true; // S / Down key
-soundsPlayed = [];
-const preSpeed = game.speedKmh;
+game.update(0.016);
+assert.strictEqual(game.phase5DepartureLocked, false, 'Soltar a seta libera a saída depois da pesagem');
+game.keys.right = true;
+game.update(0.25);
+assert.ok(truck.speed > 0, 'A seta volta a mover a carreta após a liberação');
 
-for (let i = 0; i < 20; i++) {
-    game.update(1 / 60);
-}
+truck.x = game.phase5DestinationX - 79;
+truck.speed = 0;
+game.keys.right = false;
+game.keys.jumpHeld = true;
+game.update(0.016);
+assert.strictEqual(game.phase5Mode, 'WIN', 'A entrega precisa concluir dentro do aterro');
+assert.strictEqual(game.cargoWeight, 30000);
 
-console.log(`Freio Motor Test: Speed ${preSpeed.toFixed(1)} -> ${game.speedKmh.toFixed(1)} km/h, Engine Brake Sound: ${soundsPlayed.includes('engineBrake')}`);
-if (game.speedKmh >= preSpeed) {
-    console.error("FAIL: Freio Motor did not decelerate the carreta!");
-    process.exit(1);
-}
-if (!soundsPlayed.includes('engineBrake')) {
-    console.error("FAIL: Engine brake sound was not played!");
-    process.exit(1);
-}
-console.log("PASS: Freio motor successfully slows the 30t carreta with retarder sound!");
-
-// Test 4: Tração Reduzida 6x4 on Steep Dunes
-console.log("\n--- Testing Tração Reduzida 6x4 Climbing ---");
-game.keys.down = false;
-game.player.x = 2150;
-game.speedKmh = 15; // Low speed on slope
-game.keys.jumpHeld = true; // Engage 6x4
-game.keys.right = true; // Throttle
-
-for (let i = 0; i < 30; i++) {
-    game.update(1 / 60);
-}
-
-console.log(`Tração 6x4 Test: Mode Active = ${game.tracaoReduzidaActive}, Speed = ${game.speedKmh.toFixed(1)} km/h`);
-if (!game.tracaoReduzidaActive || game.speedKmh <= 15) {
-    console.error("FAIL: Tração Reduzida 6x4 did not activate or accelerate!");
-    process.exit(1);
-}
-console.log("PASS: Tração 6x4 heavy sand torque powers up the dunes!");
-
-// Test 5: Full Drive to Weigh Station & Level Clear
-console.log("\n--- Testing ANTT Weigh Station & Gate Clearance ---");
-game.player.x = 3980;
-game.speedKmh = 45;
-game.cargoStability = 92;
-game.scaleWeighed = false;
-game.scaleTimer = 0;
-game.gateAngle = 0;
-soundsPlayed = [];
-
-let ticks = 0;
-const dt = 1 / 60;
-
-while (ticks < 1200 && game.state === 'PLAYING') {
-    ticks++;
-    const px = game.player.x;
-
-    // Approaching scale platform: slow down to 20 km/h
-    if (px >= 4050 && px <= 4480) {
-        game.keys.right = false;
-        if (game.speedKmh > 20) {
-            game.keys.left = true;
-        } else {
-            game.keys.left = false;
-            game.keys.right = true; // crawl through scale
-        }
-    } else if (px > 4480) {
-        // Continue onto the weighing zone
-        game.keys.left = false;
-        game.keys.right = true;
-    } else {
-        // Highway cruise 60 km/h
-        if (game.speedKmh < 60) {
-            game.keys.right = true;
-            game.keys.left = false;
-        } else {
-            game.keys.right = false;
-            game.keys.left = false;
-        }
-    }
-
-    game.update(dt);
-    game.render();
-
-    if (ticks % 100 === 0) {
-        console.log(`[Tick ${ticks}] Pos: ${game.player.x.toFixed(0)} | Speed: ${game.speedKmh.toFixed(0)} km/h | Scale Reading: "${game.scaleReading}" | Weighed: ${game.scaleWeighed} | AutoBraking: ${game.scaleAutoBraking}`);
-    }
-}
-
-console.log(`\nSimulation Ended at Tick ${ticks}`);
-console.log(`Final State: ${game.state}`);
-console.log(`Final Pos: ${game.player.x.toFixed(0)}`);
-console.log(`Scale Weighed: ${game.scaleWeighed}`);
-console.log(`Cargo Stability: ${game.cargoStability.toFixed(1)}%`);
-console.log(`Scale Beep Sound: ${soundsPlayed.includes('scaleBeep')}`);
-console.log(`Score: ${game.score}`);
-
-if (game.state !== 'LEVEL_CLEAR') {
-    console.error("FAIL: Phase 4 did not reach LEVEL_CLEAR!");
-    process.exit(1);
-}
-
-console.log("\n=========================================");
-console.log("=== ALL PHASE 4 TESTS PASSED (100%) ===");
-console.log("=========================================");
-process.exit(0);
+console.log('✓ Fase 6: rampa, parada automática, pesagem de 30 t, liberação e entrega ao aterro.');

@@ -1,4 +1,4 @@
-// Headless Automated Simulation Test for Phase 6 (Barão do Entulho & Mecha-Trator Poluidor 9000)
+// Headless Automated Simulation Test for Phase 8 (Barão do Entulho & Mecha-Trator Poluidor 9000)
 const assert = require('assert');
 
 global.document = {
@@ -83,21 +83,22 @@ global.Image = class {
 const { Game } = require('./game.js');
 
 console.log("=================================================");
-console.log("=== TEST: FASE 6 - O CHEFÃO FINAL (MECHA-TRATOR) ===");
+console.log("=== TEST: FASE 8 - O CHEFÃO FINAL (MECHA-TRATOR) ===");
 console.log("=================================================");
 
 const game = new Game();
-game.switchPhase(6);
+game.switchPhase(8);
+game.assetsReady = true;
 game.startGame();
 
-assert.strictEqual(game.currentPhase, 6, "Current phase should be 6");
+assert.strictEqual(game.currentPhase, 8, "Current phase should be 8");
 assert.strictEqual(game.levelWidth, 1400, "Arena width should be 1400px");
 assert.ok(game.boss, "Boss object must exist");
-assert.strictEqual(game.lives, 5, "Cajulim must have 5 lives in Phase 6");
+assert.strictEqual(game.lives, 5, "Cajulim must have 5 lives in Phase 8");
 assert.strictEqual(game.boss.hp, 4, "Boss initial HP must be 4");
 assert.strictEqual(game.boss.maxHp, 4, "Boss max HP must be 4");
 assert.strictEqual(game.springDumpsters.length, 2, "Must have 2 spring dumpsters");
-console.log("✔ Phase 6 initialized properly with Barão do Entulho in the Mecha-Trator 9000!");
+console.log("✔ Phase 8 initialized properly with Barão do Entulho in the Mecha-Trator 9000!");
 
 // 1. Test Player movement & Spring Dumpster bounce
 console.log("\n--- Testing Spring Dumpster Mechanics ---");
@@ -112,6 +113,7 @@ console.log(`✔ Dumpster Super Jump verified! Player vy: ${game.player.vy}px/s`
 
 // 2. Test Boss Damage & Head Bounce (Sonic-style hit)
 console.log("\n--- Testing Boss Head Bounce & Phase Transitions ---");
+const livesBeforeBossHits = game.lives;
 
 for (let hit = 1; hit <= 4; hit++) {
     const expectedHp = 4 - hit;
@@ -129,6 +131,7 @@ for (let hit = 1; hit <= 4; hit++) {
 
     assert.strictEqual(game.boss.hp, expectedHp, `After hit #${hit}, boss HP should be ${expectedHp}`);
     assert.ok(game.player.vy < -300, `Player must bounce upward from boss head after hit #${hit}`);
+    assert.strictEqual(game.lives, livesBeforeBossHits, 'Atingir o ponto fraco não pode machucar o Cajulim');
 
     if (expectedHp >= 3) {
         assert.strictEqual(game.boss.phase, 1, "Should be Boss Phase 1 (Pá de Sucata)");
@@ -169,8 +172,8 @@ for (let f = 0; f < 250; f++) {
 assert.strictEqual(game.state, 'LEVEL_CLEAR', "Game state should reach LEVEL_CLEAR");
 console.log("✔ Game completion reached LEVEL_CLEAR with Grand Victory!");
 
-// 4. Test Rendering Pipeline for Phase 6
-console.log("\n--- Testing Phase 6 Render Pipeline ---");
+// 4. Test Rendering Pipeline for Phase 8
+console.log("\n--- Testing Phase 8 Render Pipeline ---");
 let renderThrew = false;
 try {
     game.render();
@@ -178,10 +181,10 @@ try {
     renderThrew = true;
     console.error("Render threw exception:", err);
 }
-assert.strictEqual(renderThrew, false, "Phase 6 render() must complete without errors");
-console.log("✔ Phase 6 render() ran completely without any errors!");
+assert.strictEqual(renderThrew, false, "Phase 8 render() must complete without errors");
+console.log("✔ Phase 8 render() ran completely without any errors!");
 
 console.log("\n=================================================");
-console.log("=== ALL PHASE 6 AUTOMATED TESTS PASSED (100%) ===");
+console.log("=== ALL PHASE 8 AUTOMATED TESTS PASSED (100%) ===");
 console.log("=================================================\n");
 process.exit(0);
