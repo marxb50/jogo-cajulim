@@ -290,7 +290,7 @@ class Game {
             4: ['sc_phase4_transbordo_bg', 'sc_truck', 'tile_road', 'tile_road_sub'],
             5: ['sc_transbordo_interior', 'sc_carreta', 'p_supervisor'],
             6: ['sc_rota_aterro', 'sc_carreta_magenta', 'p_cajulim_idle'],
-            7: ['sc_aterro_complex_bg', 'sc_trator_compactador', 'p_idle_0', 'p_walk_0'],
+            7: ['sc_aterro_complex_bg', 'sc_trator_compactador', 'sc_biogas_plant', 'sc_lagoa_aerador', 'p_idle_0', 'p_walk_0'],
             8: ['sc_mecha_boss_pixel', 'sc_aterro_complex_bg', 'p_sheet']
         };
         const prioritySet = new Set([...common, ...(byPhase[this.currentPhase] || [])]);
@@ -6214,13 +6214,10 @@ ctx.restore();
         if (plantImg && plantImg.complete && plantImg.naturalWidth > 0) {
             ctx.drawImage(plantImg, 1960, FLOOR - 230, 520, 230);
         } else {
-            // Procedural Biogas digester & generator building
-            ctx.fillStyle = "#1e3a34";
-            ctx.fillRect(1980, FLOOR - 200, 480, 200);
-            ctx.fillStyle = "#2a544b";
-            ctx.beginPath();
-            ctx.arc(2120, FLOOR - 120, 75, 0, Math.PI * 2);
-            ctx.fill();
+            // Fallback detalhado para conexões lentas. O desenho antigo era um
+            // retângulo com um círculo gigante, que parecia um defeito sobre o
+            // cenário quando a imagem ainda estava baixando.
+            this.drawPhase5BiogasFallback(ctx, FLOOR);
         }
         ctx.globalAlpha = 1.0;
 
@@ -8103,6 +8100,93 @@ ctx.restore();
             ctx.textBaseline = 'middle';
             ctx.fillText(block.type === 'question' ? '?' : '↻', block.x + block.w / 2, drawY + block.h / 2 + 1);
         }
+        ctx.restore();
+    }
+
+    drawPhase5BiogasFallback(ctx, FLOOR) {
+        const x = 1980;
+        const top = FLOOR - 205;
+        const w = 480;
+        const h = 205;
+        ctx.save();
+
+        // Galpão do gerador
+        ctx.fillStyle = '#164b3d';
+        ctx.fillRect(x + 138, top + 48, 322, h - 48);
+        ctx.fillStyle = '#1f7456';
+        ctx.fillRect(x + 128, top + 38, 342, 18);
+        ctx.fillStyle = '#0c3029';
+        ctx.fillRect(x + 145, top + 55, 294, 7);
+        ctx.strokeStyle = '#09241f';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x + 138, top + 48, 322, h - 48);
+
+        // Telhado de chapas e janelas
+        ctx.fillStyle = '#2e9b6e';
+        ctx.beginPath();
+        ctx.moveTo(x + 122, top + 40);
+        ctx.lineTo(x + 160, top + 8);
+        ctx.lineTo(x + 438, top + 8);
+        ctx.lineTo(x + 474, top + 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#0a3328';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.fillStyle = '#bde8d3';
+        for (let i = 0; i < 3; i++) {
+            ctx.fillRect(x + 164 + i * 36, top + 22, 22, 16);
+            ctx.strokeStyle = '#123d32';
+            ctx.strokeRect(x + 164 + i * 36, top + 22, 22, 16);
+        }
+
+        // Porta, turbina e placa
+        ctx.fillStyle = '#0a2723';
+        ctx.fillRect(x + 160, top + 92, 74, 108);
+        ctx.fillStyle = '#e9d56d';
+        ctx.fillRect(x + 255, top + 76, 142, 38);
+        ctx.fillStyle = '#123c31';
+        ctx.font = '900 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('BIOGÁS', x + 326, top + 92);
+        ctx.fillStyle = '#55d28c';
+        ctx.fillRect(x + 273, top + 132, 115, 67);
+        ctx.fillStyle = '#0a2b24';
+        ctx.fillRect(x + 288, top + 147, 84, 37);
+        ctx.fillStyle = '#f6dd76';
+        ctx.fillRect(x + 307, top + 158, 47, 13);
+
+        // Digestor vertical e painel de válvulas
+        ctx.fillStyle = '#496d70';
+        ctx.fillRect(x + 42, top + 82, 54, 112);
+        ctx.fillStyle = '#8ab3af';
+        ctx.fillRect(x + 50, top + 91, 38, 94);
+        ctx.strokeStyle = '#122e2c';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x + 42, top + 82, 54, 112);
+        ctx.fillStyle = '#172f2d';
+        ctx.fillRect(x + 8, top + 75, 25, 119);
+        ctx.fillStyle = '#d8e8c7';
+        ctx.fillRect(x + 12, top + 88, 17, 20);
+        ctx.fillRect(x + 12, top + 116, 17, 20);
+        ctx.fillStyle = '#e4c34d';
+        ctx.beginPath(); ctx.arc(x + 20, top + 159, 7, 0, Math.PI * 2); ctx.fill();
+
+        // Torre de queima e tubulação
+        ctx.fillStyle = '#6c7f84';
+        ctx.fillRect(x + 105, top + 18, 16, 177);
+        ctx.fillStyle = '#d6a64c';
+        ctx.fillRect(x + 98, top + 12, 30, 12);
+        ctx.fillStyle = '#ffbc32';
+        ctx.beginPath();
+        ctx.moveTo(x + 103, top + 12); ctx.lineTo(x + 113, top - 20); ctx.lineTo(x + 123, top + 12); ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#436d62';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(x + 94, top + 194); ctx.lineTo(x + 94, top + 198); ctx.lineTo(x + 300, top + 198);
+        ctx.lineTo(x + 300, top + 188);
+        ctx.stroke();
         ctx.restore();
     }
 

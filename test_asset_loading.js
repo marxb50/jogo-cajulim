@@ -68,6 +68,21 @@ try {
     phase2.ctx.fillRect = (...args) => { if (args[2] === 48 && args[3] === 48) fallbackBlocks++; };
     phase2.renderBlocks(phase2.ctx);
     assert.ok(fallbackBlocks >= 4, 'Os blocos devem continuar desenhados durante uma falha de textura');
+
+    global.window.location.search = '?fase=7';
+    requested.length = 0;
+    deferredTimers.length = 0;
+    delete require.cache[gamePath];
+    const { Game: Phase7Game } = require(gamePath);
+    const phase7 = new Phase7Game();
+    assert.ok(requested.some(url => url.includes('biogas_plant.png')), 'A usina deve carregar antes de abrir a Fase 7');
+    assert.ok(requested.some(url => url.includes('lagoa_aerador.png')), 'Os aeradores devem carregar antes de abrir a Fase 7');
+    phase7.assets.sc_biogas_plant.complete = false;
+    phase7.assets.sc_biogas_plant.naturalWidth = 0;
+    const fallbackArcs = [];
+    phase7.ctx.arc = (...args) => fallbackArcs.push(args);
+    phase7.drawPhase5BiogasSector(phase7.ctx);
+    assert.ok(!fallbackArcs.some(args => args[2] >= 60), 'O fallback da usina não pode desenhar o círculo verde gigante');
 } finally {
     global.setTimeout = realSetTimeout;
 }
