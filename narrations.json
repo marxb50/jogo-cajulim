@@ -3,7 +3,8 @@
     "filename": "cutscene_intro_step0.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo seco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então vamos organizar nossa casa antes de ir pra rua!"
+    "text": "Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo seco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então vamos organizar nossa casa antes de ir pra rua!",
+    "speech_text": "Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo sêco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então vamos organizar nossa casa antes de ir pra rua!"
   },
   "PHASE1_CLEAR:0": {
     "filename": "cutscene_intro_step1.mp3",
@@ -22,21 +23,21 @@
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
     "text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!",
-    "speech_text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbôrdo!"
+    "speech_text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbõrdo!"
   },
   "PHASE4_CLEAR:0": {
     "filename": "cutscene_phase2_clear.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
     "text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbordo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!",
-    "speech_text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbôrdo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!"
+    "speech_text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbõrdo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!"
   },
   "PHASE5_CLEAR:0": {
     "filename": "cutscene_phase3_clear.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
     "text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbordo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!",
-    "speech_text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbôrdo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!"
+    "speech_text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbõrdo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!"
   },
   "PHASE6_CLEAR:0": {
     "filename": "cutscene_phase4_clear.mp3",

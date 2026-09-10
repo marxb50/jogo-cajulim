@@ -41,15 +41,19 @@ for (const [key, item] of entries) {
     const played = soundEvents.at(-1);
     assert.strictEqual(played.name, 'playNarration');
     assert.strictEqual(played.text, item.speech_text || item.text, 'A fala precisa usar o texto próprio de pronúncia quando informado');
-    assert.strictEqual(played.file, `assets/audio/${item.filename}`);
+    assert.strictEqual(played.file, `assets/audio/${item.filename}?v=8.5`);
     assert.strictEqual(played.voice, key === 'PHASE7_TO_8:1' ? 'antonio' : 'thalita');
 }
 
 for (const key of ['PHASE3_CLEAR:0', 'PHASE4_CLEAR:0', 'PHASE5_CLEAR:0']) {
-    assert.match(source[key].speech_text, /transbôrdo/i, `${key} precisa pronunciar transbôrdo`);
-    assert.doesNotMatch(source[key].text, /transbôrdo/i, `${key} precisa manter a grafia visível original`);
+    assert.match(source[key].speech_text, /transbõrdo/i, `${key} precisa pronunciar transbõrdo`);
+    assert.doesNotMatch(source[key].text, /transbõrdo/i, `${key} precisa manter a grafia visível original`);
     assert.match(source[key].text, /transbordo/i, `${key} precisa continuar exibindo transbordo`);
 }
+
+assert.match(source['INTRO:0'].speech_text, /sêco/i, 'A introdução precisa pronunciar sêco');
+assert.doesNotMatch(source['INTRO:0'].text, /sêco/i, 'A introdução precisa manter a grafia visível seco');
+assert.match(source['INTRO:0'].text, /seco/i, 'A legenda da introdução precisa continuar exibindo seco');
 
 game.startCutscene('PHASE7_TO_8');
 game.cutscene.textProgress = game.getCutsceneFullText().length;
@@ -68,4 +72,4 @@ for (let step = 0; step < 3; step++) {
 assert.strictEqual(game.state, 'TITLE');
 assert.strictEqual(game.currentPhase, 1);
 
-console.log('✓ Legendas preservadas; pronúncia dedicada no transbôrdo; Thalita em tudo, Antônio somente no chefão.');
+console.log('✓ Legendas preservadas; pronúncias transbõrdo e sêco; Thalita em tudo, Antônio somente no chefão.');

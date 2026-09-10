@@ -8936,7 +8936,7 @@ ctx.restore();
         }
         const voiceHint = narration.voice && narration.voice.includes('Antonio') ? 'antonio' : 'thalita';
         window.soundManager.playNarration(
-            `assets/audio/${narration.filename}`,
+            `assets/audio/${narration.filename}?v=8.5`,
             narration.speech_text || narration.text,
             voiceHint
         );
