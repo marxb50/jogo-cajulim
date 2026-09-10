@@ -82,14 +82,24 @@ Os prompts fornecidos na [Seção 4](#-catálogo-visual-e-prompts-de-imagem-para
 ---
 
 ### Prólogo: Abertura & Chamado à Aventura
-- **Contexto**: Manhã ensolarada na garagem da Secretaria de Limpeza Urbana de Parnamirim.
-- **Imagem de Fundo**: `assets/cutscenes/cs_intro_father.jpg` e `assets/cutscenes/cs_intro_mission.jpg`.
-- **Áudio de Narration**: `assets/audio/cutscene_intro_step0.mp3` (Voz Thalita).
+
+#### Passo 0: A Cozinha do Cajulim (Separação Seco vs. Molhado)
+- **Contexto**: Manhã ensolarada na acolhedora cozinha do Cajulim.
+- **Imagem de Fundo**: `assets/cutscenes/cs_intro_casa.jpg` (16-bit Pixel Art: Cajulim entre as lixeiras SECO e MOLHADO).
+- **Áudio de Narração**: `assets/audio/cutscene_intro_step0.mp3` (Voz Puck / Infantil 8 anos - super animada).
 - **Texto Oficial da Cutscene**:
-> *"A PREFEITURA DE PARNAMIRIM APRESENTA: A TURMA DO CAJULIM NA GRANDE MISSÃO DA COLETA SELETIVA! AO LADO DO SEU PAI NO CAMINHÃO DA COLETA MUNICIPAL, NOSSO HERÓI CAJULIM SE PREPARA PARA UMA GRANDE JORNADA PARA MANTER A NOSSA CIDADE SEMPRE LIMPA, BONITA E SUSTENTÁVEL!"*
-- **Texto Falado na Dublagem**:
-> *"A Prefeitura de Parnamirim apresenta: A Turma do Cajulim na Grande Missão da Coleta Seletiva! Ao lado do seu pai no caminhão da coleta municipal, nosso herói Cajulim se prepara para uma grande jornada para manter a nossa cidade sempre limpa, bonita e sustentável!"*
-- **Objetivo do Jogador**: Iniciar a rotina diária recolhendo os materiais nos bairros históricos.
+> *"BOM DIA, TURMA! A SUSTENTABILIDADE COMEÇA DENTRO DE CASA! LIXO SECO NA LIXEIRA AZUL: PLÁSTICO, PAPELÃO E LATINHA LIMPA! E LIXO MOLHADO NA LIXEIRA MARROM: CASCA DE FRUTA E RESTO DE COMIDA! SEPAROU CERTINHO? ENTÃO PARTIU PRA RUA QUE A GRANDE MISSÃO COMEÇOU!"*
+- **Texto Falado na Dublagem (Tags AI Studio)**:
+> *"[super_animado] Ei, turma! Bom dia! [muito_alegre] A sustentabilidade começa aqui dentro de casa! [empolgado] Olha só: lixo SECO na lixeira azul — plástico, papelão e latinha limpa! [apontando] E lixo MOLHADO na lixeira marrom — casca de fruta e resto de comida! [comemorando] Separou certinho? Então partiu pra rua que a grande missão começou!"*
+
+#### Passo 1: O Chamado da Coleta Municipal (Caminhão e Seu Caju)
+- **Contexto**: O caminhão da coleta municipal chega na rua do bairro. O pai do Cajulim dá um toque na buzina.
+- **Imagem de Fundo**: `assets/cutscenes/cs_intro_father.jpg` (16-bit Pixel Art: Cajulim e seu pai no caminhão coletor).
+- **Áudio de Narração**: `assets/audio/cutscene_intro_step1.mp3` (Voz Puck / Infantil 8 anos).
+- **Texto Oficial da Cutscene**:
+> *"OLHA O CAMINHÃO DA COLETA CHEGANDO! MEU PAI JÁ ESTÁ NO VOLANTE DA LIMPEZA MUNICIPAL! PARNAMIRIM NÃO PODE PARAR! VAMOS RECOLHER OS SACOS BEM FECHADOS NAS CALÇADAS E DEIXAR NOSSO BAIRRO BRILHANDO! BORA NESSA!"*
+- **Texto Falado na Dublagem (Tags AI Studio)**:
+> *"[gritando_de_alegria] Olha o caminhão da coleta chegando! [super_animado] Meu pai já tá no volante da limpeza municipal! [rindo] Parnamirim não pode parar! Vamos colocar os sacos no caminhão e deixar nosso bairro brilhando! Bora lá!"*
 
 ---
 
@@ -215,28 +225,28 @@ Os prompts fornecidos na [Seção 4](#-catálogo-visual-e-prompts-de-imagem-para
     - **Imagem**: `assets/cutscenes/cs_landfill_aerial.jpg`
     - **Áudio**: `assets/audio/cutscene_phase5_step0.mp3`
     - **Texto da Tela**:
-    > *"CIDADE LIMPA, SERVIÇO CUMPRIDO! O ATERRO SANITÁRIO E A USINA VERDE FUNCIONAM COM PERFEIÇÃO. O CHORUME ESTÁ 100% PURIFICADO E A ENERGIA LIMPA ILUMINA MILHARES DE LARES... TUDO PARECIA EM PERFEITA HARMONIA, MAS..."*
-    - **Texto Falado**:
-    > *"Cidade limpa, serviço cumprido! O aterro sanitário e a usina verde funcionam com perfeição. O chorume está 100% purificado e a energia limpa ilumina milhares de lares... Tudo parecia em perfeita harmonia, mas..."*
-  - **Parte 2 (A Invasão do Barão do Entulho)**:
+    > *"CIDADE LIMPA, SERVIÇO CUMPRIDO! O ATERRO SANITÁRIO E A USINA VERDE FUNCIONAM COM PERFEIÇÃO. O CHORUME ESTÁ 100% PURIFICADO E A ENERGIA LIMPA ILUMINA MILHARES DE LARES... MAS ESPERA AÍ... QUE BARULHO HORRÍVEL É AQUELE NA PRAÇA?!"*
+    - **Texto Falado (Tags AI Studio)**:
+    > *"[maravilhado] Olha que espetáculo, galera! [super_animado] Nada de lixão aqui! O lixo fica bem compactado e protegido! [empolgado] O chorume vira água limpinha e os gases da decomposição alimentam a Usina de Biogás! [comemorando] São dez megawatts de energia limpa iluminando Parnamirim! [pausa] Mas... espera aí... que barulho horrível é aquele na praça?!"*
+  - **Parte 2 (A Invasão do Barão do Entulho - Construtor Clandestino)**:
     - **Imagem**: `assets/cutscenes/cs_villain_mecha.jpg` e `assets/cutscenes/cs_villain_laugh.jpg`
-    - **Áudio**: `assets/audio/cutscene_phase5_step1.mp3` (Voz Antonio - tom vilanesco)
+    - **Áudio**: `assets/audio/cutscene_phase5_step1.mp3` (Voz Fenrir / Vilão Teatral)
     - **Texto da Tela**:
-    > *"BARÃO DO ENTULHO: 'MWAHAHAHA! ACHAVAM QUE A FAXINA TINHA TERMINADO?! ENQUANTO HOUVER ENTULHO PARA LUCRAR, EU, O BARÃO DO ENTULHO, SEREI O DONO DESTA CIDADE! O MEU MECHA-TRATOR POLUIDOR 9000 VAI SOTERRAR A PRAÇA CENTRAL! TENTE ME IMPEDIR, CAJULIM!'"*
-    - **Texto Falado**:
-    > *"Barão do Entulho: Mwahahaha! Achavam que a faxina tinha terminado?! Enquanto houver entulho para lucrar, eu, o Barão do Entulho, serei o dono desta cidade! O meu Mecha-Trator Poluidor nove mil vai soterrar a Praça Central! Tente me impedir, Cajulim!"*
+    > *"BARÃO DO ENTULHO: 'MWAHAHAHA! ACHAVAM QUE IAM MANTER A CIDADE LIMPINHA, NÉ?! EU SOU O BARÃO DO ENTULHO! PRA QUE PAGAR CAÇAMBA DE OBRA SE EU POSSO DESPEJAR RESTOS DE CIMENTO, BLOCOS DE CONCRETO E FERRO VELHO DIRETO NA RUA?! O MEU MECHA-TRATOR VAI SOTERRAR A PRAÇA! NINGUÉM VAI ME IMPEDIR! MWAHAHAHA!'"*
+    - **Texto Falado (Tags AI Studio)**:
+    > *"[gargalhando] Mwahahahaha! [sarcástico] Achavam que iam manter a cidade limpinha, né, seus faxineiros?! [debochado] Eu sou o Barão do Entulho! Pra que pagar caçamba de obra se eu posso despejar restos de cimento, blocos de concreto e ferro velho direto no meio da rua?! [gritando] O meu Mecha-Trator nove mil vai soterrar a Praça Central de entulho! Ninguém vai me impedir! Mwahahaha!"*
 
 ---
 
 ### Fase 7: O Confronto Final na Praça Central (Mecha-Trator Poluidor)
-- **Contexto**: A Praça Central de Parnamirim ao crepúsculo. O Barão do Entulho comanda sua colossal máquina que vomita entulho e fumaça. Cajulim precisa usar as caçambas de mola, desviar dos pneus arremessados e acionar as alavancas de sobrecarga limpa para desmontar o mecha peça por peça.
+- **Contexto**: A Praça Central de Parnamirim ao crepúsculo. O Barão do Entulho, o falso construtor que lucra jogando entulho de obras no espaço público sem usar caçambas, ataca pilotando o Mecha-Trator 9000. Cajulim precisa usar as caçambas de mola para saltar no topo do trator, desviar dos pneus e do concreto jogado e desativar a máquina!
 - **Fases do Chefe (HP 4 a 0)**:
-  - *HP 4*: *"FASE 1/3: PÁ DE SUCATA — O Barão tenta esmagar a praça com sua pá mecânica enferrujada!"*
-  - *HP 2*: *"FASE 2/3: PNEUS & ÓLEO — O mecha arremessa pilhas de pneus velhos e derrama óleo!"*
+  - *HP 4*: *"FASE 1/3: PÁ DE SUCATA & CIMENTO — O Barão tenta esmagar a praça com sua pá mecânica cheia de concreto!"*
+  - *HP 2*: *"FASE 2/3: PNEUS & ENTULHO — O mecha arremessa pilhas de entulho de obra e derrama óleo!"*
   - *HP 1*: *"FASE 3/3: SOBRECARGA! — O motor poluidor entra em pane com fumaça e faíscas!"*
   - *HP 0*: *"DERROTADO! A máquina desaba e o Barão pede trégua!"*
 - **Tip / Dica em Jogo**:
-> *"Fase 7: O Chefão Final! Derrote o Barão do Entulho e seu Mecha-Trator na Praça Central!"*
+> *"Fase 7: O Chefão Final! Pule nas caçambas de mola e acerte o topo do Mecha-Trator para salvar a cidade do descarte clandestino!"*
 - **Sub-banner de Missão**:
 > *"1. COLETA ✓ | 2. ROTA ✓ | 3. RODOVIA ✓ | 4. TRANSBORDO ✓ | 5. DUNA ✓ | 6. ATERRO ✓ | FASE 7: O CHEFÃO FINAL 👾 ★"*
 
@@ -244,27 +254,27 @@ Os prompts fornecidos na [Seção 4](#-catálogo-visual-e-prompts-de-imagem-para
 
 ### Epílogo: Redenção do Barão & Grande Celebração
 - **Cutscene Final**: `GRAND_ENDING` (3 atos completos)
-- **Ato 1 — A Redenção do Barão**:
+- **Ato 1 — A Redenção do Barão (Lição da Caçamba Legal)**:
   - **Imagem**: `assets/cutscenes/cs_barao_sweep.jpg` (e `cs_barao_service.jpg`)
   - **Áudio**: `assets/audio/cutscene_ending_step0.mp3`
   - **Texto da Tela**:
-  > *"A REDENÇÃO DO BARÃO: DERROTADO PELO TRABALHO EM EQUIPE, O BARÃO CUMPRE 300 HORAS DE SERVIÇO COMUNITÁRIO NA PRAÇA! COM A VASSOURA NA MÃO E O COLETE DE GARI, ELE APRENDEU O VALOR DE CADA TRABALHADOR DA LIMPEZA PÚBLICA: 'CUIDAR DA CIDADE É DEVER DE TODOS!'"*
-  - **Texto Falado**:
-  > *"A Redenção do Barão: Derrotado pelo trabalho em equipe, o Barão cumpre 300 horas de serviço comunitário na praça! Com a vassoura na mão e o colete de gari, ele aprendeu o valor de cada trabalhador da limpeza pública: Cuidar da cidade é dever de todos!"*
+  > *"A REDENÇÃO DO BARÃO: DERROTADO PELO TRABALHO EM EQUIPE, O BARÃO CUMPRE 300 HORAS DE SERVIÇO COMUNITÁRIO NA PRAÇA! COM A VASSOURA NA MÃO E O COLETE DE GARI, ELE APRENDEU O VALOR DA CIDADE LIMPA: 'OBRA DE VERDADE USA CAÇAMBA CREDENCIADA E DESTINAÇÃO CORRETA PRO ENTULHO! CUIDAR DA CIDADE É DEVER DE TODOS!'"*
+  - **Texto Falado (Tags AI Studio)**:
+  > *"[rindo_animado] É, seu Barão... quem joga entulho clandestino na rua acaba pegando na vassoura! [comemorando] Trezentas horas de serviço comunitário varrendo a praça! [sorrindo] Obra de verdade usa caçamba legalizada e dá destino certo pro concreto e cimento! Cuidar da cidade é dever de todo mundo!"*
 - **Ato 2 — Celebração da Turma do Cajulim**:
   - **Imagem**: `assets/cutscenes/cs_cajulim_celebration.jpg`
   - **Áudio**: `assets/audio/cutscene_ending_step1.mp3`
   - **Texto da Tela**:
-  > *"CELEBRAÇÃO DA TURMA DO CAJULIM: A CIDADE ESTÁ TOTALMENTE SUSTENTÁVEL! DAS RESIDÊNCIAS AO CAMINHÃO, DO TRANSBORDO À CARRETA DE 30T, DO ATERRO AO COMBATE FINAL... VOCÊ DOMINOU TODAS AS ETAPAS E PROTEGEU O FUTURO DO PLANETA!"*
-  - **Texto Falado**:
-  > *"Celebração da Turma do Cajulim: A cidade está totalmente sustentável! Das residências ao caminhão, do transbordo à carreta de 30 toneladas, do aterro ao combate final... Você dominou todas as etapas e protegeu o futuro do planeta!"*
+  > *"CELEBRAÇÃO DA TURMA DO CAJULIM: A CIDADE ESTÁ TOTALMENTE SUSTENTÁVEL! DA NOSSA COZINHA ATÉ A USINA DE BIOGÁS, VOCÊ DOMINOU TODAS AS ETAPAS E SALVOU O FUTURO DO PLANETA! RUAS LIMPINHAS, ENTULHO NO LUGAR CERTO E ENERGIA VERDE!"*
+  - **Texto Falado (Tags AI Studio)**:
+  > *"[gritando_de_felicidade] Conseguimos, galeraaaa! [muito_empolgado] Da nossa cozinha até a usina de biogás, mostramos que Parnamirim é nota mil em sustentabilidade! [comemorando] Ruas limpinhas, entulho no lugar certo e a cidade cheia de energia verde! Esse troféu é de todos nós! Parabéns, campeões!"*
 - **Ato 3 — Certificado de Mestre da Sustentabilidade**:
   - **Imagem**: `assets/player/cajulim_portrait.png` com medalha de ouro ecológica
   - **Áudio**: `assets/audio/cutscene_ending_step2.mp3`
   - **Texto da Tela**:
   > *"CERTIFICADO DE MESTRE DA SUSTENTABILIDADE: PARABÉNS POR ZERAR O JOGO! 100% DE CONSCIÊNCIA ECOLÓGICA, 10.0 MW DE BIOGÁS E ÁGUA CRISTALINA DEVOLVIDA À NATUREZA. O MEIO AMBIENTE AGRADECE!"*
-  - **Texto Falado**:
-  > *"Certificado de Mestre da Sustentabilidade: Parabéns por zerar o jogo! 100% de consciência ecológica, 10.0 MW de biogás e água cristalina devolvida à natureza. O meio ambiente agradece!"*
+  - **Texto Falado (Tags AI Studio)**:
+  > *"[super_feliz] Certificado de Mestre da Sustentabilidade! Parabéns por zerar o jogo! Consciência ecológica total, dez megawatts de biogás e Parnamirim brilhando! Valeu, turma!"*
 
 ---
 
@@ -275,7 +285,8 @@ Esta seção reúne cada arquivo visual do projeto e o **prompt profissional em 
 ### Tabela Geral de Arquivos de Cutscene e Cenário
 | Arquivo no Jogo | Função Narrativa | Resolução / Aspecto | Estilo Artístico |
 |---|---|---|---|
-| `assets/cutscenes/cs_intro_father.jpg` | Cajulim e pai no caminhão da coleta | 16:9 (1280×720) | Ilustração Digital Estilizada / Pixar 2D |
+| `assets/cutscenes/cs_intro_casa.jpg` | Cozinha do Cajulim: Lixo Seco e Molhado | 16:9 (1280×720) | 16-bit Retro Pixel Art SNES/PS1 |
+| `assets/cutscenes/cs_intro_father.jpg` | Cajulim e pai no caminhão da coleta | 16:9 (1280×720) | 16-bit Retro Pixel Art SNES/PS1 |
 | `assets/cutscenes/cs_intro_mission.jpg` | Visão panorâmica de Parnamirim limpa | 16:9 (1280×720) | Matte Painting / Animação Infantil |
 | `assets/scenery/parnamirim-centro-pixel.png` | Cenário jogável do Centro e Igreja Matriz | 16:9 Panorama | 16-bit Pixel Art SNES/PS1 |
 | `assets/cutscenes/cs_phase1_clear.jpg` | Conclusão da coleta residencial | 16:9 (1280×720) | Ilustração de Animação Colorida |

@@ -232,6 +232,7 @@ class Game {
             'cs_barao_service': 'assets/cutscenes/cs_barao_service.jpg',
             'cs_barao_sweep': 'assets/cutscenes/cs_barao_sweep.jpg',
             'cs_cajulim_celebration': 'assets/cutscenes/cs_cajulim_celebration.jpg',
+            'cs_intro_casa': 'assets/cutscenes/cs_intro_casa.jpg',
             'cs_intro_father': 'assets/cutscenes/cs_intro_father.jpg',
             'cs_intro_mission': 'assets/cutscenes/cs_intro_mission.jpg',
             'cs_phase1_clear': 'assets/cutscenes/cs_phase1_clear.jpg',
@@ -8456,7 +8457,9 @@ ctx.restore();
     }
 
     getCutsceneRequiredAsset() {
-        if (this.cutscene.type === 'INTRO') return 'cs_intro_father';
+        if (this.cutscene.type === 'INTRO') {
+            return this.cutscene.step === 0 ? 'cs_intro_casa' : 'cs_intro_father';
+        }
         if (this.cutscene.type === 'PHASE1_CLEAR') return 'cs_phase1_clear';
         if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_phase2_bairros';
         if (this.cutscene.type === 'PHASE3_CLEAR') return 'cs_phase2_clear';
@@ -8535,8 +8538,13 @@ ctx.restore();
         let spokenText = '';
 
         if (this.cutscene.type === 'INTRO') {
-            audioFile = 'assets/audio/cutscene_intro_step0.mp3';
-            spokenText = 'A Prefeitura de Parnamirim apresenta: A Turma do Cajulim na Grande Missão da Coleta Seletiva! Ao lado do seu pai no caminhão da coleta municipal, nosso herói Cajulim se prepara para uma grande jornada para manter a nossa cidade sempre limpa, bonita e sustentável!';
+            if (this.cutscene.step === 0) {
+                audioFile = 'assets/audio/cutscene_intro_step0.mp3';
+                spokenText = 'Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo seco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então partiu pra rua que a grande missão começou!';
+            } else {
+                audioFile = 'assets/audio/cutscene_intro_step1.mp3';
+                spokenText = 'Olha o caminhão da coleta chegando! Meu pai já tá no volante da limpeza municipal! Parnamirim não pode parar! Vamos colocar os sacos no caminhão e deixar nosso bairro brilhando! Bora lá!';
+            }
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
             audioFile = 'assets/audio/cutscene_phase1_clear.mp3';
             spokenText = 'Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!';
@@ -8555,18 +8563,18 @@ ctx.restore();
         } else if (this.cutscene.type === 'PHASE6_TO_7') {
             if (this.cutscene.step === 0) {
                 audioFile = 'assets/audio/cutscene_phase5_step0.mp3';
-                spokenText = 'Cidade limpa, serviço cumprido! O aterro sanitário e a usina verde funcionam com perfeição. O chorume está 100% purificado e a energia limpa ilumina milhares de lares... Tudo parecia em perfeita harmonia, mas...';
+                spokenText = 'Cidade limpa, serviço cumprido! O aterro sanitário e a usina verde funcionam com perfeição. O chorume está 100% purificado e a energia limpa ilumina milhares de lares... Mas espera aí... Que barulho horrível é aquele na praça?!';
             } else {
                 audioFile = 'assets/audio/cutscene_phase5_step1.mp3';
-                spokenText = 'Barão do Entulho: Mwahahaha! Achavam que a faxina tinha terminado?! Enquanto houver entulho para lucrar, eu, o Barão do Entulho, serei o dono desta cidade! O meu Mecha-Trator Poluidor nove mil vai soterrar a Praça Central! Tente me impedir, Cajulim!';
+                spokenText = 'Barão do Entulho: Mwahahaha! Achavam que iam manter a cidade limpinha, né, seus faxineiros?! Eu sou o Barão do Entulho! Pra que pagar caçamba de obra se eu posso despejar restos de cimento, blocos de concreto e ferro velho direto no meio da rua?! O meu Mecha-Trator nove mil vai soterrar a Praça Central de entulho! Ninguém vai me impedir! Mwahahaha!';
             }
         } else if (this.cutscene.type === 'GRAND_ENDING') {
             if (this.cutscene.step === 0) {
                 audioFile = 'assets/audio/cutscene_ending_step0.mp3';
-                spokenText = 'A Redenção do Barão: Derrotado pelo trabalho em equipe, o Barão cumpre 300 horas de serviço comunitário na praça! Com a vassoura na mão e o colete de gari, ele aprendeu o valor de cada trabalhador da limpeza pública: Cuidar da cidade é dever de todos!';
+                spokenText = 'A Redenção do Barão: Derrotado pelo trabalho em equipe, o Barão cumpre 300 horas de serviço comunitário na praça! Com a vassoura na mão e o colete de gari, ele aprendeu o valor de cada trabalhador da limpeza pública: Obra de verdade usa caçamba legalizada e dá destino certo pro entulho! Cuidar da cidade é dever de todos!';
             } else if (this.cutscene.step === 1) {
                 audioFile = 'assets/audio/cutscene_ending_step1.mp3';
-                spokenText = 'Celebração da Turma do Cajulim: A cidade está totalmente sustentável! Das residências ao caminhão, do transbordo à carreta de 30 toneladas, do aterro ao combate final... Você dominou todas as etapas e protegeu o futuro do planeta!';
+                spokenText = 'Celebração da Turma do Cajulim: A cidade está totalmente sustentável! Da nossa cozinha até a usina de biogás, mostramos que Parnamirim é nota mil em sustentabilidade! Ruas limpinhas, entulho no lugar certo e a cidade cheia de energia verde! Esse troféu é de todos nós! Parabéns, campeões!';
             } else if (this.cutscene.step === 2) {
                 audioFile = 'assets/audio/cutscene_ending_step2.mp3';
                 spokenText = 'Certificado de Mestre da Sustentabilidade: Parabéns por zerar o jogo! 100% de consciência ecológica, 10.0 MW de biogás e água cristalina devolvida à natureza. O meio ambiente agradece!';
@@ -8582,7 +8590,11 @@ ctx.restore();
 
     getCutsceneFullText() {
         if (this.cutscene.type === 'INTRO') {
-            return 'A PREFEITURA DE PARNAMIRIM APRESENTA: A TURMA DO CAJULIM NA GRANDE MISSAO DA COLETA SELETIVA! AO LADO DO SEU PAI NO CAMINHAO DA COLETA MUNICIPAL, NOSSO HEROI CAJULIM SE PREPARA PARA UMA GRANDE JORNADA PARA MANTER A NOSSA CIDADE SEMPRE LIMPA, BONITA E SUSTENTAVEL!';
+            if (this.cutscene.step === 0) {
+                return 'BOM DIA, TURMA! A SUSTENTABILIDADE COMECA DENTRO DE CASA! LIXO SECO NA LIXEIRA AZUL: PLASTICO, PAPELAO E LATINHA LIMPA! E LIXO MOLHADO NA LIXEIRA MARROM: CASCA DE FRUTA E RESTO DE COMIDA! SEPAROU CERTINHO? ENTAO PARTIU PRA RUA QUE A GRANDE MISSAO COMECOU!';
+            } else {
+                return 'OLHA O CAMINHAO DA COLETA CHEGANDO! MEU PAI JA ESTA NO VOLANTE DA LIMPEZA MUNICIPAL! PARNAMIRIM NAO PODE PARAR! VAMOS RECOLHER OS SACOS BEM FECHADOS NAS CALCADAS E DEIXAR NOSSO BAIRRO BRILHANDO! BORA NESSA!';
+            }
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
             return 'PARABENS! VOCE COMPLETOU A COLETA RESIDENCIAL EM PARNAMIRIM! TODOS OS SACOS DE LIXO E MATERIAIS RECICLAVEIS FORAM RECOLHIDOS DAS RUAS COM SUCESSO. A CIDADE ESTA LIMPA E O CAMINHAO MUNICIPAL ESTA PRONTO PARA A PROXIMA ETAPA!';
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
@@ -8595,15 +8607,15 @@ ctx.restore();
             return 'PESAGEM CONCLUIDA COM SUCESSO! A CARRETA DE 30.000 KG PASSOU PELA BALANCA RODOVIARIA OFICIAL E ENTROU NO ATERRO SANITARIO DE PARNAMIRIM! CARGA 100% CONFERIDA E APROVADA PARA O TRATAMENTO E RECICLAGEM ENERGETICA!';
         } else if (this.cutscene.type === 'PHASE6_TO_7') {
             if (this.cutscene.step === 0) {
-                return 'CIDADE LIMPA, SERVICO CUMPRIDO! O ATERRO SANITARIO E A USINA VERDE FUNCIONAM COM PERFEICAO. O CHORUME ESTA 100% PURIFICADO E A ENERGIA LIMPA ILUMINA MILHARES DE LARES... TUDO PARECIA EM PERFEITA HARMONIA, MAS...';
+                return 'CIDADE LIMPA, SERVICO CUMPRIDO! O ATERRO SANITARIO E A USINA VERDE FUNCIONAM COM PERFEICAO. O CHORUME ESTA 100% PURIFICADO E A ENERGIA LIMPA ILUMINA MILHARES DE LARES... MAS ESPERA AI... QUE BARULHO HORRIVEL E AQUELE NA PRACA?!';
             } else {
-                return 'BARAO DO ENTULHO: "MWAHAHAHA! ACHAVAM QUE A FAXINA TINHA TERMINADO?! ENQUANTO HOUVER ENTULHO PARA LUCRAR, EU, O BARAO DO ENTULHO, SEREI O DONO DESTA CIDADE! O MEU MECHA-TRATOR POLUIDOR 9000 VAI SOTERRAR A PRACA CENTRAL! TENTE ME IMPEDIR, CAJULIM!"';
+                return 'BARAO DO ENTULHO: "MWAHAHAHA! ACHAVAM QUE IAM MANTER A CIDADE LIMPINHA, NE, SEUS FAXINEIROS?! EU SOU O BARAO DO ENTULHO! PRA QUE PAGAR CACAMBA DE OBRA SE EU POSSO DESPEJAR RESTOS DE CIMENTO, BLOCOS DE CONCRETO E FERRO VELHO DIRETO NO MEIO DA RUA?! O MEU MECHA-TRATOR 9000 VAI SOTERRAR A PRACA CENTRAL DE ENTULHO! NINGUEM VAI ME IMPEDIR! MWAHAHAHA!"';
             }
         } else if (this.cutscene.type === 'GRAND_ENDING') {
             if (this.cutscene.step === 0) {
-                return 'A REDENCAO DO BARAO: DERROTADO PELO TRABALHO EM EQUIPE, O BARAO CUMPRE 300 HORAS DE SERVICO COMUNITARIO NA PRACA! COM A VASSOURA NA MAO E O COLETE DE GARI, ELE APRENDEU O VALOR DE CADA TRABALHADOR DA LIMPEZA PUBLICA: "CUIDAR DA CIDADE E DEVER DE TODOS!"';
+                return 'A REDENCAO DO BARAO: DERROTADO PELO TRABALHO EM EQUIPE, O BARAO CUMPRE 300 HORAS DE SERVICO COMUNITARIO NA PRACA! COM A VASSOURA NA MAO E O COLETE DE GARI, ELE APRENDEU: "OBRA DE VERDADE USA CACAMBA LEGALIZADA E DESTINACAO CORRETA PRO ENTULHO! CUIDAR DA CIDADE E DEVER DE TODOS!"';
             } else if (this.cutscene.step === 1) {
-                return 'CELEBRACAO DA TURMA DO CAJULIM: A CIDADE ESTA TOTALMENTE SUSTENTAVEL! DAS RESIDENCIAS AO CAMINHAO, DO TRANSBORDO A CARRETA DE 30T, DO ATERRO AO COMBATE FINAL... VOCE DOMINOU TODAS AS ETAPAS E PROTEGEU O FUTURO DO PLANETA!';
+                return 'CELEBRACAO DA TURMA DO CAJULIM: A CIDADE ESTA TOTALMENTE SUSTENTAVEL! DA NOSSA COZINHA ATE A USINA DE BIOGAS, VOCE DOMINOU TODAS AS ETAPAS E SALVOU O PLANETA! RUAS LIMPINHAS, ENTULHO NO LUGAR CERTO E ENERGIA VERDE! ESSE TROFEU E DE TODOS NOS!';
             } else {
                 return 'CERTIFICADO DE MESTRE DA SUSTENTABILIDADE: PARABENS POR ZERAR O JOGO! 100% DE CONSCIENCIA ECOLOGICA, 10.0 MW DE BIOGAS E AGUA CRISTALINA DEVOLVIDA A NATUREZA. O MEIO AMBIENTE AGRADECE!';
             }
@@ -8645,14 +8657,11 @@ ctx.restore();
             }
         }
 
-        // Automatic progression to the next slide / step without needing to press space!
+        // Auto advance cutscene step only after spoken narration finishes completely
         if (this.cutscene.textProgress >= fullText.length) {
-            const isAudioPlaying = narration && !narration.paused && !narration.ended && (narration.currentTime < (narration.duration - 0.2));
-            if (!isAudioPlaying) {
-                this.cutscene.autoAdvanceTimer = (this.cutscene.autoAdvanceTimer || 0) + dt;
-                // Wait a comfortable 1.8s pause after audio ends, then automatically advance to the second slide!
-                if (this.cutscene.autoAdvanceTimer >= 1.8) {
-                    this.cutscene.autoAdvanceTimer = 0;
+            if (!narration || narration.ended || narration.paused) {
+                this.cutscene.autoAdvanceTimer += dt;
+                if (this.cutscene.autoAdvanceTimer > 4.5) {
                     this.advanceCutscene();
                 }
             } else {
@@ -8674,12 +8683,29 @@ ctx.restore();
         this.cutscene.autoAdvanceTimer = 0;
 
         if (this.cutscene.type === 'INTRO') {
-            if (window.soundManager && window.soundManager.stopNarration) {
-                window.soundManager.stopNarration();
+            if (this.cutscene.step === 0) {
+                if (window.soundManager && window.soundManager.stopNarration) {
+                    window.soundManager.stopNarration();
+                }
+                this.cutscene.step = 1;
+                this.cutscene.textProgress = 0;
+                this.cutscene.flashTimer = 0.35;
+                if (this.isCutsceneAssetReady()) {
+                    this.triggerCutsceneNarration();
+                } else {
+                    this.waitForCutsceneAsset(() => {
+                        this.triggerCutsceneNarration();
+                    });
+                }
+                return;
+            } else {
+                if (window.soundManager && window.soundManager.stopNarration) {
+                    window.soundManager.stopNarration();
+                }
+                this.cutscene.active = false;
+                this.switchPhase(1);
+                this.startGame();
             }
-            this.cutscene.active = false;
-            this.switchPhase(1);
-            this.startGame();
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
             if (window.soundManager && window.soundManager.stopNarration) {
                 window.soundManager.stopNarration();

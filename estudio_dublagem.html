@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎙️ Estúdio de Voz & Cutscenes — Turma do Cajulim</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d131f;
+            --card-bg: #162032;
+            --card-border: #233554;
+            --accent: #ff8c00;
+            --accent-green: #10b981;
+            --accent-blue: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --tag-bg: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 32px auto;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 2px solid var(--accent);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h1 {
+            font-family: 'Fredoka', cursive;
+            font-size: 2.2rem;
+            color: #ffb703;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .studio-btn {
+            background: linear-gradient(135deg, #ff8c00, #e63946);
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+            padding: 12px 24px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4);
+        }
+
+        .studio-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 140, 0, 0.6);
+        }
+
+        .instructions {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--accent-green);
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #a7f3d0;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            margin-top: 6px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .scene-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transition: border-color 0.2s ease;
+        }
+
+        .scene-card:hover {
+            border-color: var(--accent);
+        }
+
+        @media (max-width: 900px) {
+            .scene-card {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .scene-visual {
+            background: #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid var(--card-border);
+        }
+
+        .scene-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            min-height: 260px;
+        }
+
+        .badge-step {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid var(--accent);
+            color: #ffb703;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.65rem;
+            padding: 6px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .scene-content {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .scene-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .scene-title {
+            font-family: 'Fredoka', cursive;
+            font-size: 1.5rem;
+            color: #fff;
+        }
+
+        .voice-pill {
+            background: #2563eb;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .voice-pill.villain {
+            background: #9333ea;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 800;
+            color: var(--accent-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .prompt-box {
+            background: #0b111e;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            line-height: 1.45;
+            user-select: all;
+            position: relative;
+        }
+
+        .prompt-box.tags {
+            border-left: 3px solid var(--accent);
+            color: #fef08a;
+            font-weight: 600;
+        }
+
+        .btn-copy {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        .actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #1e293b;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        audio {
+            height: 36px;
+            max-width: 280px;
+        }
+
+        .target-filename {
+            font-family: monospace;
+            font-size: 0.75rem;
+            background: #0f172a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #38bdf8;
+            border: 1px solid #1e293b;
+        }
+
+        .btn-full-copy {
+            background: #10b981;
+            color: #022c22;
+            font-weight: 800;
+            font-size: 0.85rem;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-full-copy:hover {
+            background: #34d399;
+            transform: scale(1.02);
+        }
+
+        .copied-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #10b981;
+            color: #022c22;
+            font-weight: 800;
+            padding: 12px 24px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .copied-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-row">
+            <h1>🍊 Estúdio de Cutscenes & Vozes do Cajulim</h1>
+            <a href="https://aistudio.google.com/generate-speech?hl=pt-br" target="_blank" class="studio-btn">
+                ⚡ Abrir Google AI Studio (TTS) ↗
+            </a>
+        </div>
+        <div class="instructions">
+            <strong>Como gerar o áudio no Google AI Studio:</strong>
+            <ol>
+                <li>Clique no botão <strong>"Copiar Texto + Contexto"</strong> da cena desejada abaixo.</li>
+                <li>No Google AI Studio Speech, selecione a voz indicada (ex: <strong>Puck</strong> para Cajulim, <strong>Fenrir</strong> para o Barão).</li>
+                <li>Cole o <em>Contexto/Instruções de Estilo</em> no campo de instruções da voz e o <em>Texto com Tags</em> no campo de texto.</li>
+                <li>Clique em <strong>Generate Speech</strong>, baixe o arquivo MP3 e salve com o nome indicado no card (ex: <code>cutscene_intro_step0.mp3</code>) dentro de <code>assets/audio/</code>.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="container" id="scenesContainer">
+
+        <!-- CENA 1: CASA DO CAJULIM -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">PRÓLOGO 1/2</span>
+                <img src="assets/cutscenes/cs_intro_casa.jpg" alt="Cozinha do Cajulim" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">1. Casa do Cajulim: Lixo Seco e Molhado</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_1')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_1">Voz infantil masculina de 8 anos, extremamente animada, falada bem alto para fora, tom vibrante, sorridente, super alegre, zero sussurro, cheia de entusiasmo e orgulho.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_1')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_1">[super_animado] Ei, turma! Bom dia! [muito_alegre] A sustentabilidade começa aqui dentro de casa! [empolgado] Olha só: lixo SECO na lixeira azul — plástico, papelão e latinha limpa! [apontando] E lixo MOLHADO na lixeira marrom — casca de fruta e resto de comida! [comemorando] Separou certinho? Então partiu pra rua que a grande missão começou!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_intro_step0.mp3"></audio>
+                        <span class="target-filename">cutscene_intro_step0.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_1', 'txt_1')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 2: CAMINHÃO E PAI -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">PRÓLOGO 2/2</span>
+                <img src="assets/cutscenes/cs_intro_father.jpg" alt="Caminhão da Coleta" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">2. O Caminhão da Coleta Municipal</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_2')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_2">Voz infantil de 8 anos, muito energética, falando bem alto com entusiasmo, estilo herói mirim empolgado, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_2')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_2">[gritando_de_alegria] Olha o caminhão da coleta chegando! [super_animado] Meu pai já tá no volante da limpeza municipal! [rindo] Parnamirim não pode parar! Vamos colocar os sacos no caminhão e deixar nosso bairro brilhando! Bora lá!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_intro_step1.mp3"></audio>
+                        <span class="target-filename">cutscene_intro_step1.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_2', 'txt_2')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 3: FASE 1 CENTRO -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">FASE 1 CONCLUÍDA</span>
+                <img src="assets/cutscenes/cs_phase1_clear.jpg" alt="Centro de Parnamirim Limpo" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">3. Pega o Lixo! Centro de Parnamirim</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_3')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_3">Voz infantil eufórica, comemorando vitória de fase de videogame, alta e vibrante, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_3')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_3">[vibrando] Aeee, conseguimos! [comemorando] O Centro de Parnamirim tá um brinco! [rindo] Recolhemos todos os sacos da calçada e os recicláveis surpresa! Não sobrou uma latinha pro bueiro engolir! Partiu pros outros bairros!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_phase1_clear.mp3"></audio>
+                        <span class="target-filename">cutscene_phase1_clear.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_3', 'txt_3')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 4: FASE 2 BAIRROS -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">FASE 2 CONCLUÍDA</span>
+                <img src="assets/cutscenes/cs_phase2_bairros.jpg" alt="Coleta nos Bairros" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">4. Rota nos Bairros Residenciais</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_4')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_4">Voz infantil cheia de energia, orgulho e ritmo rápido de aventura, tom bem alto e claro, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_4')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_4">[super_animado] Missão nos bairros cumprida com sucesso! [muito_alegre] Passamos por Rosa dos Ventos, Cohabinal e Boa Esperança! [empolgado] O caminhão tá cheinho de sacos bem ensacados! Agora engata a primeira que a gente vai entrar na rodovia!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_phase2_bairros.mp3"></audio>
+                        <span class="target-filename">cutscene_phase2_bairros.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_4', 'txt_4')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 5: FASE 3 TRANSBORDO -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">FASE 3 CONCLUÍDA</span>
+                <img src="assets/cutscenes/cs_phase2_clear.jpg" alt="Estação de Transbordo" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">5. Rodovia e Chegada ao Transbordo</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_5')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_5">Voz infantil aliviada e orgulhosa, falando com energia, estilo comemoração de piloto de corrida mirim, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_5')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_5">[comemorando] Ufa! Chegamos inteirinhos à Estação de Transbordo de Parnamirim! [rindo] Desviamos de todas as poças e respeitamos os semáforos! [curioso] Sabia que o caminhão pequeno não pode ir até o aterro pra economizar combustível? Agora a gente vai passar tudo pra uma carreta gigante!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_phase2_clear.mp3"></audio>
+                        <span class="target-filename">cutscene_phase2_clear.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_5', 'txt_5')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 6: FASE 4 CARRETA 30T -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">FASE 4 CONCLUÍDA</span>
+                <img src="assets/cutscenes/cs_phase3_clear.jpg" alt="Doca de Carga Carreta 30t" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">6. Joga na Carreta! Transferência de 30t</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_6')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_6">Voz infantil impressionada com máquinas pesadas, falando alto, cheia de empolgação e dinamismo, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_6')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_6">[impressionado] Caraca, que máquina gigante! [super_animado] Descarregamos na doca e a super carreta tá lotada com trinta toneladas de resíduos! [enérgico] Lona verde lacrada, sem cheiro e sem derrubar nada na estrada! Agora é segurar firme que as dunas nos esperam!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_phase3_clear.mp3"></audio>
+                        <span class="target-filename">cutscene_phase3_clear.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_6', 'txt_6')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 7: FASE 5 BALANÇA ATERRO -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">FASE 5 CONCLUÍDA</span>
+                <img src="assets/cutscenes/cs_phase4_clear.jpg" alt="Balança Oficial 30.000 kg" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">7. Balança Oficial do Aterro: 30.000 kg</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_7')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_7">Voz infantil triunfante, tom bem alto e orgulhoso, comemorando aprovação técnica na balança, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_7')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_7">[gritando_de_alegria] Olha lá no painel digital! Trinta mil quilos cravados! [comemorando] Pesagem aprovada com nota dez na balança oficial! [muito_alegre] A carreta de trinta toneladas venceu as subidas das dunas e entrou com tudo no Aterro Sanitário de Parnamirim! Bora pro tratamento verde!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_phase4_clear.mp3"></audio>
+                        <span class="target-filename">cutscene_phase4_clear.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_7', 'txt_7')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 8: FASE 6 BIOGÁS & ENERGIA LIMPA -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">FASE 6 CONCLUÍDA</span>
+                <img src="assets/cutscenes/cs_landfill_aerial.jpg" alt="Usina de Biogás e Energia Limpa" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">8. Aterro Tecnológico: Biogás e 10.0 MW</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_8')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_8">Voz infantil fascinada pela ciência ambiental, tom explicativo alegre e muito animado, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_8')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_8">[maravilhado] Olha que espetáculo, galera! [super_animado] Nada de lixão aqui! O lixo fica bem compactado e protegido! [empolgado] O chorume vira água limpinha e os gases da decomposição alimentam a Usina de Biogás! [comemorando] São dez megawatts de energia limpa iluminando Parnamirim! [pausa] Mas... espera aí... que barulho horrível é aquele na praça?!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_phase5_step0.mp3"></audio>
+                        <span class="target-filename">cutscene_phase5_step0.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_8', 'txt_8')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 9: FASE 7 CHEFÃO CONSTRUÇÃO CIVIL -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">FASE 7 CHEFÃO</span>
+                <img src="assets/cutscenes/cs_villain_mecha.jpg" alt="Barão do Entulho Mecha-Trator" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">9. Chefão: Barão do Entulho Clandestino</h2>
+                    <span class="voice-pill villain">😈 Voz: Fenrir (Vilão Teatral)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_9')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_9">Voz masculina de vilão de desenho animado clássico, rouca, teatral, zombeteira, gargalhando bem alto, sotaque sarcástico, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_9')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_9">[gargalhando] Mwahahahaha! [sarcástico] Achavam que iam manter a cidade limpinha, né, seus faxineiros?! [debochado] Eu sou o Barão do Entulho! Pra que pagar caçamba de obra se eu posso despejar restos de cimento, blocos de concreto e ferro velho direto no meio da rua?! [gritando] O meu Mecha-Trator nove mil vai soterrar a Praça Central de entulho! Ninguém vai me impedir! Mwahahaha!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_phase5_step1.mp3"></audio>
+                        <span class="target-filename">cutscene_phase5_step1.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_9', 'txt_9')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 10: EPÍLOGO 1 REDENÇÃO -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">EPÍLOGO 1/2</span>
+                <img src="assets/cutscenes/cs_barao_sweep.jpg" alt="Barão Varrendo a Praça" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">10. A Redenção: 300 Horas de Caçamba Legal</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck / Fenrir</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_10')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_10">Voz infantil alegre e orgulhosa (Cajulim) seguida de resposta sincera, redimida e amigável (Barão), zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_10')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_10">[rindo_animado] É, seu Barão... quem joga entulho clandestino na rua acaba pegando na vassoura! [comemorando] Trezentas horas de serviço comunitário varrendo a praça! [sorrindo] Obra de verdade usa caçamba legalizada e dá destino certo pro concreto e cimento! Cuidar da cidade é dever de todo mundo!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_ending_step0.mp3"></audio>
+                        <span class="target-filename">cutscene_ending_step0.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_10', 'txt_10')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENA 11: EPÍLOGO 2 CELEBRAÇÃO -->
+        <div class="scene-card">
+            <div class="scene-visual">
+                <span class="badge-step">EPÍLOGO 2/2</span>
+                <img src="assets/cutscenes/cs_cajulim_celebration.jpg" alt="Celebração da Vitória" class="scene-img">
+            </div>
+            <div class="scene-content">
+                <div class="scene-header">
+                    <h2 class="scene-title">11. A Grande Vitória da Sustentabilidade</h2>
+                    <span class="voice-pill">🎙️ Voz: Puck (Infantil 8 anos)</span>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Contexto / Instruções de Estilo</span>
+                        <button class="btn-copy" onclick="copyText('ctx_11')">Copiar</button>
+                    </div>
+                    <div class="prompt-box" id="ctx_11">Voz infantil transbordando pura euforia e vitória, gritando de felicidade, comemorando o troféu máximo, zero sussurro.</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span>Texto Falado com Tags de Emoção</span>
+                        <button class="btn-copy" onclick="copyText('txt_11')">Copiar</button>
+                    </div>
+                    <div class="prompt-box tags" id="txt_11">[gritando_de_felicidade] Conseguimos, galeraaaa! [muito_empolgado] Da nossa cozinha até a usina de biogás, mostramos que Parnamirim é nota mil em sustentabilidade! [comemorando] Ruas limpinhas, entulho no lugar certo e a cidade cheia de energia verde! Esse troféu é de todos nós! Parabéns, campeões!</div>
+                </div>
+                <div class="actions-row">
+                    <div class="audio-controls">
+                        <audio controls src="assets/audio/cutscene_ending_step1.mp3"></audio>
+                        <span class="target-filename">cutscene_ending_step1.mp3</span>
+                    </div>
+                    <button class="btn-full-copy" onclick="copyFull('ctx_11', 'txt_11')">📋 Copiar Tudo Pronto</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="copied-toast" id="toast">✅ Copiado para a área de transferência!</div>
+
+    <script>
+        function copyText(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            navigator.clipboard.writeText(el.innerText.trim()).then(() => {
+                showToast();
+            });
+        }
+
+        function copyFull(ctxId, txtId) {
+            const ctx = document.getElementById(ctxId).innerText.trim();
+            const txt = document.getElementById(txtId).innerText.trim();
+            const combined = `[CONTEXTO/ESTILO DE VOZ]:\n${ctx}\n\n[TEXTO COM TAGS]:\n${txt}`;
+            navigator.clipboard.writeText(combined).then(() => {
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
