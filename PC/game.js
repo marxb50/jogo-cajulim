@@ -203,7 +203,7 @@ class Game {
             'sc_cloud': 'assets/scenery/cloud.png',
             'sc_signpost': 'assets/scenery/signpost.png',
             'sc_truck': 'assets/scenery/truck.png',
-            'sc_parnamirim_centro': 'assets/scenery/parnamirim-bairro-pixel-v2.png',
+            'sc_parnamirim_centro': 'assets/scenery/parnamirim-igreja-pixel-v3.png',
             'sc_phase3_bairros_bg': 'assets/scenery/rota-bairros-pixel-v2.png',
 
             // Phase 2 Assets (Road, Obstacles & Transbordo)
@@ -273,20 +273,70 @@ class Game {
 
         this.imageList = imageList;
         const keys = Object.keys(imageList);
-        this.totalAssets = keys.length;
+
+        // Cria os objetos imediatamente, mas baixa primeiro apenas o conjunto
+        // necessário para a fase atual. Antes, a tela inicial esperava todas as
+        // fotos, cutscenes e fases (mais de 100 arquivos), o que era muito lento
+        // em conexões fracas e deixava a Casa Viva sem o personagem.
         keys.forEach(key => {
-            const img = new Image();
-            this.assets[key] = img;
-            img.src = imageList[key] + '?v=7.2';
-            img.onload = () => {
-                this.loadedCount++;
-                if (this.loadedCount >= this.totalAssets) this.onAllAssetsLoaded();
-            };
-            img.onerror = () => {
-                this.loadedCount++;
-                if (this.loadedCount >= this.totalAssets) this.onAllAssetsLoaded();
-            };
+            this.assets[key] = new Image();
         });
+
+        const common = ['ui_parnamirim_logo', 'p_portrait'];
+        const byPhase = {
+            1: ['cv_service', 'p_idle_0', 'p_idle_1', 'p_walk_0', 'p_collect_0'],
+            2: ['sc_parnamirim_centro', 'p_sheet', 'tile_grass', 'tile_dirt', 'item_trash_bag'],
+            3: ['sc_phase3_bairros_bg', 'sc_truck', 'item_trash_bag_raw'],
+            4: ['sc_phase4_transbordo_bg', 'sc_truck', 'tile_road', 'tile_road_sub'],
+            5: ['sc_transbordo_interior', 'sc_carreta', 'p_supervisor'],
+            6: ['sc_rota_aterro', 'sc_carreta_magenta', 'p_cajulim_idle'],
+            7: ['sc_aterro_complex_bg', 'sc_trator_compactador', 'p_idle_0', 'p_walk_0'],
+            8: ['sc_mecha_boss_pixel', 'sc_aterro_complex_bg', 'p_sheet']
+        };
+        const prioritySet = new Set([...common, ...(byPhase[this.currentPhase] || [])]);
+        const priorityKeys = keys.filter(key => prioritySet.has(key));
+        const deferredKeys = keys.filter(key => !prioritySet.has(key));
+
+        this.loadedCount = 0;
+        this.totalAssets = priorityKeys.length;
+
+        const loadOne = (key, onSettled) => {
+            const img = this.assets[key];
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                if (onSettled) onSettled();
+            };
+            img.onload = finish;
+            img.onerror = finish;
+            img.src = imageList[key] + '?v=8.2';
+        };
+
+        const beginDeferredLoading = () => {
+            let cursor = 0;
+            const loadBatch = () => {
+                deferredKeys.slice(cursor, cursor + 8).forEach(key => loadOne(key));
+                cursor += 8;
+                if (cursor < deferredKeys.length) setTimeout(loadBatch, 120);
+            };
+            setTimeout(loadBatch, 80);
+        };
+
+        const prioritySettled = () => {
+            this.loadedCount++;
+            if (this.loadedCount >= this.totalAssets) {
+                this.onAllAssetsLoaded();
+                beginDeferredLoading();
+            }
+        };
+
+        if (priorityKeys.length === 0) {
+            this.onAllAssetsLoaded();
+            beginDeferredLoading();
+        } else {
+            priorityKeys.forEach(key => loadOne(key, prioritySettled));
+        }
     }
 
     makeTruckCutout(source) {
@@ -326,8 +376,9 @@ class Game {
     }
 
     onAllAssetsLoaded() {
+        if (this.assetsReady) return;
         this.assetsReady = true;
-        if (this.assets['sc_carreta_magenta']) {
+        if (this.assets['sc_carreta_magenta'] && this.assets['sc_carreta_magenta'].naturalWidth > 0) {
             this.assets['sc_carreta_cutout'] = this.makeTruckCutout(this.assets['sc_carreta_magenta']);
         }
         if (typeof window !== 'undefined' && window.location) {
@@ -3259,8 +3310,9 @@ class Game {
         p.x += p.vx * dt;
         p.y += p.vy * dt;
 
-        const isCatwalk = (p.x >= 3000 && p.x <= 4620);
-        const floorY = (isCatwalk ? 422 : this.phase5Floor) - p.h;
+        // A passarela usa a mesma cota do chão. A cota antiga deixava
+        // 26 pixels de ar entre os pés do Cajulim e a plataforma.
+        const floorY = this.phase5Floor - p.h;
 
         if (p.y >= floorY) {
             p.y = floorY;
@@ -6107,12 +6159,22 @@ ctx.restore();
             ctx.stroke();
         }
 
-        // Soil load visual in front blade if loaded
+        // Terra carregada na lâmina dianteira. O trator-base aponta para a
+        // esquerda; a transformação acima espelha tudo ao virar para a direita.
         if (this.phase5SoilLoaded) {
             ctx.fillStyle = "#8f582f";
+            ctx.strokeStyle = "#4e2f1d";
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(t.w - 15, t.h - 30, 16, 0, Math.PI * 2);
+            ctx.moveTo(-24, t.h - 12);
+            ctx.quadraticCurveTo(-14, t.h - 48, 8, t.h - 51);
+            ctx.quadraticCurveTo(31, t.h - 45, 39, t.h - 12);
+            ctx.closePath();
             ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "#d2a05a";
+            ctx.fillRect(-4, t.h - 41, 12, 4);
+            ctx.fillRect(13, t.h - 29, 9, 3);
         }
 
         ctx.restore();
@@ -6230,22 +6292,24 @@ ctx.restore();
             ctx.fillStyle = "#2f7890";
         }
 
-        // Elevated safety gangway / walkway for Cajulim
+        // Passarela exatamente sob os pés do Cajulim, acima da água.
         ctx.fillStyle = "#744b2b";
-        ctx.fillRect(3010, FLOOR - 8, 1570, 22);
+        ctx.fillRect(3010, FLOOR, 1570, 24);
+        ctx.fillStyle = "#302218";
+        ctx.fillRect(3010, FLOOR + 19, 1570, 5);
         ctx.fillStyle = "#d8aa5e";
         for (let x = 3020; x < 4570; x += 42) {
-            ctx.fillRect(x, FLOOR - 6, 32, 4);
+            ctx.fillRect(x, FLOOR + 2, 32, 4);
         }
         // Safety handrail
         ctx.strokeStyle = "#183a42";
         ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.moveTo(3020, FLOOR - 32);
-        ctx.lineTo(4570, FLOOR - 32);
+        ctx.moveTo(3020, FLOOR - 34);
+        ctx.lineTo(4570, FLOOR - 34);
         ctx.stroke();
         for (let x = 3030; x < 4580; x += 80) {
-            ctx.fillRect(x, FLOOR - 32, 5, 26);
+            ctx.fillRect(x, FLOOR - 34, 5, 34);
         }
 
         // 3 Floating Aerators
@@ -8410,7 +8474,9 @@ ctx.restore();
 
         const alpha = Math.min(1, this.tipTimer * 2);
         const boxW = 860;
-        const tipY = (this.currentPhase === 3 || this.currentPhase === 7 || this.currentPhase === 8) ? (VIRTUAL_HEIGHT - 98) : (VIRTUAL_HEIGHT - 60);
+        const tipY = this.currentPhase === 7
+            ? (this.phase5MessageTimer > 0 ? 178 : 114)
+            : ((this.currentPhase === 3 || this.currentPhase === 8) ? (VIRTUAL_HEIGHT - 98) : (VIRTUAL_HEIGHT - 60));
         ctx.fillStyle = `rgba(0, 0, 0, ${0.82 * alpha})`;
         ctx.fillRect(VIRTUAL_WIDTH / 2 - boxW / 2, tipY, boxW, 42);
 
@@ -10743,7 +10809,7 @@ ctx.restore();
 
         this.casaVivaBins = [
             { id: "dry", kind: "dry", label: "SECO", color: "#247bd0", dark: "#164c8a", x: 425, y: 400, w: 176, h: 150, interactX: 513, interactY: 574, rimY: 414 },
-            { id: "wet", kind: "wet", label: "MOLHADO", color: "#4da950", dark: "#27652d", x: 855, y: 400, w: 176, h: 150, interactX: 943, interactY: 574, rimY: 414 }
+            { id: "wet", kind: "wet", label: "MOLHADO", color: "#9b5b32", dark: "#57301f", x: 855, y: 400, w: 176, h: 150, interactX: 943, interactY: 574, rimY: 414 }
         ];
 
         this.casaViva = {
@@ -10922,6 +10988,7 @@ ctx.restore();
         }
         p.state = "depositing";
         p.actionTime = 0;
+        p.actionItem = item.id;
         p.actionBin = bin.id;
         p.originX = p.x;
         p.originY = p.y;
@@ -11038,6 +11105,7 @@ ctx.restore();
                 if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('trash');
                 this.spawnCasaVivaSparkles(bin.x + bin.w / 2, bin.rimY + 16, bin.color, 17);
                 p.state = "free";
+                p.actionItem = null;
                 p.actionBin = null;
                 p.actionTime = 0;
                 cv.message = `${held.name.toUpperCase()} NO LUGAR CERTO!`;
@@ -11146,6 +11214,71 @@ ctx.restore();
     // =========================================================================
     // CASA VIVA RENDERING METHODS (1280x720 scaled to 960x540)
     // =========================================================================
+
+    drawCasaVivaFallbackCajulim(ctx, held = null) {
+        // Personagem completo e reconhecível mesmo se a conexão falhar. Este
+        // desenho substitui o antigo círculo laranja usado durante o download.
+        ctx.save();
+        ctx.strokeStyle = "#5a3018";
+        ctx.lineWidth = 3;
+
+        // Pernas e tênis
+        ctx.fillStyle = "#21795d";
+        ctx.fillRect(-34, -51, 23, 42);
+        ctx.fillRect(11, -51, 23, 42);
+        ctx.fillStyle = "#f4f1e8";
+        this.roundedRect(ctx, -48, -19, 40, 18, 7);
+        ctx.fill(); ctx.stroke();
+        this.roundedRect(ctx, 8, -19, 40, 18, 7);
+        ctx.fill(); ctx.stroke();
+
+        // Corpo de caju e camisa verde
+        ctx.fillStyle = "#ef9227";
+        this.roundedRect(ctx, -52, -184, 104, 139, 43);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#2e8b62";
+        this.roundedRect(ctx, -50, -101, 100, 57, 14);
+        ctx.fill();
+        ctx.fillStyle = "#76b866";
+        ctx.fillRect(-48, -85, 96, 8);
+        ctx.fillRect(-48, -63, 96, 6);
+
+        // Olhos, sobrancelhas, nariz e sorriso
+        ctx.fillStyle = "#fff8e7";
+        ctx.beginPath(); ctx.ellipse(-20, -139, 14, 18, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(20, -139, 14, 18, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#332014";
+        ctx.beginPath(); ctx.arc(-17, -137, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(17, -137, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#4b2818";
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(-32, -160); ctx.lineTo(-11, -163); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(11, -163); ctx.lineTo(32, -160); ctx.stroke();
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, -117, 17, 0.15, Math.PI - 0.15); ctx.stroke();
+
+        // Castanha no topo
+        ctx.fillStyle = "#8a7252";
+        ctx.beginPath();
+        ctx.moveTo(-9, -181); ctx.quadraticCurveTo(-5, -215, 12, -218);
+        ctx.quadraticCurveTo(27, -210, 15, -181); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Braços e luvas. Com objeto, a mão direita é completada pelo overlay.
+        ctx.strokeStyle = "#e58b28";
+        ctx.lineWidth = 13;
+        ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(-44, -93); ctx.lineTo(-55, -58); ctx.stroke();
+        if (!held) {
+            ctx.beginPath(); ctx.moveTo(44, -93); ctx.lineTo(55, -58); ctx.stroke();
+        }
+        ctx.fillStyle = "#f7f2e7";
+        ctx.beginPath(); ctx.arc(-56, -52, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (!held) {
+            ctx.beginPath(); ctx.arc(56, -52, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
+    }
 
     renderCasaViva(ctx) {
         const cv = this.casaViva;
@@ -11353,18 +11486,9 @@ ctx.restore();
         // 5. Draw Player
         const p = cv.player;
         const held = this.currentCasaVivaItem();
-        // A linha parada tem quatro quadros. Os quadros 4 a 7 são vazios,
-        // então percorrê-los fazia o Cajulim piscar na fase da casa.
         let frame = p.moving
             ? Math.floor(p.animTime * 10) % 8
             : Math.floor(p.animTime * 4) % 4;
-        let row = p.moving ? 240 : 0;
-        if (p.state === "reaching" || p.state === "depositing" || p.state === "wrong") {
-            row = 720;
-            // A linha de ação possui somente os quadros 0 e 1.
-            frame = p.state === "reaching" && !held ? 0 : 1;
-        }
-        if (p.state === "complete") { row = 960; frame = 0; }
 
         ctx.save();
         ctx.translate(Math.round(p.x), Math.round(p.y));
@@ -11384,18 +11508,42 @@ ctx.restore();
         }
 
         if (!spriteDrawn) {
-            const sheet = this.assets['p_sheet'];
-            if (sheet && sheet.complete && sheet.naturalWidth > 0) {
-                ctx.drawImage(sheet, frame * 160, row, 160, 218, -64, -192, 128, 192);
-            } else {
-                ctx.fillStyle = "#ed8b28";
-                ctx.beginPath();
-                ctx.arc(0, -96, 36, 0, Math.PI * 2);
-                ctx.fill();
+            let baseKey;
+            if (p.state === "complete") baseKey = 'p_win';
+            else if (p.state === "reaching" || p.state === "depositing") baseKey = 'p_collect_0';
+            else if (p.moving) baseKey = `p_walk_${frame}`;
+            else baseKey = `p_idle_${frame}`;
+
+            let baseImg = this.assets[baseKey];
+            if (!(baseImg && baseImg.complete && baseImg.naturalWidth > 0)) {
+                baseImg = this.assets['p_idle_0'];
             }
 
             if (held) {
-                this.drawCasaVivaItem(ctx, held.kind, 31, -49, 0.75, 0.04);
+                // O fallback próprio já omite o braço que segura o item, para o
+                // overlay completar exatamente duas mãos, nunca três ou quatro.
+                this.drawCasaVivaFallbackCajulim(ctx, held);
+            } else if (baseImg && baseImg.complete && baseImg.naturalWidth > 0) {
+                ctx.drawImage(baseImg, 0, 0, baseImg.naturalWidth, baseImg.naturalHeight, -64, -192, 128, 192);
+            } else {
+                this.drawCasaVivaFallbackCajulim(ctx);
+            }
+
+            if (held) {
+                // Quando a pose específica ainda está carregando, o braço e a
+                // mão chegam até o resíduo; ele nunca fica solto no ar.
+                ctx.strokeStyle = "#e58b28";
+                ctx.lineWidth = 13;
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.moveTo(24, -91);
+                ctx.lineTo(31, -58);
+                ctx.stroke();
+                ctx.fillStyle = "#f7f2e7";
+                ctx.beginPath();
+                ctx.arc(31, -53, 8, 0, Math.PI * 2);
+                ctx.fill();
+                this.drawCasaVivaItem(ctx, held.kind, 31, -43, 0.72, 0.04);
             }
         }
         ctx.restore();
@@ -11474,7 +11622,7 @@ ctx.restore();
         // Held item info
         if (held) {
             const itemText = `NAS MÃOS: ${held.name.toUpperCase()}`;
-            const targetText = `AGORA JOGUE NO ${held.category === "dry" ? "SECO (AZUL)" : "MOLHADO (VERDE)"}`;
+            const targetText = `AGORA JOGUE NO ${held.category === "dry" ? "SECO (AZUL)" : "MOLHADO (MARROM)"}`;
             ctx.fillStyle = "rgba(38,24,16,.92)";
             this.roundedRect(ctx, W / 2 - 200, 16, 400, 58, 11);
             ctx.fill();
@@ -11494,7 +11642,11 @@ ctx.restore();
         // Bottom prompt
         let promptText = cv.messageTime > 0 ? cv.message : "";
         if (!promptText) {
-            if (held) {
+            if (p.state === "depositing") {
+                const actionItem = cv.items.find(item => item.id === p.actionItem);
+                const target = actionItem?.category === "dry" ? "SECO" : "MOLHADO";
+                promptText = actionItem ? `DESCARTANDO ${actionItem.name.toUpperCase()} NO ${target}` : "DESCARTANDO RESÍDUO";
+            } else if (held) {
                 const bin = this.nearestCasaVivaBin();
                 const target = held.category === "dry" ? "SECO" : "MOLHADO";
                 if (bin?.kind === held.category) promptText = `ESPAÇO / BOTÃO A · JOGAR ${held.name.toUpperCase()} NO ${target}`;

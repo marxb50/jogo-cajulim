@@ -5,7 +5,7 @@ const path = require('path');
 const { createGame } = require('./test_support.js');
 
 const cases = [
-    { phase: 2, key: 'sc_parnamirim_centro', filename: 'parnamirim-bairro-pixel-v2.png' },
+    { phase: 2, key: 'sc_parnamirim_centro', filename: 'parnamirim-igreja-pixel-v3.png' },
     { phase: 3, key: 'sc_phase3_bairros_bg', filename: 'rota-bairros-pixel-v2.png' },
     { phase: 4, key: 'sc_phase4_transbordo_bg', filename: 'rodovia-transbordo-pixel-v2.png' }
 ];
