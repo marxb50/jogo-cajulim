@@ -21,19 +21,22 @@
     "filename": "cutscene_phase2_bairros.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!"
+    "text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbordo!",
+    "speech_text": "Coleta nos bairros concluída com sucesso! Todos os dez sacos de lixo foram recolhidos pela equipe do Cajulim. Agora o caminhão coletor entra na rodovia a caminho da Estação de Transbôrdo!"
   },
   "PHASE4_CLEAR:0": {
     "filename": "cutscene_phase2_clear.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbordo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!"
+    "text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbordo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!",
+    "speech_text": "Excelente viagem! O caminhão da coleta chegou em segurança à Estação de Transbôrdo de Parnamirim! Toda a carga de resíduos da cidade foi transportada sem deixar nada pelo caminho. Agora é hora de preparar a grande carreta!"
   },
   "PHASE5_CLEAR:0": {
     "filename": "cutscene_phase3_clear.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbordo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!"
+    "text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbordo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!",
+    "speech_text": "Manobra perfeita! A carreta foi totalmente carregada com trinta toneladas de resíduos e coberta com a lona protetora na doca do transbôrdo! O processo de transferência foi um sucesso total e o transporte rodoviário vai começar!"
   },
   "PHASE6_CLEAR:0": {
     "filename": "cutscene_phase4_clear.mp3",

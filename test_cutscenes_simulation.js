@@ -40,9 +40,15 @@ for (const [key, item] of entries) {
     game.triggerCutsceneNarration();
     const played = soundEvents.at(-1);
     assert.strictEqual(played.name, 'playNarration');
-    assert.strictEqual(played.text, item.text, 'A fala precisa ter exatamente as mesmas palavras da legenda');
+    assert.strictEqual(played.text, item.speech_text || item.text, 'A fala precisa usar o texto próprio de pronúncia quando informado');
     assert.strictEqual(played.file, `assets/audio/${item.filename}`);
     assert.strictEqual(played.voice, key === 'PHASE7_TO_8:1' ? 'antonio' : 'thalita');
+}
+
+for (const key of ['PHASE3_CLEAR:0', 'PHASE4_CLEAR:0', 'PHASE5_CLEAR:0']) {
+    assert.match(source[key].speech_text, /transbôrdo/i, `${key} precisa pronunciar transbôrdo`);
+    assert.doesNotMatch(source[key].text, /transbôrdo/i, `${key} precisa manter a grafia visível original`);
+    assert.match(source[key].text, /transbordo/i, `${key} precisa continuar exibindo transbordo`);
 }
 
 game.startCutscene('PHASE7_TO_8');
@@ -62,4 +68,4 @@ for (let step = 0; step < 3; step++) {
 assert.strictEqual(game.state, 'TITLE');
 assert.strictEqual(game.currentPhase, 1);
 
-console.log('✓ Narrações e legendas idênticas; Thalita em tudo, Antônio somente no chefão.');
+console.log('✓ Legendas preservadas; pronúncia dedicada no transbôrdo; Thalita em tudo, Antônio somente no chefão.');

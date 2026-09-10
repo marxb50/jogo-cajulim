@@ -203,7 +203,8 @@ class Game {
             'sc_cloud': 'assets/scenery/cloud.png',
             'sc_signpost': 'assets/scenery/signpost.png',
             'sc_truck': 'assets/scenery/truck.png',
-            'sc_parnamirim_centro': 'assets/scenery/parnamirim-centro-pixel.png',
+            'sc_parnamirim_centro': 'assets/scenery/parnamirim-bairro-pixel-v2.png',
+            'sc_phase3_bairros_bg': 'assets/scenery/rota-bairros-pixel-v2.png',
 
             // Phase 2 Assets (Road, Obstacles & Transbordo)
             'tile_road': 'assets/scenery/tile_road.png',
@@ -216,6 +217,7 @@ class Game {
             'item_biodiesel': 'assets/items/biodiesel.png',
             'item_wrench': 'assets/items/wrench.png',
             'sc_city_bg': 'assets/scenery/city_bg.png',
+            'sc_phase4_transbordo_bg': 'assets/scenery/rodovia-transbordo-pixel-v2.png',
             'sc_transbordo': 'assets/scenery/transbordo_facility.png',
 
             // Phase 3 Assets (Transbordo Interior, Carreta & Supervisor)
@@ -3384,6 +3386,12 @@ class Game {
             this.phase5Stage = 'COMPLETE';
             this.phase5State = 'COMPLETE';
             this.phase5Mode = 'WIN';
+            // A análise esconde o personagem. Ao voltar para o mundo, reposicione
+            // os pés no piso do laboratório para impedir que ele reapareça no ar.
+            this.player.y = this.phase5Floor - this.player.h;
+            this.player.vy = 0;
+            this.player.grounded = true;
+            this.player.animState = 'idle';
             this.phase5CompletedAt = this.gameTime || 0;
             this.score += 1500;
             this.setPhase5Message("Análise da simulação concluída. Tratamento certificado: pH 7,0!", 7.0);
@@ -7487,6 +7495,19 @@ ctx.restore();
         }
     }
 
+    drawScrollingPanorama(ctx, image, parallaxStrength = 1) {
+        if (!image || image.complete === false) return false;
+        const sourceWidth = image.naturalWidth || image.width || 2172;
+        const sourceHeight = image.naturalHeight || image.height || 724;
+        const panoramaWidth = Math.max(VIRTUAL_WIDTH, VIRTUAL_HEIGHT * (sourceWidth / sourceHeight));
+        const imageTravel = Math.max(0, panoramaWidth - VIRTUAL_WIDTH);
+        const worldTravel = Math.max(1, (this.levelWidth || VIRTUAL_WIDTH) - VIRTUAL_WIDTH);
+        const progress = Math.max(0, Math.min(1, (this.camera.x || 0) / worldTravel));
+        const pan = imageTravel * progress * parallaxStrength;
+        ctx.drawImage(image, -Math.round(Math.min(imageTravel, pan)), 0, panoramaWidth, VIRTUAL_HEIGHT);
+        return true;
+    }
+
     renderBackground(ctx) {
         if (this.currentPhase === 2) {
             const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
@@ -7522,22 +7543,10 @@ ctx.restore();
                 ctx.drawImage(cloudImg, cloudX3 - 100, 50, 130, 65);
             }
 
-            // Centro de Parnamirim landmark panorama. The generated pixel-art plate
-            // adds a recognizable church/square silhouette while the level remains
-            // fully playable on its original platforms and collision map.
+            // Panorama urbano de Parnamirim com casas e prédios. A imagem longa
+            // percorre o bairro sem repetir placas ou criar cortes verticais.
             const centroImg = this.assets['sc_parnamirim_centro'];
-            if (centroImg && centroImg.complete !== false) {
-                // This is a complete 16:9 panorama, not a tile. Repeating it at
-                // every 960px made the left and right edges meet in the middle
-                // of the viewport as soon as the camera moved. Draw one slightly
-                // wider plate and clamp its small parallax range instead, so the
-                // church, trees and road stay continuous with no hard vertical cut.
-                const bgW = Math.round(VIRTUAL_WIDTH * 1.12);
-                const bgH = VIRTUAL_HEIGHT;
-                const maxPan = bgW - VIRTUAL_WIDTH;
-                const parallax = -Math.min(maxPan, Math.max(0, (this.camera.x || 0) * 0.15));
-                ctx.drawImage(centroImg, Math.floor(parallax), 0, bgW, bgH);
-            }
+            this.drawScrollingPanorama(ctx, centroImg);
         } else if (this.currentPhase === 3) {
             // Phase 3: Neighborhood Collection Route - Bright Parnamirim Morning Sky
             const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
@@ -7641,6 +7650,20 @@ ctx.restore();
             ctx.fillStyle = '#e6edf0';
             ctx.fillRect(0, 422, VIRTUAL_WIDTH, 4);
 
+            // Panorama longo exclusivo: altera apenas a aparência da fase 3,
+            // preservando caminhão, paradas, NPC e todas as regras de coleta.
+            this.drawScrollingPanorama(ctx, this.assets['sc_phase3_bairros_bg']);
+
+        } else if (this.currentPhase === 4) {
+            const highwayImg = this.assets['sc_phase4_transbordo_bg'];
+            if (!this.drawScrollingPanorama(ctx, highwayImg)) {
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
+                skyGrad.addColorStop(0, '#312e81');
+                skyGrad.addColorStop(0.55, '#c2410c');
+                skyGrad.addColorStop(1, '#fb923c');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            }
         } else if (this.currentPhase === 6) {
             this.renderPhase5Background(ctx);
         } else if (this.currentPhase === 7) {
@@ -8618,7 +8641,11 @@ ctx.restore();
             return;
         }
         const voiceHint = narration.voice && narration.voice.includes('Antonio') ? 'antonio' : 'thalita';
-        window.soundManager.playNarration(`assets/audio/${narration.filename}`, narration.text, voiceHint);
+        window.soundManager.playNarration(
+            `assets/audio/${narration.filename}`,
+            narration.speech_text || narration.text,
+            voiceHint
+        );
     }
 
     getCutsceneFullText() {
@@ -10677,8 +10704,8 @@ ctx.restore();
                 obstacles: [
                     { x: 92, y: 392, w: 350, h: 84 },
                     { x: 1020, y: 392, w: 168, h: 72 },
-                    { x: 455, y: 400, w: 176, h: 150 },
-                    { x: 785, y: 400, w: 176, h: 150 }
+                    { x: 425, y: 400, w: 176, h: 150 },
+                    { x: 855, y: 400, w: 176, h: 150 }
                 ],
                 doors: [
                     { side: "left", target: "kitchen", label: "COZINHA", minY: 420, maxY: 640, exitX: 96, spawn: { x: 1110, y: 536, facing: -1 } },
@@ -10715,24 +10742,24 @@ ctx.restore();
         };
 
         this.casaVivaBins = [
-            { id: "dry", kind: "dry", label: "SECO", color: "#247bd0", dark: "#164c8a", x: 455, y: 400, w: 176, h: 150, interactX: 543, interactY: 574, rimY: 414 },
-            { id: "wet", kind: "wet", label: "MOLHADO", color: "#4da950", dark: "#27652d", x: 785, y: 400, w: 176, h: 150, interactX: 873, interactY: 574, rimY: 414 }
+            { id: "dry", kind: "dry", label: "SECO", color: "#247bd0", dark: "#164c8a", x: 425, y: 400, w: 176, h: 150, interactX: 513, interactY: 574, rimY: 414 },
+            { id: "wet", kind: "wet", label: "MOLHADO", color: "#4da950", dark: "#27652d", x: 855, y: 400, w: 176, h: 150, interactX: 943, interactY: 574, rimY: 414 }
         ];
 
         this.casaViva = {
             room: 'service',
             roomVisits: new Set(['service']),
             items: [
-                { id: "orange", kind: "orange", name: "casca de laranja", label: "CASCA DE LARANJA", category: "wet", room: "service", x: 400, y: 547, approach: { x: 390, y: 601 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
-                { id: "can", kind: "can", name: "lata vazia", label: "LATA VAZIA", category: "dry", room: "service", x: 1120, y: 552, approach: { x: 1110, y: 608 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
-                { id: "coffee", kind: "coffee", name: "borra de café", label: "BORRA DE CAFÉ", category: "wet", room: "service", x: 280, y: 563, approach: { x: 280, y: 614 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
-                { id: "jar", kind: "jar", name: "pote de vidro vazio", label: "POTE DE VIDRO", category: "dry", room: "service", x: 1035, y: 562, approach: { x: 1035, y: 614 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "orange", kind: "orange", name: "casca de laranja", label: "CASCA DE LARANJA", category: "wet", room: "service", x: 400, y: 574, approach: { x: 400, y: 625 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "can", kind: "can", name: "lata vazia", label: "LATA VAZIA", category: "dry", room: "service", x: 690, y: 574, approach: { x: 690, y: 625 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "coffee", kind: "coffee", name: "borra de café", label: "BORRA DE CAFÉ", category: "wet", room: "service", x: 325, y: 586, approach: { x: 325, y: 632 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "jar", kind: "jar", name: "pote de vidro vazio", label: "POTE DE VIDRO", category: "dry", room: "service", x: 770, y: 586, approach: { x: 770, y: 632 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
                 { id: "bottle", kind: "bottle", name: "garrafa PET vazia", label: "GARRAFA PET", category: "dry", room: "kitchen", x: 758, y: 250, approach: { x: 790, y: 472 }, surface: "counter", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
-                { id: "banana", kind: "banana", name: "casca de banana", label: "CASCA DE BANANA", category: "wet", room: "kitchen", x: 996, y: 568, approach: { x: 984, y: 619 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
-                { id: "yogurt", kind: "yogurt", name: "pote de iogurte usado", label: "POTE DE IOGURTE", category: "wet", room: "kitchen", x: 1100, y: 568, approach: { x: 1090, y: 619 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "banana", kind: "banana", name: "casca de banana", label: "CASCA DE BANANA", category: "wet", room: "kitchen", x: 700, y: 552, approach: { x: 700, y: 608 }, surface: "floor", labelLift: 0, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "yogurt", kind: "yogurt", name: "pote de iogurte usado", label: "POTE DE IOGURTE", category: "wet", room: "kitchen", x: 820, y: 584, approach: { x: 820, y: 632 }, surface: "floor", labelLift: -26, state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
                 { id: "box", kind: "box", name: "caixa de papelão limpa", label: "CAIXA DE PAPELÃO", category: "dry", room: "living", x: 423, y: 445, approach: { x: 565, y: 600 }, surface: "table", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
-                { id: "apple", kind: "apple", name: "miolo de maçã", label: "MIOLO DE MAÇÃ", category: "wet", room: "living", x: 920, y: 533, approach: { x: 914, y: 592 }, surface: "floor", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
-                { id: "paper", kind: "paper", name: "papel ou carta limpa", label: "PAPEL / CARTA", category: "dry", room: "living", x: 1075, y: 577, approach: { x: 1058, y: 624 }, surface: "floor", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null }
+                { id: "apple", kind: "apple", name: "miolo de maçã", label: "MIOLO DE MAÇÃ", category: "wet", room: "living", x: 745, y: 568, approach: { x: 745, y: 620 }, surface: "floor", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null },
+                { id: "paper", kind: "paper", name: "papel ou carta limpa", label: "PAPEL / CARTA", category: "dry", room: "living", x: 900, y: 588, approach: { x: 900, y: 632 }, surface: "floor", state: "onSurface", fallT: 0, fallFrom: null, fallTo: null }
             ],
             particles: [],
             transition: null,
@@ -10782,7 +10809,7 @@ ctx.restore();
 
         dx /= magnitude;
         dy /= magnitude;
-        const speed = p.held ? 210 : 240;
+        const speed = p.held ? 245 : 285;
         const nextX = Math.max(data.bounds.left, Math.min(data.bounds.right, p.x + dx * speed * dt));
         const nextY = Math.max(data.bounds.top, Math.min(data.bounds.bottom, p.y + dy * speed * dt));
         const previousX = p.x;
@@ -11326,11 +11353,16 @@ ctx.restore();
         // 5. Draw Player
         const p = cv.player;
         const held = this.currentCasaVivaItem();
-        let frame = Math.floor(p.animTime * 10) % 8;
+        // A linha parada tem quatro quadros. Os quadros 4 a 7 são vazios,
+        // então percorrê-los fazia o Cajulim piscar na fase da casa.
+        let frame = p.moving
+            ? Math.floor(p.animTime * 10) % 8
+            : Math.floor(p.animTime * 4) % 4;
         let row = p.moving ? 240 : 0;
         if (p.state === "reaching" || p.state === "depositing" || p.state === "wrong") {
-            row = p.actionTime < 0.38 ? 720 : 0;
-            frame = row === 720 ? 0 : (p.actionTime < 0.6 ? 1 : 2);
+            row = 720;
+            // A linha de ação possui somente os quadros 0 e 1.
+            frame = p.state === "reaching" && !held ? 0 : 1;
         }
         if (p.state === "complete") { row = 960; frame = 0; }
 
@@ -11340,7 +11372,7 @@ ctx.restore();
 
         // Check held sprite
         let spriteDrawn = false;
-        if (held && (p.state === "carrying" || p.state === "free")) {
+        if (held && p.state !== "complete") {
             const spriteKey = p.moving ? `cv_${held.id}_walk` : `cv_${held.id}_hold`;
             const spriteImg = this.assets[spriteKey];
             if (spriteImg && spriteImg.complete && spriteImg.naturalWidth > 0) {

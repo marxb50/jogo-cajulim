@@ -71,7 +71,8 @@ async def generate_all():
     for key, item in narrations.items():
         output_path = primary_dir / item["filename"]
         print(f"Gerando {key} -> {item['filename']} com {item['voice']}...")
-        communicate = edge_tts.Communicate(item["text"], item["voice"], rate=item.get("rate", "+2%"))
+        speech_text = item.get("speech_text", item["text"])
+        communicate = edge_tts.Communicate(speech_text, item["voice"], rate=item.get("rate", "+2%"))
         await communicate.save(str(output_path))
         if output_path.stat().st_size < 1_000:
             raise RuntimeError(f"Áudio inválido ou vazio: {output_path}")

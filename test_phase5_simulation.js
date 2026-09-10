@@ -67,6 +67,8 @@ game.update(2.8);
 assert.strictEqual(game.phase5AnalysisDone, true);
 assert.strictEqual(game.phase5Stage, 'COMPLETE');
 assert.strictEqual(game.phase5Mode, 'WIN');
+assert.strictEqual(game.player.y, game.phase5Floor - game.player.h, 'Cajulim precisa reaparecer com os pés no chão');
+assert.strictEqual(game.player.grounded, true, 'Cajulim precisa terminar a fase apoiado no piso');
 
 game.triggerPhase5Action();
 assert.strictEqual(game.state, 'LEVEL_CLEAR');

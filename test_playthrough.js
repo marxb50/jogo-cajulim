@@ -8,6 +8,20 @@ const wet = cv.items.filter(item => item.category === 'wet');
 assert.strictEqual(dry.length, 5, 'A casa precisa de cinco resíduos secos');
 assert.strictEqual(wet.length, 5, 'A casa precisa de cinco resíduos molhados');
 
+const dryBin = game.casaVivaBins.find(bin => bin.kind === 'dry');
+const wetBin = game.casaVivaBins.find(bin => bin.kind === 'wet');
+assert.ok(wetBin.x - (dryBin.x + dryBin.w) >= 240, 'Os dois cestos precisam ficar visualmente separados');
+
+for (const entry of cv.items.filter(value => value.surface === 'floor')) {
+    assert.ok(entry.x > 250 && entry.x < 1010, `${entry.id} não pode ficar atrás das placas ou dos controles móveis`);
+}
+
+cv.player.x = 1080;
+cv.player.y = 640;
+const startX = cv.player.x;
+game.moveCasaVivaPlayer(-1, 0, 0.25);
+assert.ok(startX - cv.player.x >= 70, 'Cajulim precisa andar mais rápido dentro da casa');
+
 const item = cv.items.find(entry => entry.id === 'orange');
 cv.room = item.room;
 cv.player.x = item.approach.x;
@@ -44,5 +58,16 @@ for (const entry of cv.items) {
     assert.ok(game.assets[`cv_${entry.kind}_hold`], `Falta imagem parada segurando ${entry.kind}`);
     assert.ok(game.assets[`cv_${entry.kind}_walk`], `Falta imagem andando com ${entry.kind}`);
 }
+
+const playerDraws = [];
+game.ctx.drawImage = (...args) => playerDraws.push(args);
+cv.room = 'service';
+cv.player.state = 'free';
+cv.player.moving = false;
+cv.player.animTime = 1.75;
+game.renderCasaViva(game.ctx);
+const idleDraw = playerDraws.find(args => args[0] === game.assets.p_sheet && args[2] === 0);
+assert.ok(idleDraw, 'A animação parada precisa desenhar o sprite do Cajulim');
+assert.ok(idleDraw[1] <= 3 * 160, 'A animação parada não pode acessar os quatro quadros vazios');
 
 console.log('✓ Fase 1: 5 secos, 5 molhados, nomes, mãos, bloqueio de troca e cestos corretos.');
