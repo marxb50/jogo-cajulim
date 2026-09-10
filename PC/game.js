@@ -285,7 +285,7 @@ class Game {
         const common = ['ui_parnamirim_logo', 'p_portrait'];
         const byPhase = {
             1: ['cv_service', 'p_idle_0', 'p_idle_1', 'p_walk_0', 'p_collect_0'],
-            2: ['sc_parnamirim_centro', 'p_sheet', 'tile_grass', 'tile_dirt', 'item_trash_bag'],
+            2: ['sc_parnamirim_centro', 'p_sheet', 'tile_grass', 'tile_dirt', 'block_brick', 'block_question', 'block_recycle', 'item_trash_bag'],
             3: ['sc_phase3_bairros_bg', 'sc_truck', 'item_trash_bag_raw'],
             4: ['sc_phase4_transbordo_bg', 'sc_truck', 'tile_road', 'tile_road_sub'],
             5: ['sc_transbordo_interior', 'sc_carreta', 'p_supervisor'],
@@ -4395,21 +4395,27 @@ class Game {
         block.bumpY = -8;
         if (window.soundManager) window.soundManager.playBump();
 
-        if (block.content && !block.hit) {
+        // Qualquer bloco especial se transforma em tijolo no primeiro impacto.
+        // Antes somente o reciclável mudava; os blocos de interrogação ficavam
+        // para sempre com a textura antiga, dando a impressão de que o golpe
+        // não funcionou.
+        if (!block.hit) {
             block.hit = true;
-            if (block.type === 'recycle') block.type = 'brick';
-            const item = {
-                id: Date.now() + Math.random(),
-                x: block.x + block.w / 2 - 18,
-                y: block.y - 30,
-                type: block.content,
-                points: block.content === 'star' ? 300 : 150,
-                popping: true,
-                popVy: -260
-            };
-            this.items.push(item);
+            block.type = 'brick';
+            if (block.content) {
+                const item = {
+                    id: Date.now() + Math.random(),
+                    x: block.x + block.w / 2 - 18,
+                    y: block.y - 30,
+                    type: block.content,
+                    points: block.content === 'star' ? 300 : 150,
+                    popping: true,
+                    popVy: -260
+                };
+                this.items.push(item);
+            }
             this.spawnSparkles(block.x + block.w / 2, block.y, 16);
-            if (window.soundManager) window.soundManager.playCollect('star');
+            if (block.content && window.soundManager) window.soundManager.playCollect('star');
         }
     }
 
@@ -8062,16 +8068,42 @@ ctx.restore();
 
             const drawY = b.y + (b.bumpY || 0);
             let img = brickImg;
-            if (b.type === 'recycle') img = recycleImg;
-            else if (b.type === 'question') img = questionImg;
+            if (!b.hit && b.type === 'recycle') img = recycleImg;
+            else if (!b.hit && b.type === 'question') img = questionImg;
 
-            if (img) {
+            if (img && img.complete && (img.naturalWidth === undefined || img.naturalWidth > 0)) {
                 ctx.drawImage(img, b.x, drawY, b.w, b.h);
             } else {
-                ctx.fillStyle = b.type === 'brick' ? '#b55229' : '#e6a100';
-                ctx.fillRect(b.x, drawY, b.w, b.h);
+                this.drawPhase2BlockFallback(ctx, b, drawY);
             }
         }
+    }
+
+    drawPhase2BlockFallback(ctx, block, drawY) {
+        const brick = block.hit || block.type === 'brick';
+        ctx.save();
+        ctx.fillStyle = brick ? '#b55229' : (block.type === 'recycle' ? '#1f9d67' : '#e6a100');
+        ctx.strokeStyle = brick ? '#5d2b1c' : '#5b3510';
+        ctx.lineWidth = 3;
+        ctx.fillRect(block.x, drawY, block.w, block.h);
+        ctx.strokeRect(block.x + 1, drawY + 1, block.w - 2, block.h - 2);
+        if (brick) {
+            ctx.strokeStyle = '#7b3b24';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(block.x + 2, drawY + block.h / 2);
+            ctx.lineTo(block.x + block.w - 2, drawY + block.h / 2);
+            ctx.moveTo(block.x + block.w / 2, drawY + 2);
+            ctx.lineTo(block.x + block.w / 2, drawY + block.h / 2);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = '#fff4bd';
+            ctx.font = '900 28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(block.type === 'question' ? '?' : '↻', block.x + block.w / 2, drawY + block.h / 2 + 1);
+        }
+        ctx.restore();
     }
 
     renderItems(ctx) {

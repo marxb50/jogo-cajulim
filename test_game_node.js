@@ -10,6 +10,15 @@ const checks = {
     2(game) {
         assert.ok(game.platforms.length > 10, 'Fase 2 precisa do mapa de plataformas');
         assert.ok(game.truck, 'Fase 2 precisa do caminhão de chegada');
+        assert.ok(game.blocks.length >= 12, 'Fase 2 precisa manter os blocos suspensos do percurso');
+        const specialBlocks = game.blocks.filter(block => block.content);
+        const itemCount = game.items.length;
+        for (const block of specialBlocks) {
+            game.hitBlock(block);
+            assert.strictEqual(block.type, 'brick', 'Todo bloco especial atingido deve virar tijolo');
+            assert.strictEqual(block.hit, true, 'O bloco atingido precisa ficar marcado como usado');
+        }
+        assert.strictEqual(game.items.length, itemCount + specialBlocks.length, 'Cada bloco especial deve soltar seu item uma vez');
         assert.strictEqual(game.totalTrash, 6);
         assert.strictEqual(game.totalRecyclables, 13);
     },
