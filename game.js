@@ -36,10 +36,15 @@ class Game {
             const getParam = (key) => searchParams.get(key) || hashParams.get(key);
             const targetPhase = getParam('fase') || getParam('phase');
             if (targetPhase) {
-                const parsed = parseInt(targetPhase, 10);
-                if (parsed >= 1 && parsed <= 8) {
-                    initialPhase = parsed;
+                if (targetPhase === '0' || targetPhase === 'casa') {
+                    initialPhase = 1;
                     hasDirectPhase = true;
+                } else {
+                    const parsed = parseInt(targetPhase, 10);
+                    if (parsed >= 1 && parsed <= 8) {
+                        initialPhase = parsed;
+                        hasDirectPhase = true;
+                    }
                 }
             }
             if (getParam('cutscene')) {
@@ -334,7 +339,7 @@ class Game {
                 this.state = 'PLAYING';
             }
 
-            if (targetPhase === '1') {
+            if (targetPhase === '1' || targetPhase === '0' || targetPhase === 'casa') {
                 this.switchPhase(1);
                 this.startGame();
             } else if (targetPhase === '2') {
