@@ -11380,6 +11380,7 @@ ctx.restore();
                 actionItem: null,
                 held: null,
                 actionBin: null,
+                heldActionConsumed: false,
                 originX: 0,
                 originY: 0
             }
@@ -11758,7 +11759,10 @@ ctx.restore();
             return;
         }
 
-        if (this.actionJustPressed || (this.keys.action && !cv.player.heldActionConsumed)) {
+        // Na casa, somente o botão de ação (A no celular / E no teclado)
+        // recolhe ou descarta resíduos. O ↑/W continua reservado para subir
+        // no analógico e não pode pegar um objeto por acidente.
+        if (this.keys.action && !cv.player.heldActionConsumed) {
             this.handleCasaVivaAction();
             cv.player.heldActionConsumed = true;
         }
@@ -12058,6 +12062,13 @@ ctx.restore();
         // 5. Draw Player
         const p = cv.player;
         const held = this.currentCasaVivaItem();
+        // Durante a queda para a lixeira, o objeto já saiu da mão física, mas
+        // continua sendo o item da ação até chegar ao recipiente. Assim o nome
+        // permanece acima do Cajulim e some somente quando o descarte termina.
+        const depositingItem = p.state === "depositing" && p.actionItem
+            ? cv.items.find(item => item.id === p.actionItem && item.state === "falling")
+            : null;
+        const activeItem = held || depositingItem || null;
         let frame = p.moving
             ? Math.floor(p.animTime * 10) % 8
             : Math.floor(p.animTime * 4) % 4;
@@ -12192,13 +12203,13 @@ ctx.restore();
         ctx.fillText(`PONTOS  ${this.score.toString().padStart(4, "0")}`, W - 304, 68);
 
         // Held item info
-        if (held) {
-            const itemText = `NAS MÃOS: ${held.name.toUpperCase()}`;
-            const targetText = `AGORA JOGUE NO ${held.category === "dry" ? "SECO (AZUL)" : "MOLHADO (MARROM)"}`;
+        if (activeItem) {
+            const itemText = `NAS MÃOS: ${activeItem.name.toUpperCase()}`;
+            const targetText = `AGORA JOGUE NO ${activeItem.category === "dry" ? "SECO (AZUL)" : "MOLHADO (MARROM)"}`;
             ctx.fillStyle = "rgba(38,24,16,.92)";
             this.roundedRect(ctx, W / 2 - 200, 16, 400, 58, 11);
             ctx.fill();
-            ctx.strokeStyle = held.category === "dry" ? "#58bde8" : "#78d07b";
+            ctx.strokeStyle = activeItem.category === "dry" ? "#58bde8" : "#78d07b";
             ctx.lineWidth = 2;
             ctx.stroke();
 
@@ -12206,9 +12217,47 @@ ctx.restore();
             ctx.font = "900 13px sans-serif";
             ctx.textAlign = "center";
             ctx.fillText(itemText, W / 2, 39);
-            ctx.fillStyle = held.category === "dry" ? "#6bd3ff" : "#91ed91";
+            ctx.fillStyle = activeItem.category === "dry" ? "#6bd3ff" : "#91ed91";
             ctx.font = "900 12px sans-serif";
             ctx.fillText(targetText, W / 2, 60);
+        }
+
+        // Identificação grande e presa ao personagem enquanto ele leva o
+        // resíduo. O cartão desaparece somente após o item virar deposited.
+        if (activeItem && p.state !== "complete") {
+            ctx.save();
+            const itemName = activeItem.name.toUpperCase();
+            const destination = activeItem.category === "dry" ? "LEVAR AO SECO" : "LEVAR AO MOLHADO";
+            ctx.font = "900 22px sans-serif";
+            const nameWidth = ctx.measureText(itemName).width;
+            ctx.font = "900 13px sans-serif";
+            const destinationWidth = ctx.measureText(destination).width;
+            const labelWidth = Math.min(W - 32, Math.max(250, Math.ceil(Math.max(nameWidth, destinationWidth) + 38)));
+            const labelHeight = 56;
+            const labelX = Math.max(16, Math.min(W - labelWidth - 16, p.x - labelWidth / 2));
+            const labelY = Math.max(96, p.y - 252);
+            ctx.fillStyle = "rgba(5, 20, 35, 0.94)";
+            this.roundedRect(ctx, labelX, labelY, labelWidth, labelHeight, 12);
+            ctx.fill();
+            ctx.strokeStyle = activeItem.category === "dry" ? "#55c8ef" : "#83dc8e";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = "#fff5c7";
+            ctx.font = "900 22px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(itemName, labelX + labelWidth / 2, labelY + 22);
+            ctx.fillStyle = activeItem.category === "dry" ? "#6bd3ff" : "#91ed91";
+            ctx.font = "900 13px sans-serif";
+            ctx.fillText(destination, labelX + labelWidth / 2, labelY + 43);
+            ctx.fillStyle = "rgba(5, 20, 35, 0.94)";
+            ctx.beginPath();
+            ctx.moveTo(p.x - 10, labelY + labelHeight);
+            ctx.lineTo(p.x + 10, labelY + labelHeight);
+            ctx.lineTo(p.x, labelY + labelHeight + 12);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
         }
 
         // O prompt de ação ficava no rodapé e escondia resíduos e controles.
