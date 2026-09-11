@@ -251,6 +251,7 @@ class Game {
             'sc_lagoa_aerador': 'assets/scenery/lagoa_aerador.png',
             // Phase 7 Test Asset (isolated boss sprite; original assets remain untouched)
             'sc_mecha_boss_pixel': 'assets/phase7/mecha-trator-boss-pixel.png',
+            'sc_boss_cajueiro_bg': 'assets/phase7/cajueiro-pirangi-boss-panorama.webp',
             'p_portrait': 'assets/player/cajulim_portrait.png',
             'p_sheet': 'assets/player/cajulim_sheet.png',
             'item_trash_bag_raw': 'assets/items/trash_bag.png',
@@ -297,7 +298,7 @@ class Game {
             5: ['sc_transbordo_interior', 'sc_carreta', 'p_supervisor'],
             6: ['sc_rota_aterro', 'sc_carreta_magenta', 'p_cajulim_idle'],
             7: ['sc_aterro_complex_bg', 'sc_trator_compactador', 'sc_biogas_plant', 'sc_lagoa_aerador', 'p_idle_0', 'p_walk_0'],
-            8: ['sc_mecha_boss_pixel', 'sc_aterro_complex_bg', 'p_sheet']
+            8: ['sc_mecha_boss_pixel', 'sc_boss_cajueiro_bg', 'p_sheet']
         };
         const prioritySet = new Set([...common, ...(byPhase[this.currentPhase] || [])]);
         const priorityKeys = keys.filter(key => prioritySet.has(key));
@@ -6932,12 +6933,12 @@ ctx.restore();
     renderPhase6Plaza(ctx) {
         const groundY = 460;
 
-        // Pavement base
-        ctx.fillStyle = '#334155';
+        // Warm stone plaza that continues the Cajueiro de Pirangi panorama.
+        ctx.fillStyle = '#54404a';
         ctx.fillRect(0, groundY, 1400, 80);
 
         // Cobblestone / flagstone pattern
-        ctx.strokeStyle = '#1e293b';
+        ctx.strokeStyle = '#2f2733';
         ctx.lineWidth = 1.5;
         for (let x = 0; x < 1400; x += 40) {
             ctx.beginPath();
@@ -6954,7 +6955,7 @@ ctx.restore();
         }
 
         // Curb with hazard diagonal stripes in work zones
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = '#9a5b35';
         ctx.fillRect(0, groundY - 6, 1400, 6);
         ctx.fillStyle = '#facc15';
         for (let x = 0; x < 1400; x += 32) {
@@ -6988,19 +6989,6 @@ ctx.restore();
             ctx.fill();
         });
 
-        // Municipal Plaza Banner
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-        ctx.fillRect(40, 395, 260, 42);
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(40, 395, 260, 42);
-        ctx.font = 'bold 7.5px "Press Start 2P", monospace, sans-serif';
-        ctx.fillStyle = '#38bdf8';
-        ctx.textAlign = 'center';
-        ctx.fillText('🏛️ PRAÇA CENTRAL MUNICIPAL', 170, 412);
-        ctx.fillStyle = '#86efac';
-        ctx.fillText('ZONA DE PRESERVAÇÃO & COLETA', 170, 426);
-
         // Caution Barricades at boundaries
         [20, 1330].forEach(bx => {
             ctx.fillStyle = '#e2e8f0';
@@ -7023,18 +7011,40 @@ ctx.restore();
     }
 
     renderPhase6Platforms(ctx) {
+        // Dark safety mesh separates the climbable scaffolds from the detailed
+        // craft-market panorama without covering the landmark itself.
+        const scaffoldTowers = [
+            { x: 90, y: 226, w: 200, h: 234 },
+            { x: 510, y: 186, w: 220, h: 274 },
+            { x: 930, y: 226, w: 200, h: 234 }
+        ];
+        for (const tower of scaffoldTowers) {
+            ctx.fillStyle = 'rgba(4, 22, 30, 0.58)';
+            ctx.fillRect(tower.x, tower.y, tower.w, tower.h);
+            ctx.strokeStyle = 'rgba(73, 219, 214, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(tower.x, tower.y, tower.w, tower.h);
+
+            ctx.fillStyle = 'rgba(73, 219, 214, 0.16)';
+            for (let meshY = tower.y + 14; meshY < tower.y + tower.h; meshY += 18) {
+                ctx.fillRect(tower.x + 2, meshY, tower.w - 4, 2);
+            }
+        }
+
         // Scaffolding towers
         for (const plat of this.platforms) {
             if (plat.type !== 'scaffold') continue;
 
             // Wooden Deck Planks
-            ctx.fillStyle = '#b45309'; // Rich cedar wood
+            ctx.fillStyle = '#231b18';
+            ctx.fillRect(plat.x - 3, plat.y - 3, plat.w + 6, plat.h + 6);
+            ctx.fillStyle = '#f0a51b';
             ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
-            ctx.fillStyle = '#d97706';
-            ctx.fillRect(plat.x + 2, plat.y + 2, plat.w - 4, plat.h - 6);
+            ctx.fillStyle = '#ffd257';
+            ctx.fillRect(plat.x + 2, plat.y + 2, plat.w - 4, 4);
 
             // Wood plank dividers
-            ctx.fillStyle = '#78350f';
+            ctx.fillStyle = '#713409';
             for (let px = plat.x + 24; px < plat.x + plat.w; px += 24) {
                 ctx.fillRect(px, plat.y, 2, plat.h);
             }
@@ -7048,27 +7058,38 @@ ctx.restore();
             }
 
             // Vertical Steel Tubular Posts extending downward
-            ctx.fillStyle = '#94a3b8'; // Galvanized steel
+            ctx.fillStyle = '#9ff4ee';
             const postX1 = plat.x + 12;
             const postX2 = plat.x + plat.w - 12;
             const postBottomY = 460;
             const postH = postBottomY - plat.y;
 
             [postX1, postX2].forEach(px => {
+                ctx.fillStyle = '#142b34';
+                ctx.fillRect(px - 5, plat.y + plat.h, 10, postH - plat.h);
+                ctx.fillStyle = '#9ff4ee';
                 ctx.fillRect(px - 3, plat.y + plat.h, 6, postH - plat.h);
                 // Metal couplers / clamps
-                ctx.fillStyle = '#475569';
+                ctx.fillStyle = '#facc15';
                 for (let cy = plat.y + plat.h + 20; cy < postBottomY; cy += 35) {
                     ctx.fillRect(px - 5, cy, 10, 6);
                 }
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = '#9ff4ee';
             });
 
             // Steel Cross-Bracing Struts (X struts) between the two posts
-            ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 2;
             for (let sy = plat.y + plat.h; sy < postBottomY - 20; sy += 50) {
                 const ey = Math.min(postBottomY, sy + 50);
+                ctx.strokeStyle = '#142b34';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(postX1, sy);
+                ctx.lineTo(postX2, ey);
+                ctx.moveTo(postX2, sy);
+                ctx.lineTo(postX1, ey);
+                ctx.stroke();
+                ctx.strokeStyle = '#67d9dc';
+                ctx.lineWidth = 2.5;
                 ctx.beginPath();
                 ctx.moveTo(postX1, sy);
                 ctx.lineTo(postX2, ey);
@@ -7906,40 +7927,39 @@ ctx.restore();
                 ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
             }
         } else if (this.currentPhase === 8) {
-            // Phase 8: Boss Arena over the polluted urban plaza
-            const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
-            skyGrad.addColorStop(0, '#090514');
-            skyGrad.addColorStop(0.35, '#2e0854');
-            skyGrad.addColorStop(0.7, '#881337');
-            skyGrad.addColorStop(1, '#e11d48');
-            ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            // Phase 8: panoramic Cajueiro de Pirangi arena. At 1400x467 the
+            // image keeps its original 3:1 proportion and follows the camera
+            // across the complete boss battlefield without seams or cuts.
+            const bossBg = this.assets['sc_boss_cajueiro_bg'];
+            const hasBossBg = bossBg && bossBg.complete && (bossBg.naturalWidth || bossBg.width);
+            if (hasBossBg) {
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(bossBg, -Math.floor(this.camera.x), 0, 1400, 467);
 
-            // Dark industrial smog clouds
-            ctx.fillStyle = 'rgba(24, 15, 36, 0.45)';
-            for (let i = 0; i < 6; i++) {
-                const cx = (i * 240 - (this.camera.x * 0.1)) % (VIRTUAL_WIDTH + 260) - 60;
-                ctx.beginPath();
-                ctx.arc(cx, 110 + (i % 2) * 40, 90 + (i % 3) * 25, 0, Math.PI * 2);
-                ctx.fill();
-            }
+                // A restrained shade keeps Cajulim, projectiles and the boss
+                // readable while preserving the golden-hour landmark colors.
+                const arenaShade = ctx.createLinearGradient(0, 0, 0, 467);
+                arenaShade.addColorStop(0, 'rgba(4, 15, 32, 0.03)');
+                arenaShade.addColorStop(1, 'rgba(4, 15, 32, 0.22)');
+                ctx.fillStyle = arenaShade;
+                ctx.fillRect(0, 0, VIRTUAL_WIDTH, 467);
 
-            // Distant City Skyline with illuminated windows
-            const cityImg = this.assets['sc_city_bg'];
-            if (cityImg) {
-                const cityOff = - (this.camera.x * 0.18) % 256;
-                for (let x = -256 + cityOff; x < VIRTUAL_WIDTH + 256; x += 256) {
-                    ctx.drawImage(cityImg, x, 240, 256, 220);
+                const danger = this.boss
+                    ? Math.max(0, 1 - this.boss.hp / this.boss.maxHp)
+                    : 0;
+                if (danger > 0) {
+                    ctx.fillStyle = `rgba(92, 12, 46, ${danger * 0.12})`;
+                    ctx.fillRect(0, 0, VIRTUAL_WIDTH, 467);
                 }
+                ctx.restore();
             } else {
-                // Silhouetted buildings
-                const bOffset = - (this.camera.x * 0.18);
-                ctx.fillStyle = '#0f0920';
-                for (let i = -1; i < 14; i++) {
-                    const bx = i * 90 + (bOffset % 90);
-                    const bh = 140 + ((i * 37) % 110);
-                    ctx.fillRect(bx, 460 - bh, 80, bh);
-                }
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, VIRTUAL_HEIGHT);
+                skyGrad.addColorStop(0, '#090514');
+                skyGrad.addColorStop(0.4, '#5b164f');
+                skyGrad.addColorStop(1, '#e97832');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
             }
         } else {
             // Phase 3 Urban Twilight Sunset (Old Phase 2 Highway to Transbordo)

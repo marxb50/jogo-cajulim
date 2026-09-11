@@ -99,6 +99,19 @@ try {
     phase7.ctx.arc = (...args) => fallbackArcs.push(args);
     phase7.drawPhase5BiogasSector(phase7.ctx);
     assert.ok(!fallbackArcs.some(args => args[2] >= 60), 'O fallback da usina não pode desenhar o círculo verde gigante');
+
+    // O panorama do Cajueiro de Pirangi precisa estar pronto antes do chefão
+    // para que a arena nunca apareça com o antigo fundo genérico no celular.
+    global.window.location.search = '?fase=8';
+    requested.length = 0;
+    deferredTimers.length = 0;
+    delete require.cache[gamePath];
+    const { Game: Phase8Game } = require(gamePath);
+    new Phase8Game();
+    assert.ok(
+        requested.some(url => url.includes('cajueiro-pirangi-boss-panorama.webp')),
+        'O panorama do Cajueiro de Pirangi deve carregar antes de abrir a Fase 8'
+    );
 } finally {
     global.setTimeout = realSetTimeout;
 }
