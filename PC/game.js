@@ -11364,12 +11364,12 @@ ctx.restore();
             // A configuração completa acima continua intacta para a variante
             // "Fase 1 com 3 cômodos" disponível no seletor de fases.
             const singleRoomLayout = {
-                can:    { x: 275, y: 590, approachY: 632, labelLift: 0 },
-                jar:    { x: 365, y: 550, approachY: 615, labelLift: -22 },
-                paper:  { x: 400, y: 620, approachY: 642, labelLift: -55 },
-                orange: { x: 650, y: 585, approachY: 630, labelLift: 0 },
-                coffee: { x: 745, y: 545, approachY: 612, labelLift: -22 },
-                apple:  { x: 820, y: 620, approachY: 642, labelLift: -55 }
+                can:    { x: 275, y: 590, approachY: 632, labelLift: 0, labelOffsetX: 0 },
+                orange: { x: 365, y: 550, approachY: 615, labelLift: -36, labelOffsetX: -40 },
+                jar:    { x: 400, y: 620, approachY: 642, labelLift: -72, labelOffsetX: -75 },
+                coffee: { x: 650, y: 585, approachY: 630, labelLift: 0, labelOffsetX: 35 },
+                paper:  { x: 745, y: 545, approachY: 612, labelLift: -36, labelOffsetX: 0 },
+                apple:  { x: 820, y: 620, approachY: 642, labelLift: -72, labelOffsetX: -55 }
             };
             const serviceRoom = this.casaVivaRooms.service;
             serviceRoom.doors = [];
@@ -11386,7 +11386,8 @@ ctx.restore();
                         y: position.y,
                         approach: { x: position.x, y: position.approachY },
                         surface: 'floor',
-                        labelLift: position.labelLift
+                        labelLift: position.labelLift,
+                        labelOffsetX: position.labelOffsetX
                     };
                 });
         }
@@ -11883,20 +11884,23 @@ ctx.restore();
             const itemLabel = item.label || item.name.toUpperCase();
 
             ctx.save();
-            ctx.translate(Math.round(item.x), Math.round(arrowY));
+            ctx.translate(Math.round(item.x + (item.labelOffsetX || 0)), Math.round(arrowY));
             const labelY = -72 + (item.labelLift || 0);
+            const isSingleRoom = this.casaVivaVariant !== 'three-rooms';
+            const labelHeight = isSingleRoom ? 30 : 26;
+            const labelWidth = isSingleRoom ? 180 : 200;
             ctx.fillStyle = "rgba(35,18,10,.82)";
-            this.roundedRect(ctx, -100, labelY, 200, 26, 8);
+            this.roundedRect(ctx, -labelWidth / 2, labelY, labelWidth, labelHeight, 8);
             ctx.fill();
             ctx.strokeStyle = item.category === "dry" ? "#69c9ee" : "#83dc8e";
             ctx.lineWidth = 2;
             ctx.stroke();
 
             ctx.fillStyle = "#fff3c3";
-            ctx.font = "900 11px sans-serif";
+            ctx.font = `900 ${isSingleRoom ? 13 : 11}px sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(itemLabel, 0, labelY + 13);
+            ctx.fillText(itemLabel, 0, labelY + labelHeight / 2);
             ctx.restore();
 
             // Downward arrow

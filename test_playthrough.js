@@ -8,6 +8,11 @@ const wet = cv.items.filter(item => item.category === 'wet');
 assert.strictEqual(dry.length, 3, 'A Fase 1 principal precisa de três resíduos secos');
 assert.strictEqual(wet.length, 3, 'A Fase 1 principal precisa de três resíduos molhados');
 assert.deepStrictEqual(Object.keys(game.casaVivaRooms), ['service'], 'A Fase 1 principal precisa ter apenas um cômodo');
+assert.deepStrictEqual(
+    [...cv.items].sort((a, b) => a.x - b.x).map(item => item.category),
+    ['dry', 'wet', 'dry', 'wet', 'dry', 'wet'],
+    'Os resíduos secos e molhados precisam ficar alternados pelo cômodo'
+);
 
 const dryBin = game.casaVivaBins.find(bin => bin.kind === 'dry');
 const wetBin = game.casaVivaBins.find(bin => bin.kind === 'wet');
