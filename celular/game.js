@@ -30,6 +30,7 @@ class Game {
         let initialPhase = 1;
         let hasDirectPhase = false;
         let initialCutscene = null;
+        let initialCasaVivaVariant = 'single-room';
         if (typeof window !== 'undefined' && window.location) {
             const searchParams = new URLSearchParams(window.location.search || '');
             const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
@@ -50,11 +51,15 @@ class Game {
             if (getParam('cutscene')) {
                 initialCutscene = getParam('cutscene');
             }
+            if (getParam('casa') === '3comodos') {
+                initialCasaVivaVariant = 'three-rooms';
+            }
         }
 
         this.currentPhase = initialPhase;
         this.hasDirectPhase = hasDirectPhase;
         this.initialCutscene = initialCutscene;
+        this.casaVivaVariant = initialCasaVivaVariant;
         this.state = (hasDirectPhase || initialCutscene) ? 'PLAYING' : 'TITLE';
         this.assets = {};
         this.loadedCount = 0;
@@ -944,7 +949,10 @@ class Game {
         } else if (phaseNum === 2) {
             this.showTip('Fase 2: Pega o Lixo! Colete os sacos e recicláveis até o caminhão!', 4.0);
         } else {
-            this.showTip('Fase 1: Casa Viva do Cajulim! Separe os resíduos secos e molhados!', 4.5);
+            const casaTip = this.casaVivaVariant === 'three-rooms'
+                ? 'Fase 1 com 3 cômodos! Explore a cozinha, a sala e a área de serviço para separar os resíduos!'
+                : 'Fase 1: Casa Viva do Cajulim! Separe 3 resíduos secos e 3 molhados neste cômodo!';
+            this.showTip(casaTip, 4.5);
         }
     }
 
@@ -962,7 +970,10 @@ class Game {
             window.soundManager.startMusic(this.currentPhase === 8 ? 'boss' : 'stage');
         }
         if (this.currentPhase === 1) {
-            this.showTip('Fase 1: Casa Viva do Cajulim! Separe os lixos secos (azul) e molhados (marrom)!', 4.5);
+            const casaTip = this.casaVivaVariant === 'three-rooms'
+                ? 'Fase 1 com 3 cômodos! Encontre 5 secos e 5 molhados pela casa!'
+                : 'Fase 1: Separe 3 secos no recipiente azul e 3 molhados no marrom!';
+            this.showTip(casaTip, 4.5);
         } else if (this.currentPhase === 2) {
             this.showTip('Fase 2: Pega o Lixo! Colete os sacos e recicláveis nas ruas até o caminhão!', 4.0);
         } else if (this.currentPhase === 3) {
@@ -10984,9 +10995,12 @@ ctx.restore();
         if (this.currentPhase === 1) {
             const sorted = this.casaViva && this.casaViva.items
                 ? this.casaViva.items.filter(item => item.state === 'deposited').length
-                : 10;
+                : 0;
+            const casaItems = this.casaViva?.items || [];
+            const dryTotal = casaItems.filter(item => item.category === 'dry').length;
+            const wetTotal = casaItems.filter(item => item.category === 'wet').length;
             phaseTitle = 'CASA VIVA: RESIDUOS SEPARADOS';
-            phaseDetail = `Objetos separados corretamente: ${sorted}/10 | Secos: 5 | Molhados: 5`;
+            phaseDetail = `Objetos separados corretamente: ${sorted}/${casaItems.length} | Secos: ${dryTotal} | Molhados: ${wetTotal}`;
         } else if (this.currentPhase === 2) {
             phaseTitle = 'A GRANDE COLETA DE LIXO NO BAIRRO';
             phaseDetail = `Sacos Coletados: ${this.trashCollected}/${this.totalTrash} | Recicláveis: ${this.recyclablesCollected}/${this.totalRecyclables}`;
@@ -11344,6 +11358,40 @@ ctx.restore();
                 originY: 0
             }
         };
+
+        if (this.casaVivaVariant !== 'three-rooms') {
+            // Fase 1 principal: toda a atividade acontece em um único cômodo.
+            // A configuração completa acima continua intacta para a variante
+            // "Fase 1 com 3 cômodos" disponível no seletor de fases.
+            const singleRoomLayout = {
+                can:    { x: 275, y: 590, approachY: 632, labelLift: 0 },
+                jar:    { x: 365, y: 550, approachY: 615, labelLift: -22 },
+                paper:  { x: 400, y: 620, approachY: 642, labelLift: -55 },
+                orange: { x: 650, y: 585, approachY: 630, labelLift: 0 },
+                coffee: { x: 745, y: 545, approachY: 612, labelLift: -22 },
+                apple:  { x: 820, y: 620, approachY: 642, labelLift: -55 }
+            };
+            const serviceRoom = this.casaVivaRooms.service;
+            serviceRoom.doors = [];
+            serviceRoom.subtitle = '3 secos • 3 molhados';
+            this.casaVivaRooms = { service: serviceRoom };
+            this.casaViva.items = this.casaViva.items
+                .filter(item => singleRoomLayout[item.id])
+                .map(item => {
+                    const position = singleRoomLayout[item.id];
+                    return {
+                        ...item,
+                        room: 'service',
+                        x: position.x,
+                        y: position.y,
+                        approach: { x: position.x, y: position.approachY },
+                        surface: 'floor',
+                        labelLift: position.labelLift
+                    };
+                });
+        }
+
+        this.casaViva.variant = this.casaVivaVariant;
         this.camera.x = 0;
         this.camera.y = 0;
     }
@@ -12151,7 +12199,9 @@ ctx.restore();
             } else {
                 const item = this.nearestCasaVivaItem();
                 if (item) promptText = `ESPAÇO / BOTÃO A · PEGAR ${item.name.toUpperCase()}`;
-                else promptText = "EXPLORE OS CÔMODOS PARA ENCONTRAR RESÍDUOS";
+                else promptText = this.casaVivaVariant === 'three-rooms'
+                    ? "EXPLORE OS CÔMODOS PARA ENCONTRAR RESÍDUOS"
+                    : "ENCONTRE OS 6 RESÍDUOS NESTE CÔMODO";
             }
         }
 

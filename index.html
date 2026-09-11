@@ -691,7 +691,18 @@
                     <div class="phase-info">
                         <span class="phase-badge-tag" style="color:#22c55e;">FASE 1</span>
                         <div class="phase-name">Casa Viva do Cajulim</div>
-                        <div class="phase-sub">Separação doméstica: lixo seco e molhado.</div>
+                        <div class="phase-sub">1 cômodo: 3 secos e 3 molhados.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 1 preservada com os três cômodos originais -->
+                <div class="phase-card-btn p-phase1" onclick="launchPhase(1, '3comodos')">
+                    <div class="phase-icon-box">🏡</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#86efac;">FASE 1 • VERSÃO COMPLETA</span>
+                        <div class="phase-name">Fase 1 com 3 Cômodos</div>
+                        <div class="phase-sub">Cozinha, sala e área de serviço: 5 secos e 5 molhados.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
@@ -883,7 +894,7 @@
         function actionStartGame() {
             playBeep(880, 'triangle', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html?fase=1&cutscene=intro&v=8.8';
+                window.location.href = currentPlatform + '/index.html?fase=1&cutscene=intro&v=8.9';
             }, 100);
         }
 
@@ -894,10 +905,13 @@
         }
 
         // Passo 3: Escolhe qualquer fase de 1 a 8 (Entra direto na fase sem cutscenes)
-        function launchPhase(phaseNumber) {
+        function launchPhase(phaseNumber, casaVariant = '') {
             playBeep(920, 'sine', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1&v=8.8';
+                const variantQuery = phaseNumber === 1 && casaVariant === '3comodos'
+                    ? '&casa=3comodos'
+                    : '';
+                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1' + variantQuery + '&v=8.9';
             }, 100);
         }
 

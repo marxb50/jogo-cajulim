@@ -3,9 +3,10 @@ const { createGame } = require('./test_support.js');
 
 const checks = {
     1(game) {
-        assert.strictEqual(game.casaViva.items.length, 10);
-        assert.strictEqual(game.casaViva.items.filter(item => item.category === 'dry').length, 5);
-        assert.strictEqual(game.casaViva.items.filter(item => item.category === 'wet').length, 5);
+        assert.strictEqual(game.casaViva.items.length, 6);
+        assert.strictEqual(game.casaViva.items.filter(item => item.category === 'dry').length, 3);
+        assert.strictEqual(game.casaViva.items.filter(item => item.category === 'wet').length, 3);
+        assert.deepStrictEqual(Object.keys(game.casaVivaRooms), ['service']);
     },
     2(game) {
         assert.ok(game.platforms.length > 10, 'Fase 2 precisa do mapa de plataformas');

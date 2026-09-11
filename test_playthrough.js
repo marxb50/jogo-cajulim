@@ -5,8 +5,9 @@ const { game } = createGame(1);
 const cv = game.casaViva;
 const dry = cv.items.filter(item => item.category === 'dry');
 const wet = cv.items.filter(item => item.category === 'wet');
-assert.strictEqual(dry.length, 5, 'A casa precisa de cinco resíduos secos');
-assert.strictEqual(wet.length, 5, 'A casa precisa de cinco resíduos molhados');
+assert.strictEqual(dry.length, 3, 'A Fase 1 principal precisa de três resíduos secos');
+assert.strictEqual(wet.length, 3, 'A Fase 1 principal precisa de três resíduos molhados');
+assert.deepStrictEqual(Object.keys(game.casaVivaRooms), ['service'], 'A Fase 1 principal precisa ter apenas um cômodo');
 
 const dryBin = game.casaVivaBins.find(bin => bin.kind === 'dry');
 const wetBin = game.casaVivaBins.find(bin => bin.kind === 'wet');
@@ -81,4 +82,12 @@ const idleDraw = playerDraws.find(args => args[0] === game.assets.p_idle_3);
 assert.ok(idleDraw, 'A animação parada precisa desenhar o sprite do Cajulim');
 assert.ok(!playerDraws.some(args => args[0] === game.assets.p_sheet), 'A animação parada não pode voltar para a folha pesada que causava a bola/piscada');
 
-console.log('✓ Fase 1: 5 secos, 5 molhados, nomes, mãos, bloqueio de troca e cestos corretos.');
+const { game: completeGame } = createGame(1, { search: '?fase=1&casa=3comodos' });
+const completeItems = completeGame.casaViva.items;
+assert.strictEqual(completeGame.casaVivaVariant, 'three-rooms', 'O parâmetro precisa abrir a versão preservada');
+assert.deepStrictEqual(Object.keys(completeGame.casaVivaRooms).sort(), ['kitchen', 'living', 'service']);
+assert.strictEqual(completeItems.length, 10, 'A versão com 3 cômodos precisa manter os dez objetos originais');
+assert.strictEqual(completeItems.filter(entry => entry.category === 'dry').length, 5);
+assert.strictEqual(completeItems.filter(entry => entry.category === 'wet').length, 5);
+
+console.log('✓ Fase 1: versão principal com 1 cômodo e 3+3; versão preservada com 3 cômodos e 5+5.');
