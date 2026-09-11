@@ -515,10 +515,16 @@ class Game {
                 }
             } else if ((getParam('cutscene')) === 'ending') {
                 this.switchPhase(8);
-                const step = parseInt((getParam('step')) || '0', 10);
+                const requestedStep = parseInt((getParam('step')) || '0', 10);
                 this.startCutscene('GRAND_ENDING');
-                this.cutscene.step = step;
-                if ((getParam('instant')) === '1') {
+                // O encerramento agora tem apenas a redenção e a celebração.
+                // Links antigos que apontavam para o certificado seguem direto aos créditos.
+                if (requestedStep >= 2) {
+                    this.startCredits();
+                } else {
+                    this.cutscene.step = Math.max(0, requestedStep);
+                }
+                if (this.cutscene.active && (getParam('instant')) === '1') {
                     this.cutscene.textProgress = 999;
                 }
             }
@@ -8840,6 +8846,7 @@ ctx.restore();
             if (window.soundManager.stopNarration) window.soundManager.stopNarration();
             if (window.soundManager.stopMusic) window.soundManager.stopMusic();
             if (window.soundManager.playFanfare) window.soundManager.playFanfare();
+            if (window.soundManager.startMusic) window.soundManager.startMusic('credits');
         }
         this.cutscene.active = false;
         this.state = 'CREDITS';
@@ -9056,8 +9063,7 @@ ctx.restore();
         }
         if (this.cutscene.type === 'GRAND_ENDING') {
             if (this.cutscene.step === 0) return 'cs_barao_sweep';
-            if (this.cutscene.step === 1) return 'cs_cajulim_celebration';
-            return 'p_portrait';
+            return 'cs_intro_father';
         }
         return null;
     }
@@ -9307,10 +9313,7 @@ ctx.restore();
                 if (window.soundManager && window.soundManager.stopNarration) {
                     window.soundManager.stopNarration();
                 }
-                this.cutscene.step = 2;
-                this.cutscene.textProgress = 0;
-                if (window.soundManager && window.soundManager.playCollect) window.soundManager.playCollect('star');
-                this.triggerCutsceneNarration();
+                this.startCredits();
             } else {
                 this.startCredits();
             }
@@ -9354,8 +9357,8 @@ ctx.restore();
             this.switchPhase(8);
             this.startGame();
         } else if (this.cutscene.type === 'GRAND_ENDING') {
-            if (this.cutscene.step < 2) {
-                this.cutscene.step = 2;
+            if (this.cutscene.step < 1) {
+                this.cutscene.step = 1;
                 this.cutscene.textProgress = 999;
                 this.triggerCutsceneNarration();
             } else {
@@ -10285,7 +10288,8 @@ ctx.restore();
         } else if (this.cutscene.step === 1) {
             this.renderCutsceneEndingCelebration(ctx);
         } else {
-            this.renderCutsceneEndingStats(ctx);
+            // Compatibilidade visual para links antigos: não há mais tela de certificado.
+            this.renderCutsceneEndingCelebration(ctx);
         }
     }
 
@@ -10392,7 +10396,7 @@ ctx.restore();
         // Dialog Box
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
-        this.renderCutsceneDialogBox(ctx, 'PRACA CENTRAL - A LICAO DO BARAO', currentText, '[ESPACO / ENTER] CELEBRACAO ▶', 'blue');
+        this.renderCutsceneDialogBox(ctx, 'PRACA CENTRAL - A LICAO DO BARAO', currentText, '[ESPACO / ENTER] CONTINUAR ▶', 'blue');
     }
 
     renderProceduralEndingRedemption(ctx) {
@@ -10531,12 +10535,14 @@ ctx.restore();
         // Dialog Box
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
-        this.renderCutsceneDialogBox(ctx, 'PRACA CENTRAL - A LICAO DO BARAO', currentText, '[ESPACO / ENTER] CELEBRACAO ▶', 'blue');
+        this.renderCutsceneDialogBox(ctx, 'PRACA CENTRAL - A LICAO DO BARAO', currentText, '[ESPACO / ENTER] CONTINUAR ▶', 'blue');
     }
 
     renderCutsceneEndingCelebration(ctx) {
         const t = this.cutscene.animTime;
-        const imgCelebration = this.assets['cs_cajulim_celebration'];
+        // A cena do caminhão apresenta o Pai Cajulão correto, sem o personagem
+        // de bigode que aparecia na arte comemorativa antiga.
+        const imgCelebration = this.assets['cs_intro_father'];
 
         if (imgCelebration && imgCelebration.complete && imgCelebration.naturalWidth > 0) {
             ctx.save();
@@ -10652,7 +10658,7 @@ ctx.restore();
         // Dialog Box
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
-        this.renderCutsceneDialogBox(ctx, 'TURMA DO CAJULIM - MISSAO CUMPRIDA', currentText, '[ESPACO / ENTER] VER CERTIFICADO ▶', 'gold');
+        this.renderCutsceneDialogBox(ctx, 'TURMA DO CAJULIM - MISSAO CUMPRIDA', currentText, '[ESPACO / ENTER] VER CREDITOS ▶', 'gold');
     }
 
     renderProceduralEndingCelebration(ctx) {
@@ -10754,7 +10760,7 @@ ctx.restore();
         // Dialog Box
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
-        this.renderCutsceneDialogBox(ctx, 'TURMA DO CAJULIM - MISSAO CUMPRIDA', currentText, '[ESPACO / ENTER] VER CERTIFICADO ▶', 'gold');
+        this.renderCutsceneDialogBox(ctx, 'TURMA DO CAJULIM - MISSAO CUMPRIDA', currentText, '[ESPACO / ENTER] VER CREDITOS ▶', 'gold');
     }
 
     renderCutsceneEndingStats(ctx) {

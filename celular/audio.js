@@ -773,6 +773,7 @@ class SoundManager {
         let bpm, stepDur, totalSteps;
         let leadNotes, harmNotes, bassNotes, drumEvents;
         let leadType = 'square';
+        let harmonyType = 'square';
 
         if (mode === 'boss') {
             // Intense, fast 8-bit Boss Battle (148 BPM, D minor)
@@ -808,6 +809,47 @@ class SoundManager {
                 'K', 'H', 'S', 'H', 'K', 'H', 'S', 'H', 'K', 'H', 'S', 'H', 'K', 'H', 'S', 'H',
                 'K', 'H', 'S', 'H', 'K', 'H', 'S', 'H', 'K', 'H', 'S', 'H', 'S', 'S', 'S', 'S'
             ];
+        } else if (mode === 'credits') {
+            // Tema lento e emotivo para a rolagem final (Lá menor, 72 BPM).
+            bpm = 72;
+            stepDur = 60.0 / (bpm * 4.0);
+            totalSteps = 64;
+            leadType = 'sine';
+            harmonyType = 'triangle';
+
+            leadNotes = [
+                'A4', '-', '-', 'E5', '-', '-', 'C5', '-',
+                'A4', '-', 'C5', 'E5', 'G5', '-', 'E5', '-',
+                'F4', '-', '-', 'C5', '-', '-', 'A4', '-',
+                'G4', '-', 'A4', 'C5', 'E5', '-', 'C5', '-',
+                'A4', '-', '-', 'E5', '-', '-', 'C5', '-',
+                'A4', '-', 'C5', 'E5', 'A5', '-', 'G5', '-',
+                'F5', '-', 'E5', 'C5', '-', 'D5', 'E5', '-',
+                'A4', '-', '-', '-', 'A4', '-', '-', '-'
+            ];
+
+            harmNotes = [
+                'A3', '-', 'E4', '-', 'A3', '-', 'E4', '-',
+                'F3', '-', 'C4', '-', 'F3', '-', 'C4', '-',
+                'C4', '-', 'G4', '-', 'C4', '-', 'G4', '-',
+                'G3', '-', 'D4', '-', 'G3', '-', 'D4', '-',
+                'A3', '-', 'E4', '-', 'A3', '-', 'E4', '-',
+                'F3', '-', 'C4', '-', 'F3', '-', 'C4', '-',
+                'G3', '-', 'D4', '-', 'G3', '-', 'D4', '-',
+                'A3', '-', 'E4', '-', 'A3', '-', 'E4', '-'
+            ];
+
+            bassNotes = [
+                'A2', '-', '-', '-', 'A2', '-', '-', '-',
+                'F2', '-', '-', '-', 'F2', '-', '-', '-',
+                'C3', '-', '-', '-', 'C3', '-', '-', '-',
+                'G2', '-', '-', '-', 'G2', '-', '-', '-',
+                'A2', '-', '-', '-', 'A2', '-', '-', '-',
+                'F2', '-', '-', '-', 'F2', '-', '-', '-',
+                'G2', '-', '-', '-', 'G2', '-', '-', '-',
+                'A2', '-', '-', '-', 'A2', '-', '-', '-'
+            ];
+            drumEvents = new Array(64).fill('-');
         } else {
             // Hino de Parnamirim Chiptune - Super Mario Bros style (114 BPM, C Major)
             bpm = 114;
@@ -878,7 +920,7 @@ class SoundManager {
                 const gain = this.ctx.createGain();
                 osc.type = leadType;
                 osc.frequency.setValueAtTime(leadFreq, now);
-                const leadVol = mode === 'boss' ? 0.16 : 0.14;
+                const leadVol = mode === 'boss' ? 0.16 : mode === 'credits' ? 0.12 : 0.14;
                 gain.gain.setValueAtTime(leadVol, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + stepDur * 0.85);
                 osc.connect(gain);
@@ -893,9 +935,9 @@ class SoundManager {
             if (harmFreq > 0) {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                osc.type = 'square';
+                osc.type = harmonyType;
                 osc.frequency.setValueAtTime(harmFreq, now);
-                const harmVol = mode === 'boss' ? 0.10 : 0.08;
+                const harmVol = mode === 'boss' ? 0.10 : mode === 'credits' ? 0.055 : 0.08;
                 gain.gain.setValueAtTime(harmVol, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + stepDur * 0.75);
                 osc.connect(gain);
@@ -912,7 +954,7 @@ class SoundManager {
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(bassFreq, now);
-                const bassVol = mode === 'boss' ? 0.22 : 0.20;
+                const bassVol = mode === 'boss' ? 0.22 : mode === 'credits' ? 0.12 : 0.20;
                 gain.gain.setValueAtTime(bassVol, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + stepDur * 0.90);
                 osc.connect(gain);

@@ -65,13 +65,14 @@ game.advanceCutscene();
 assert.strictEqual(game.currentPhase, 8);
 
 game.startCutscene('GRAND_ENDING');
-for (let step = 0; step < 3; step++) {
+for (let step = 0; step < 2; step++) {
     game.cutscene.textProgress = game.getCutsceneFullText().length;
     game.advanceCutscene();
 }
 assert.strictEqual(game.state, 'CREDITS', 'O final precisa abrir os créditos antes de voltar ao menu');
 assert.ok(game.credits, 'A rolagem dos créditos precisa ser inicializada');
 assert.strictEqual(game.currentPhase, 8);
+assert.strictEqual(soundEvents.filter(event => event.name === 'startMusic').at(-1).args[0], 'credits', 'Os créditos precisam iniciar sua trilha emocional');
 
 const creditsText = [];
 const creditImages = [];
