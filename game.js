@@ -8848,7 +8848,7 @@ ctx.restore();
         this.credits = {
             elapsed: 0,
             scroll: 0,
-            maxScroll: 2260,
+            maxScroll: 1886,
             complete: false
         };
     }
@@ -8869,7 +8869,7 @@ ctx.restore();
     }
 
     renderCredits(ctx) {
-        const credits = this.credits || { elapsed: 0, scroll: 0, maxScroll: 2260, complete: false };
+        const credits = this.credits || { elapsed: 0, scroll: 0, maxScroll: 1886, complete: false };
         const baseY = 42 - credits.scroll;
 
         ctx.save();
@@ -8963,33 +8963,25 @@ ctx.restore();
         line('MARX BRUNO', 1204, 14);
         line('ARTE', 1272, 9, { color: '#d1d5db' });
         line('MARX BRUNO', 1304, 14);
-        line('MÚSICA', 1372, 9, { color: '#d1d5db' });
-        line('MARX BRUNO', 1404, 14);
-        line('EFEITOS SONOROS', 1472, 9, { color: '#d1d5db' });
-        line('MARX BRUNO', 1504, 14);
-        line('DESIGN DE FASES', 1572, 9, { color: '#d1d5db' });
-        line('MARX BRUNO', 1604, 14);
-        line('HISTÓRIA', 1672, 9, { color: '#d1d5db' });
-        line('MARX BRUNO', 1704, 14);
-        divider(1754, 360);
+        divider(1380, 360);
 
-        line('SUPORTE COM INTELIGÊNCIA ARTIFICIAL', 1804, 11);
-        line('UTILIZADAS APENAS COMO SUPORTE', 1840, 8, { color: '#d1d5db' });
-        line('GPT-5.6 LUNA', 1892, 13);
-        line('GEMINI 3.8', 1928, 13);
-        divider(1978, 360);
+        line('SUPORTE COM INTELIGÊNCIA ARTIFICIAL', 1430, 11);
+        line('UTILIZADAS APENAS COMO SUPORTE', 1466, 8, { color: '#d1d5db' });
+        line('GPT-5.6 LUNA', 1518, 13);
+        line('GEMINI 3.8', 1554, 13);
+        divider(1604, 360);
 
-        line('AGRADECIMENTOS', 2028, 17);
-        line('A TODOS QUE JOGARAM', 2080, 11);
-        line('E APOIARAM O PROJETO.', 2112, 11);
-        line('UM AGRADECIMENTO ESPECIAL A', 2180, 10, { color: '#d1d5db' });
-        line('PREFEITURA DE PARNAMIRIM', 2222, 12);
-        line('SECRETARIA MUNICIPAL DE LIMPEZA URBANA', 2260, 9);
-        divider(2310, 420);
+        line('AGRADECIMENTOS', 1654, 17);
+        line('A TODOS QUE JOGARAM', 1706, 11);
+        line('E APOIARAM O PROJETO.', 1738, 11);
+        line('UM AGRADECIMENTO ESPECIAL A', 1806, 10, { color: '#d1d5db' });
+        line('PREFEITURA DE PARNAMIRIM', 1848, 12);
+        line('SECRETARIA MUNICIPAL DE LIMPEZA URBANA', 1886, 9);
+        divider(1936, 420);
 
-        line('OBRIGADO POR JOGAR!', 2370, 21);
-        line('♥  ♥  ♥', 2422, 19);
-        line('ATÉ A PRÓXIMA AVENTURA!', 2472, 12);
+        line('OBRIGADO POR JOGAR!', 1996, 21);
+        line('♥  ♥  ♥', 2048, 19);
+        line('ATÉ A PRÓXIMA AVENTURA!', 2098, 12);
 
         const topFade = ctx.createLinearGradient(0, 0, 0, 78);
         topFade.addColorStop(0, 'rgba(0,0,0,1)');

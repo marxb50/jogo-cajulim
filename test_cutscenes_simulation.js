@@ -77,7 +77,7 @@ const creditsText = [];
 const creditImages = [];
 game.ctx.fillText = text => creditsText.push(String(text));
 game.ctx.drawImage = image => creditImages.push(image);
-for (const scroll of [0, 650, 1200, 1700, 2260]) {
+for (const scroll of [0, 550, 1000, 1450, 1900]) {
     game.credits.scroll = scroll;
     game.renderCredits(game.ctx);
 }
@@ -96,9 +96,16 @@ for (const requiredText of [
 ]) {
     assert.ok(creditsText.includes(requiredText), `Crédito ausente: ${requiredText}`);
 }
-for (const role of ['CRIADO POR', 'PROGRAMAÇÃO', 'ARTE', 'MÚSICA', 'EFEITOS SONOROS', 'DESIGN DE FASES', 'HISTÓRIA']) {
+for (const role of ['CRIADO POR', 'PROGRAMAÇÃO', 'ARTE']) {
     assert.ok(creditsText.includes(role), `Função ausente nos créditos: ${role}`);
 }
+for (const removedRole of ['MÚSICA', 'EFEITOS SONOROS', 'DESIGN DE FASES', 'HISTÓRIA']) {
+    assert.ok(!creditsText.includes(removedRole), `Função removida voltou aos créditos: ${removedRole}`);
+}
+creditsText.length = 0;
+game.credits.scroll = 900;
+game.renderCredits(game.ctx);
+assert.strictEqual(creditsText.filter(text => text === 'MARX BRUNO').length, 3, 'Marx Bruno deve aparecer em apenas três funções');
 
 game.credits.scroll = 0;
 game.keys.down = true;

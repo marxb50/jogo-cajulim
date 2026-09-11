@@ -50,19 +50,7 @@
                          PROGRAMAÇÃO
                          MARX BRUNO
 
-                              ARTE
-                         MARX BRUNO
-
-                             MÚSICA
-                         MARX BRUNO
-
-                       EFEITOS SONOROS
-                         MARX BRUNO
-
-                       DESIGN DE FASES
-                         MARX BRUNO
-
-                            HISTÓRIA
+                             ARTE
                          MARX BRUNO
 
               SUPORTE COM INTELIGÊNCIA ARTIFICIAL
