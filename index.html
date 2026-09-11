@@ -894,7 +894,7 @@
         function actionStartGame() {
             playBeep(880, 'triangle', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html?fase=1&cutscene=intro&v=9.2';
+                window.location.href = currentPlatform + '/index.html?fase=1&cutscene=intro&v=9.3';
             }, 100);
         }
 
@@ -911,7 +911,7 @@
                 const variantQuery = phaseNumber === 1 && casaVariant === '3comodos'
                     ? '&casa=3comodos'
                     : '';
-                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1' + variantQuery + '&v=9.2';
+                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1' + variantQuery + '&v=9.3';
             }, 100);
         }
 

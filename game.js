@@ -966,6 +966,16 @@ class Game {
     }
 
     startGame() {
+        // Entrar em uma fase encerra qualquer locução ou fallback de voz que
+        // ainda pertença à apresentação anterior, inclusive áudio pendente.
+        if (window.soundManager && window.soundManager.stopNarration) {
+            window.soundManager.stopNarration();
+        }
+        if (this.cutscene) {
+            this.cutscene.active = false;
+            this.cutscene.waitingForImage = false;
+            this.cutscene.autoAdvanceTimer = 0;
+        }
         this.state = 'PLAYING';
         if (window.soundManager) {
             window.soundManager.startMusic(this.currentPhase === 8 ? 'boss' : 'stage');

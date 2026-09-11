@@ -10,6 +10,8 @@ class SoundManager {
         this.musicGain = null;
         this.noiseBuffer = null;
         this.currentNarration = null;
+        this.activeNarrations = new Set();
+        this.narrationRequestId = 0;
         this.pendingNarration = null;
         this.pendingMusicMode = null;
         this.initialized = false;
@@ -651,16 +653,29 @@ class SoundManager {
     playNarration(audioPath, fallbackText, voiceHint = 'thalita', fromUserGesture = false) {
         this.stopNarration();
         if (this.muted) return null;
+        const narrationRequestId = this.narrationRequestId;
 
         try {
             if (typeof Audio !== 'undefined') {
                 const audio = new Audio(audioPath);
                 audio.volume = 1.0;
                 this.currentNarration = audio;
+                this.activeNarrations.add(audio);
+                const releaseNarration = () => {
+                    this.activeNarrations.delete(audio);
+                    if (this.currentNarration === audio) this.currentNarration = null;
+                };
+                if (audio.addEventListener) {
+                    audio.addEventListener('ended', releaseNarration, { once: true });
+                    audio.addEventListener('error', releaseNarration, { once: true });
+                }
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.catch((err) => {
-                        this.currentNarration = null;
+                        releaseNarration();
+                        // A apresentação pode ter sido encerrada enquanto o
+                        // navegador ainda decidia se permitiria o áudio.
+                        if (narrationRequestId !== this.narrationRequestId) return;
                         if (fromUserGesture) {
                             console.warn('HTML5 Audio indisponível; usando síntese de voz.', err);
                             this.playSpeechFallback(fallbackText, voiceHint);
@@ -716,14 +731,20 @@ class SoundManager {
     }
 
     stopNarration() {
+        // Invalida também promessas antigas de Audio.play(), impedindo que uma
+        // locução atrasada volte a tocar depois que o jogo já começou.
+        this.narrationRequestId += 1;
         this.pendingNarration = null;
-        if (this.currentNarration) {
+        const narrationsToStop = new Set(this.activeNarrations);
+        if (this.currentNarration) narrationsToStop.add(this.currentNarration);
+        for (const narration of narrationsToStop) {
             try {
-                this.currentNarration.pause();
-                this.currentNarration.currentTime = 0;
+                narration.pause();
+                narration.currentTime = 0;
             } catch (e) {}
-            this.currentNarration = null;
         }
+        this.activeNarrations.clear();
+        this.currentNarration = null;
         if (typeof window !== 'undefined' && window.speechSynthesis) {
             try {
                 window.speechSynthesis.cancel();
