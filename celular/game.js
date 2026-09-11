@@ -8766,6 +8766,12 @@ ctx.restore();
         const tipY = this.currentPhase === 7
             ? (this.phase5MessageTimer > 0 ? 178 : 114)
             : ((this.currentPhase === 3 || this.currentPhase === 8) ? (VIRTUAL_HEIGHT - 98) : (VIRTUAL_HEIGHT - 60));
+
+        // As mensagens ancoradas no rodapé cobrem a área jogável, principalmente
+        // no celular. Os objetivos e indicadores importantes continuam no HUD;
+        // esta faixa inferior fica reservada apenas para a cena do jogo.
+        if (tipY >= VIRTUAL_HEIGHT - 100) return;
+
         ctx.fillStyle = `rgba(0, 0, 0, ${0.82 * alpha})`;
         ctx.fillRect(VIRTUAL_WIDTH / 2 - boxW / 2, tipY, boxW, 42);
 
@@ -12205,43 +12211,8 @@ ctx.restore();
             ctx.fillText(targetText, W / 2, 60);
         }
 
-        // Bottom prompt
-        let promptText = cv.messageTime > 0 ? cv.message : "";
-        if (!promptText) {
-            if (p.state === "depositing") {
-                const actionItem = cv.items.find(item => item.id === p.actionItem);
-                const target = actionItem?.category === "dry" ? "SECO" : "MOLHADO";
-                promptText = actionItem ? `DESCARTANDO ${actionItem.name.toUpperCase()} NO ${target}` : "DESCARTANDO RESÍDUO";
-            } else if (held) {
-                const bin = this.nearestCasaVivaBin();
-                const target = held.category === "dry" ? "SECO" : "MOLHADO";
-                if (bin?.kind === held.category) promptText = `ESPAÇO / BOTÃO A · JOGAR ${held.name.toUpperCase()} NO ${target}`;
-                else if (bin) promptText = `${held.name.toUpperCase()} É ${target} · PROCURE O RECIPIENTE ${target}`;
-                else promptText = cv.room === "service"
-                    ? `LEVE AO RECIPIENTE ${target}`
-                    : `LEVE ATÉ A ÁREA DE SERVIÇO`;
-            } else {
-                const item = this.nearestCasaVivaItem();
-                if (item) promptText = `ESPAÇO / BOTÃO A · PEGAR ${item.name.toUpperCase()}`;
-                else promptText = this.casaVivaVariant === 'three-rooms'
-                    ? "EXPLORE OS CÔMODOS PARA ENCONTRAR RESÍDUOS"
-                    : "ENCONTRE OS 6 RESÍDUOS NESTE CÔMODO";
-            }
-        }
-
-        if (promptText) {
-            ctx.fillStyle = "rgba(36,22,14,.91)";
-            this.roundedRect(ctx, W / 2 - 280, H - 64, 560, 44, 11);
-            ctx.fill();
-            ctx.strokeStyle = "#f0c25b";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#fff2c7";
-            ctx.font = "900 14px sans-serif";
-            ctx.fillText(promptText, W / 2, H - 37);
-        }
+        // O prompt de ação ficava no rodapé e escondia resíduos e controles.
+        // A indicação do item nas mãos e o HUD superior continuam disponíveis.
 
         // Transition fade
         if (cv.transition) {
