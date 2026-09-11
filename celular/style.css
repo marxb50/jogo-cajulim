@@ -100,22 +100,6 @@ canvas {
     z-index: 50;
 }
 
-@media (orientation: landscape) {
-    .mobile-top-bar {
-        display: none !important; /* Tela cheia pura sem nada a mais! */
-    }
-
-    .joystick-base {
-        --stick-size: clamp(118px, 19vw, 136px);
-    }
-
-    .joystick-knob {
-        width: clamp(50px, 8vw, 58px);
-        height: clamp(50px, 8vw, 58px);
-    }
-}
-
-
 .mobile-logo {
     height: 32px;
     object-fit: contain;
@@ -174,7 +158,7 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 0 4px 2px;
+    margin: 0 0 4px 16px;
 }
 
 .joystick-base {
@@ -396,16 +380,20 @@ canvas {
         padding: 0 max(26px, env(safe-area-inset-right)) 0 max(26px, env(safe-area-inset-left));
     }
     .joystick-zone {
-        margin: 0;
+        margin: 0 0 0 16px;
     }
     .joystick-base {
-        --stick-size: 112px;
+        --stick-size: 122px;
         background:
             radial-gradient(circle at 50% 50%, rgba(26, 35, 47, 0.42) 0 39%, transparent 40%),
             radial-gradient(circle at 50% 50%, rgba(63, 73, 83, 0.18) 0 69%, rgba(22, 28, 40, 0.64) 70% 100%);
         border-color: rgba(35, 43, 57, 0.7);
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
+    }
+    .joystick-knob {
+        width: 50px;
+        height: 50px;
     }
     .actions-zone {
         margin: 0;
@@ -416,16 +404,31 @@ canvas {
     }
 }
 
+@media (orientation: landscape) {
+    .mobile-top-bar {
+        display: none !important; /* Tela cheia pura sem nada a mais! */
+    }
+
+    .joystick-base {
+        --stick-size: clamp(124px, 20vw, 144px);
+    }
+
+    .joystick-knob {
+        width: clamp(54px, 8.5vw, 62px);
+        height: clamp(54px, 8.5vw, 62px);
+    }
+}
+
 @media (orientation: landscape) and (max-height: 360px) {
     .touch-controls-layer {
         padding-bottom: max(10px, env(safe-area-inset-bottom));
     }
     .joystick-base {
-        --stick-size: 112px;
+        --stick-size: 120px;
     }
     .joystick-knob {
-        width: 48px;
-        height: 48px;
+        width: 50px;
+        height: 50px;
     }
     .action-btn.btn-a {
         width: 66px;
