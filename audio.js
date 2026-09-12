@@ -10,11 +10,14 @@ class SoundManager {
         this.musicGain = null;
         this.noiseBuffer = null;
         this.currentNarration = null;
+        this.currentSpeechNarration = null;
         this.activeNarrations = new Set();
         this.narrationRequestId = 0;
         this.pendingNarration = null;
         this.pendingMusicMode = null;
         this.initialized = false;
+        this.narrationLifecycleBound = false;
+        this.bindNarrationLifecycleRecovery();
     }
 
     init() {
@@ -56,12 +59,6 @@ class SoundManager {
             const musicMode = this.pendingMusicMode;
             this.pendingMusicMode = null;
             if (musicMode && !this.musicPlaying) this.startMusic(musicMode);
-
-            const narration = this.pendingNarration;
-            this.pendingNarration = null;
-            if (narration) {
-                this.playNarration(narration.audioPath, narration.fallbackText, narration.voiceHint, true);
-            }
         };
 
         if (this.ctx.state === 'suspended') {
@@ -69,6 +66,89 @@ class SoundManager {
         }
         startPendingAudio();
         return Promise.resolve();
+    }
+
+    bindNarrationLifecycleRecovery() {
+        if (this.narrationLifecycleBound || typeof window === 'undefined') return;
+        this.narrationLifecycleBound = true;
+
+        const recover = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+            this.recoverInterruptedNarration(false);
+        };
+        const recoverSoon = () => setTimeout(recover, 120);
+
+        if (typeof document !== 'undefined' && document.addEventListener) {
+            document.addEventListener('visibilitychange', recover);
+            document.addEventListener('fullscreenchange', recoverSoon);
+            document.addEventListener('webkitfullscreenchange', recoverSoon);
+        }
+        if (window.addEventListener) {
+            window.addEventListener('pageshow', recover);
+            window.addEventListener('focus', recoverSoon);
+            window.addEventListener('orientationchange', () => setTimeout(recover, 180));
+        }
+    }
+
+    hasPendingNarration() {
+        return !!this.pendingNarration;
+    }
+
+    needsNarrationResume() {
+        if (this.muted) return false;
+        if (this.pendingNarration) return true;
+        const audio = this.currentNarration;
+        return !!(audio && audio.paused && !audio.ended);
+    }
+
+    isNarrationActiveOrPending() {
+        if (this.muted) return false;
+        if (this.pendingNarration || this.currentSpeechNarration) return true;
+        return !!(this.currentNarration && !this.currentNarration.ended);
+    }
+
+    recoverInterruptedNarration(fromUserGesture = false) {
+        // Enquanto a primeira tentativa ainda está sendo decidida pelo
+        // navegador, pageshow/orientationchange não deve criar uma segunda
+        // chamada concorrente de play(). O gesto trata a fila logo abaixo.
+        if (this.pendingNarration) return false;
+        const audio = this.currentNarration;
+        if (this.muted || !audio || audio.ended || !audio.paused) return false;
+        try {
+            const playPromise = audio.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch((error) => {
+                    if (typeof audio._cajulimHandlePlaybackFailure === 'function') {
+                        audio._cajulimHandlePlaybackFailure(error, fromUserGesture);
+                    }
+                });
+            }
+            return true;
+        } catch (error) {
+            if (typeof audio._cajulimHandlePlaybackFailure === 'function') {
+                audio._cajulimHandlePlaybackFailure(error, fromUserGesture);
+            }
+            return false;
+        }
+    }
+
+    resumeFromGesture() {
+        const narrationNeededResume = this.needsNarrationResume();
+
+        if (!this.muted) {
+            const pending = this.pendingNarration;
+            if (pending) {
+                // A chamada a Audio.play() precisa acontecer ainda dentro do
+                // toque/tecla que liberou o som, sobretudo no Safari móvel.
+                this.pendingNarration = null;
+                this.playNarration(pending.audioPath, pending.fallbackText, pending.voiceHint, true);
+            } else {
+                this.recoverInterruptedNarration(true);
+            }
+        }
+
+        this.resume();
+        return narrationNeededResume;
     }
 
     toggleMute() {
@@ -654,34 +734,66 @@ class SoundManager {
         this.stopNarration();
         if (this.muted) return null;
         const narrationRequestId = this.narrationRequestId;
+        const narrationRequest = { audioPath, fallbackText, voiceHint };
+        // Registre a intenção antes de Audio.play(): em redes lentas, o usuário
+        // pode tocar na tela antes de a promessa de autoplay ser rejeitada.
+        this.pendingNarration = narrationRequest;
 
         try {
             if (typeof Audio !== 'undefined') {
                 const audio = new Audio(audioPath);
                 audio.volume = 1.0;
+                audio.preload = 'auto';
+                audio.playsInline = true;
                 this.currentNarration = audio;
                 this.activeNarrations.add(audio);
+                let failureHandled = false;
                 const releaseNarration = () => {
                     this.activeNarrations.delete(audio);
                     if (this.currentNarration === audio) this.currentNarration = null;
                 };
+                const markPlaybackStarted = () => {
+                    if (narrationRequestId !== this.narrationRequestId || this.currentNarration !== audio) return;
+                    if (this.pendingNarration === narrationRequest) this.pendingNarration = null;
+                };
+                const finishNarration = () => {
+                    releaseNarration();
+                    if (narrationRequestId === this.narrationRequestId && this.pendingNarration === narrationRequest) {
+                        this.pendingNarration = null;
+                    }
+                };
+                const handlePlaybackFailure = (error, failureFromUserGesture = fromUserGesture) => {
+                    if (failureHandled) return;
+                    failureHandled = true;
+                    releaseNarration();
+                    // Uma fala antiga não pode reaparecer depois de avançar a
+                    // apresentação ou entrar na fase.
+                    if (narrationRequestId !== this.narrationRequestId) return;
+                    if (failureFromUserGesture) {
+                        if (this.pendingNarration === narrationRequest) this.pendingNarration = null;
+                        console.warn('HTML5 Audio indisponível; usando síntese de voz.', error);
+                        this.playSpeechFallback(fallbackText, voiceHint);
+                    } else {
+                        // Autoplay bloqueado ou arquivo interrompido: preserve a
+                        // fala para o próximo toque, sem deixar a cena avançar.
+                        this.pendingNarration = narrationRequest;
+                    }
+                };
+                audio._cajulimHandlePlaybackFailure = handlePlaybackFailure;
                 if (audio.addEventListener) {
-                    audio.addEventListener('ended', releaseNarration, { once: true });
-                    audio.addEventListener('error', releaseNarration, { once: true });
+                    audio.addEventListener('playing', markPlaybackStarted, { once: true });
+                    audio.addEventListener('ended', finishNarration, { once: true });
+                    audio.addEventListener('error', () => {
+                        // Erros de arquivo/rede chegam fora do gesto que iniciou
+                        // a fala. Guarde a locução para o próximo toque, quando
+                        // o fallback também terá autorização no Safari móvel.
+                        handlePlaybackFailure(audio.error || new Error('Falha ao carregar a locução'), false);
+                    }, { once: true });
                 }
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
-                    playPromise.catch((err) => {
-                        releaseNarration();
-                        // A apresentação pode ter sido encerrada enquanto o
-                        // navegador ainda decidia se permitiria o áudio.
-                        if (narrationRequestId !== this.narrationRequestId) return;
-                        if (fromUserGesture) {
-                            console.warn('HTML5 Audio indisponível; usando síntese de voz.', err);
-                            this.playSpeechFallback(fallbackText, voiceHint);
-                        } else {
-                            this.pendingNarration = { audioPath, fallbackText, voiceHint };
-                        }
+                    playPromise.then(markPlaybackStarted).catch((err) => {
+                        handlePlaybackFailure(err, fromUserGesture);
                     });
                 }
                 return audio;
@@ -690,6 +802,7 @@ class SoundManager {
             console.warn('Error creating audio for narration', e);
         }
 
+        this.pendingNarration = null;
         this.playSpeechFallback(fallbackText, voiceHint);
         return null;
     }
@@ -700,6 +813,12 @@ class SoundManager {
             window.speechSynthesis.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'pt-BR';
+            this.currentSpeechNarration = utter;
+            const releaseSpeech = () => {
+                if (this.currentSpeechNarration === utter) this.currentSpeechNarration = null;
+            };
+            utter.onend = releaseSpeech;
+            utter.onerror = releaseSpeech;
             const voices = window.speechSynthesis.getVoices();
             if (voiceHint === 'antonio') {
                 const antonioVoice = voices.find(v => 
@@ -725,9 +844,12 @@ class SoundManager {
                 utter.pitch = 1.02;
             }
             window.speechSynthesis.speak(utter);
+            return utter;
         } catch (e) {
+            this.currentSpeechNarration = null;
             console.warn('SpeechSynthesis error', e);
         }
+        return null;
     }
 
     stopNarration() {
@@ -745,6 +867,7 @@ class SoundManager {
         }
         this.activeNarrations.clear();
         this.currentNarration = null;
+        this.currentSpeechNarration = null;
         if (typeof window !== 'undefined' && window.speechSynthesis) {
             try {
                 window.speechSynthesis.cancel();
@@ -1049,4 +1172,9 @@ class SoundManager {
     }
 }
 
-window.soundManager = new SoundManager();
+if (typeof window !== 'undefined') {
+    window.soundManager = new SoundManager();
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { SoundManager };
+}

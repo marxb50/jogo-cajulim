@@ -674,6 +674,17 @@ class Game {
         }
     }
 
+    resumeAudioFromUserGesture() {
+        const soundManager = typeof window !== 'undefined' ? window.soundManager : null;
+        if (!soundManager) return false;
+        if (typeof soundManager.resumeFromGesture === 'function') {
+            return !!soundManager.resumeFromGesture();
+        }
+        const narrationNeededResume = !!soundManager.pendingNarration;
+        if (typeof soundManager.resume === 'function') soundManager.resume();
+        return narrationNeededResume;
+    }
+
     initControls() {
         if (typeof window === 'undefined') return;
 
@@ -683,7 +694,7 @@ class Game {
                 e.preventDefault();
             }
 
-            if (window.soundManager) window.soundManager.resume();
+            const narrationResumed = this.resumeAudioFromUserGesture();
             if (e.repeat) return;
 
             if (this.state === 'CREDITS') {
@@ -698,7 +709,9 @@ class Game {
             }
             if (this.state === 'CUTSCENE') {
                 if (e.code === 'Space' || e.code === 'Enter') {
-                    this.advanceCutscene();
+                    // O primeiro comando libera a locução bloqueada pelo
+                    // navegador sem também pular ou encerrar a mesma fala.
+                    if (!narrationResumed) this.advanceCutscene();
                     return;
                 }
                 if (e.code === 'Escape' || e.code === 'KeyS') {
@@ -793,7 +806,7 @@ class Game {
 
         this.initMobileTouchControls();
         this.canvas.addEventListener('click', (e) => {
-            if (window.soundManager) window.soundManager.resume();
+            const narrationResumed = this.resumeAudioFromUserGesture();
             if (!this.assetsReady) return;
 
             const rect = this.canvas.getBoundingClientRect();
@@ -843,7 +856,7 @@ class Game {
                 // Check skip button in top-right (x: 770 to 945, y: 12 to 50)
                 if (clickX >= 770 && clickX <= 945 && clickY >= 12 && clickY <= 50) {
                     this.skipCutscene();
-                } else {
+                } else if (!narrationResumed) {
                     this.advanceCutscene();
                 }
                 return;
@@ -882,7 +895,7 @@ class Game {
             if (!btn) return;
             const start = (e) => {
                 e.preventDefault();
-                if (window.soundManager) window.soundManager.resume();
+                this.resumeAudioFromUserGesture();
                 if (this.state === 'TITLE') {
                     this.toggleFullscreen();
                     this.startGame();
@@ -1376,7 +1389,7 @@ class Game {
         }
 
         const stop = this.getNextPhase2Stop();
-        if (stop && Math.abs(t.x - stop.truckX) <= 85 && Math.abs(t.speed) < 18 && brake) {
+        if (stop && Math.abs(t.x - stop.truckX) <= 85 && Math.abs(t.speed) < 18) {
             this.beginPhase2Collection(stop);
         } else if (stop && t.x > stop.truckX + 220 && this.phase2MessageTimer <= 0) {
             this.phase2Message = "O Ponto " + stop.id + " ficou para trás! Dê ré até a faixa amarela.";
@@ -1553,7 +1566,7 @@ class Game {
         // Prompts in the world
         const stop = this.getNextPhase2Stop();
         if (stop && Math.abs(this.phase2Truck.x - stop.truckX) < 180 && !this.phase2CurrentStop) {
-            this.drawPhase2WorldPrompt(ctx, stop.truckX + 130, 310, "PARE NA FAIXA AMARELA PARA COLETAR");
+            this.drawPhase2WorldPrompt(ctx, stop.truckX + 130, 310, "PARE NA FAIXA · COLETA AUTOMÁTICA");
         } else if (!stop && Math.abs(this.phase2Truck.x - this.phase2DestinationX) < 260) {
             this.drawPhase2WorldPrompt(ctx, this.phase2DestinationX + 140, 300, "ACESSO À RODOVIA: PARE NA FAIXA OU SIGA");
         }
@@ -9129,6 +9142,8 @@ ctx.restore();
     waitForCutsceneAsset(onReadyCallback) {
         this.cutscene.waitingForImage = true;
         const key = this.getCutsceneRequiredAsset();
+        const expectedType = this.cutscene.type;
+        const expectedStep = this.cutscene.step;
         if (!key) {
             this.cutscene.waitingForImage = false;
             if (onReadyCallback) onReadyCallback();
@@ -9138,15 +9153,21 @@ ctx.restore();
         let img = this.assets[key];
         if (!img) {
             img = new Image();
-            img.src = (this.imageList && this.imageList[key]) || `assets/cutscenes/${key}.jpg`;
             this.assets[key] = img;
+        }
+
+        // Objetos Image das cutscenes são criados antecipadamente. Se o lote
+        // em segundo plano ainda não atribuiu src, comece este download agora.
+        if (!img.src) {
+            const assetPath = (this.imageList && this.imageList[key]) || `assets/cutscenes/${key}.jpg`;
+            img.src = `${assetPath}?v=8.4`;
         }
 
         let triggered = false;
         const triggerReady = () => {
             if (triggered) return;
             triggered = true;
-            if (this.state === 'CUTSCENE') {
+            if (this.state === 'CUTSCENE' && this.cutscene.type === expectedType && this.cutscene.step === expectedStep) {
                 this.cutscene.waitingForImage = false;
                 this.cutscene.animTime = 0;
                 this.cutscene.textProgress = 0;
@@ -9219,6 +9240,9 @@ ctx.restore();
 
         // Synchronize typewriter reveal with spoken narration audio if active
         const narration = (window.soundManager && window.soundManager.currentNarration) ? window.soundManager.currentNarration : null;
+        const narrationActiveOrPending = window.soundManager && typeof window.soundManager.isNarrationActiveOrPending === 'function'
+            ? window.soundManager.isNarrationActiveOrPending()
+            : !!(narration && !narration.ended);
         if (narration && !narration.paused && narration.duration > 0 && !isNaN(narration.duration)) {
             const progressRatio = Math.min(1.0, narration.currentTime / (narration.duration * 0.95));
             this.cutscene.textProgress = Math.max(this.cutscene.textProgress, Math.floor(progressRatio * fullText.length));
@@ -9237,7 +9261,7 @@ ctx.restore();
 
         // Auto advance cutscene step only after spoken narration finishes completely
         if (this.cutscene.textProgress >= fullText.length) {
-            if (!narration || narration.ended || narration.paused) {
+            if (!narrationActiveOrPending) {
                 this.cutscene.autoAdvanceTimer += dt;
                 if (this.cutscene.autoAdvanceTimer > 4.5) {
                     this.advanceCutscene();
@@ -10910,6 +10934,9 @@ ctx.restore();
     }
 
     renderCutsceneDialogBox(ctx, speaker, text, promptText, theme = 'green') {
+        if (window.soundManager && typeof window.soundManager.needsNarrationResume === 'function' && window.soundManager.needsNarrationResume()) {
+            promptText = 'TOQUE / A / ESPAÇO: ATIVAR LOCUÇÃO 🔊';
+        }
         const boxX = 30;
         const boxY = 405;
         const boxW = VIRTUAL_WIDTH - 60;
@@ -11130,11 +11157,11 @@ ctx.restore();
                 if (e.cancelable) e.preventDefault();
                 e.stopPropagation();
                 el.classList.add('active');
-                if (window.soundManager) window.soundManager.resume();
+                const narrationResumed = this.resumeAudioFromUserGesture();
                 if (typeof navigator !== 'undefined' && navigator.vibrate) {
                     try { navigator.vibrate(15); } catch (err) {}
                 }
-                onDown();
+                onDown(narrationResumed);
             };
             const end = (e) => {
                 if (e.cancelable) e.preventDefault();
@@ -11206,7 +11233,7 @@ ctx.restore();
                 activePointerId = event.pointerId;
                 joystickBase.classList.add('active');
                 if (joystickBase.setPointerCapture) joystickBase.setPointerCapture(event.pointerId);
-                if (window.soundManager) window.soundManager.resume();
+                this.resumeAudioFromUserGesture();
                 if (typeof navigator !== 'undefined' && navigator.vibrate) {
                     try { navigator.vibrate(10); } catch (err) {}
                 }
@@ -11228,7 +11255,7 @@ ctx.restore();
             };
         }
 
-        bindBtn('btnTouchA', () => {
+        bindBtn('btnTouchA', (narrationResumed) => {
             syncTouchDirections();
             this.keys.jump = true;
             this.keys.jumpHeld = true;
@@ -11248,7 +11275,7 @@ ctx.restore();
                     this.startCutscene('INTRO');
                 }
             } else if (this.state === 'CUTSCENE') {
-                this.advanceCutscene();
+                if (!narrationResumed) this.advanceCutscene();
             } else if (this.state === 'LEVEL_CLEAR') {
                 this.nextPhase();
             } else if (this.state === 'GAME_OVER') {
@@ -11918,30 +11945,10 @@ ctx.restore();
 
             this.drawCasaVivaItem(ctx, item.kind, item.x, item.y, 0.9, 0);
 
-            // Item Arrow & Label
+            // Seta piscante do resíduo. O nome aparece somente depois que
+            // o Cajulim pega o objeto e passa a carregá-lo.
             const bob = Math.sin(performance.now() / 185 + item.x * 0.01) * 5;
             const arrowY = item.y - 45 + bob;
-            const itemLabel = item.label || item.name.toUpperCase();
-
-            ctx.save();
-            ctx.translate(Math.round(item.x + (item.labelOffsetX || 0)), Math.round(arrowY));
-            const labelY = -72 + (item.labelLift || 0);
-            const isSingleRoom = this.casaVivaVariant !== 'three-rooms';
-            const labelHeight = isSingleRoom ? 30 : 26;
-            const labelWidth = isSingleRoom ? 180 : 200;
-            ctx.fillStyle = "rgba(35,18,10,.82)";
-            this.roundedRect(ctx, -labelWidth / 2, labelY, labelWidth, labelHeight, 8);
-            ctx.fill();
-            ctx.strokeStyle = item.category === "dry" ? "#69c9ee" : "#83dc8e";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.fillStyle = "#fff3c3";
-            ctx.font = `900 ${isSingleRoom ? 13 : 11}px sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(itemLabel, 0, labelY + labelHeight / 2);
-            ctx.restore();
 
             // Downward arrow
             ctx.save();

@@ -23,6 +23,13 @@ for (const entry of cv.items.filter(value => value.surface === 'floor')) {
     assert.ok(entry.x > 250 && entry.x < 1010, `${entry.id} não pode ficar atrás das placas ou dos controles móveis`);
 }
 
+const floorTexts = [];
+game.ctx.fillText = text => floorTexts.push(String(text));
+game.renderCasaViva(game.ctx);
+for (const entry of cv.items) {
+    assert.ok(!floorTexts.includes(entry.label), `O nome ${entry.label} não deve aparecer sobre o lixo antes da coleta`);
+}
+
 cv.player.x = 1080;
 cv.player.y = 640;
 const startX = cv.player.x;
@@ -38,6 +45,12 @@ game.updateCasaVivaAction(0.40);
 game.updateCasaVivaAction(0.35);
 assert.strictEqual(cv.player.held, item.id, 'O objeto deve ficar preso às mãos do Cajulim');
 assert.strictEqual(cv.player.state, 'carrying');
+
+const carriedTexts = [];
+game.ctx.fillText = text => carriedTexts.push(String(text));
+game.renderCasaViva(game.ctx);
+assert.ok(carriedTexts.includes(`NAS MÃOS: ${item.name.toUpperCase()}`), 'O HUD deve identificar o objeto somente depois da coleta');
+assert.ok(carriedTexts.includes(item.name.toUpperCase()), 'O nome grande deve acompanhar o objeto carregado');
 
 const second = cv.items.find(entry => entry.id === 'can');
 assert.strictEqual(game.startCasaVivaPickup(second), false, 'Não pode trocar de objeto enquanto carrega um resíduo');
@@ -71,7 +84,7 @@ assert.strictEqual(cv.player.state, 'free');
 assert.strictEqual(cv.player.actionItem, null, 'A ação do descarte deve ser limpa ao terminar');
 
 for (const entry of cv.items) {
-    assert.ok(entry.label && entry.name, `O objeto ${entry.id} precisa de nome visível`);
+    assert.ok(entry.label && entry.name, `O objeto ${entry.id} precisa manter os metadados de identificação`);
     assert.ok(game.assets[`cv_${entry.kind}_hold`], `Falta imagem parada segurando ${entry.kind}`);
     assert.ok(game.assets[`cv_${entry.kind}_walk`], `Falta imagem andando com ${entry.kind}`);
 }

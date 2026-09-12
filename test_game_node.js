@@ -28,6 +28,41 @@ const checks = {
         assert.ok(game.phase2Npc, 'Fase 3 precisa do Cajulim NPC');
         assert.strictEqual(game.phase2Stops.length, 5);
         assert.strictEqual(game.phase2TotalBags, 10);
+
+        const firstStop = game.phase2Stops[0];
+        game.phase2Truck.x = firstStop.truckX;
+        game.phase2Truck.speed = 30;
+        game.updatePhase2Truck(0.016);
+        assert.strictEqual(game.phase2CurrentStop, null, 'Cajulim não pode iniciar a coleta com o caminhão em movimento');
+
+        game.phase2Truck.x = firstStop.truckX;
+        game.phase2Truck.speed = 0;
+        game.keys.down = false;
+        game.keys.jump = false;
+        game.keys.action = false;
+        game.updatePhase2Truck(0.016);
+        assert.strictEqual(game.phase2CurrentStop, firstStop, 'Cajulim deve iniciar a coleta quando o caminhão parar, sem botão');
+        assert.strictEqual(game.phase2Mode, 'COLLECTING');
+        assert.strictEqual(game.phase2CollectionPhase, 'GO_TRASH');
+
+        for (let frame = 0; frame < 900 && !firstStop.complete; frame++) {
+            game.updatePhase2(1 / 60);
+        }
+        assert.strictEqual(firstStop.collected, 2, 'Cajulim deve recolher automaticamente os dois sacos do ponto');
+        assert.strictEqual(firstStop.complete, true, 'A parada deve terminar sem qualquer entrada do jogador');
+
+        for (const stop of game.phase2Stops.slice(1)) {
+            game.phase2Truck.x = stop.truckX;
+            game.phase2Truck.speed = 0;
+            game.updatePhase2Truck(0.016);
+            assert.strictEqual(game.phase2CurrentStop, stop, `O ponto ${stop.id} deve iniciar automaticamente`);
+            for (let frame = 0; frame < 900 && !stop.complete; frame++) {
+                game.updatePhase2(1 / 60);
+            }
+            assert.strictEqual(stop.collected, stop.bags, `O ponto ${stop.id} deve recolher todos os sacos sem botão`);
+            assert.strictEqual(stop.complete, true, `O ponto ${stop.id} deve terminar automaticamente`);
+        }
+        assert.strictEqual(game.phase2Collected, game.phase2TotalBags, 'Os cinco pontos devem totalizar 10 sacos automáticos');
     },
     4(game) {
         assert.ok(game.transbordoFacility, 'Fase 4 precisa do destino do transbordo');

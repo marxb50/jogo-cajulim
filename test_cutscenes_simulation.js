@@ -55,6 +55,16 @@ assert.match(source['INTRO:0'].speech_text, /sêco/i, 'A introdução precisa pr
 assert.doesNotMatch(source['INTRO:0'].text, /sêco/i, 'A introdução precisa manter a grafia visível seco');
 assert.match(source['INTRO:0'].text, /seco/i, 'A legenda da introdução precisa continuar exibindo seco');
 
+game.startCutscene('INTRO');
+game.cutscene.textProgress = game.getCutsceneFullText().length;
+soundEvents.length = 0;
+game.cutscene.autoAdvanceTimer = 0;
+window.soundManager.isNarrationActiveOrPending = () => true;
+game.updateCutscene(10);
+assert.strictEqual(game.state, 'CUTSCENE', 'A cena não pode avançar enquanto a locução aguarda liberação ou está falando');
+assert.strictEqual(game.cutscene.autoAdvanceTimer, 0, 'A espera automática deve pausar junto com a locução');
+delete window.soundManager.isNarrationActiveOrPending;
+
 game.startCutscene('PHASE7_TO_8');
 game.cutscene.textProgress = game.getCutsceneFullText().length;
 game.advanceCutscene();
