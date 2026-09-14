@@ -9555,16 +9555,19 @@ ctx.restore();
             ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         }
 
-        // Top Header Skip Button (x: 770 to 945, y: 12 to 44)
+        // No modo retrato, mantenha o botão dentro do recorte central do canvas.
+        const portraitCutsceneLayout = this.isPortraitMobileLayout();
+        const skipButtonX = portraitCutsceneLayout ? 650 : 770;
+        const skipButtonW = 175;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-        ctx.fillRect(770, 12, 175, 32);
+        ctx.fillRect(skipButtonX, 12, skipButtonW, 32);
         ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(770, 12, 175, 32);
-        ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+        ctx.strokeRect(skipButtonX, 12, skipButtonW, 32);
+        ctx.font = `bold ${portraitCutsceneLayout ? 9 : 8}px "Press Start 2P", monospace, sans-serif`;
         ctx.fillStyle = '#fef08a';
         ctx.textAlign = 'center';
-        ctx.fillText('PULAR ⏩ (ESC)', 857, 32);
+        ctx.fillText('PULAR ⏩ (ESC)', skipButtonX + skipButtonW / 2, 32);
 
         ctx.restore();
     }
@@ -10992,14 +10995,27 @@ ctx.restore();
         }
     }
 
+    isPortraitMobileLayout() {
+        return typeof window !== 'undefined'
+            && typeof document !== 'undefined'
+            && !!document.getElementById('mobileWrapper')
+            && typeof window.matchMedia === 'function'
+            && window.matchMedia('(orientation: portrait)').matches;
+    }
+
     renderCutsceneDialogBox(ctx, speaker, text, promptText, theme = 'green') {
         if (window.soundManager && typeof window.soundManager.needsNarrationResume === 'function' && window.soundManager.needsNarrationResume()) {
             promptText = 'TOQUE / A / ESPAÇO: ATIVAR LOCUÇÃO 🔊';
         }
-        const boxX = 30;
-        const boxY = 405;
-        const boxW = VIRTUAL_WIDTH - 60;
-        const boxH = 122;
+        const isPortraitMobile = this.isPortraitMobileLayout();
+
+        // No celular em pé, o canvas é ampliado e perde parte das laterais.
+        // A caixa usa somente a área central que permanece visível, ganha
+        // altura e desce um pouco para liberar mais espaço para a ilustração.
+        const boxX = isPortraitMobile ? 132 : 30;
+        const boxY = isPortraitMobile ? 356 : 405;
+        const boxW = isPortraitMobile ? VIRTUAL_WIDTH - 264 : VIRTUAL_WIDTH - 60;
+        const boxH = isPortraitMobile ? 174 : 122;
 
         let borderColor = '#22c55e';
         let badgeBg = '#14532d';
@@ -11027,19 +11043,28 @@ ctx.restore();
         ctx.strokeRect(boxX, boxY, boxW, boxH);
 
         // Speaker Name Badge (Top Left of Box)
+        const speakerBadgeW = isPortraitMobile ? boxW - 30 : 460;
         ctx.fillStyle = badgeBg;
-        ctx.fillRect(boxX + 15, boxY - 14, 460, 26);
+        ctx.fillRect(boxX + 15, boxY - 14, speakerBadgeW, 26);
         ctx.strokeStyle = borderColor;
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(boxX + 15, boxY - 14, 460, 26);
+        ctx.strokeRect(boxX + 15, boxY - 14, speakerBadgeW, 26);
 
-        ctx.font = 'bold 9.5px "Press Start 2P", monospace, sans-serif';
+        let speakerFontSize = isPortraitMobile ? 11.5 : 9.5;
+        ctx.font = `bold ${speakerFontSize}px "Press Start 2P", monospace, sans-serif`;
+        while (isPortraitMobile && ctx.measureText(speaker).width > speakerBadgeW - 22 && speakerFontSize > 7) {
+            speakerFontSize -= 0.5;
+            ctx.font = `bold ${speakerFontSize}px "Press Start 2P", monospace, sans-serif`;
+        }
         ctx.fillStyle = badgeColor;
         ctx.textAlign = 'left';
         ctx.fillText(speaker, boxX + 26, boxY + 3);
 
         // Word-Wrapped Teletype Dialogue Text
-        ctx.font = 'bold 8.5px "Press Start 2P", monospace, sans-serif';
+        const dialogueFontSize = isPortraitMobile ? 11.5 : 8.5;
+        const dialogueLineHeight = isPortraitMobile ? 21 : 19;
+        const maxVisibleLines = isPortraitMobile ? 6 : 4;
+        ctx.font = `bold ${dialogueFontSize}px "Press Start 2P", monospace, sans-serif`;
         ctx.fillStyle = '#ffffff';
 
         const words = text.split(' ');
@@ -11058,16 +11083,20 @@ ctx.restore();
         }
         if (curLine) lines.push(curLine);
 
-        lines.forEach((l, idx) => {
-            if (idx < 4) {
-                ctx.fillText(l, boxX + 24, boxY + 32 + idx * 19);
-            }
+        const visibleLines = isPortraitMobile ? lines.slice(-maxVisibleLines) : lines.slice(0, maxVisibleLines);
+        visibleLines.forEach((line, idx) => {
+            ctx.fillText(line, boxX + 22, boxY + 34 + idx * dialogueLineHeight);
         });
 
         // Continue Indicator / Prompt (Blinking at bottom-right)
         const blink = Math.floor(this.cutscene.animTime * 3.5) % 2 === 0;
         if (blink) {
-            ctx.font = 'bold 8px "Press Start 2P", monospace, sans-serif';
+            let promptFontSize = isPortraitMobile ? 8.5 : 8;
+            ctx.font = `bold ${promptFontSize}px "Press Start 2P", monospace, sans-serif`;
+            while (isPortraitMobile && ctx.measureText(promptText).width > boxW - 40 && promptFontSize > 6.5) {
+                promptFontSize -= 0.5;
+                ctx.font = `bold ${promptFontSize}px "Press Start 2P", monospace, sans-serif`;
+            }
             ctx.fillStyle = borderColor;
             ctx.textAlign = 'right';
             ctx.fillText(promptText, boxX + boxW - 20, boxY + boxH - 12);
