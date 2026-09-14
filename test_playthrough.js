@@ -5,9 +5,9 @@ const { game } = createGame(1);
 const cv = game.casaViva;
 const dry = cv.items.filter(item => item.category === 'dry');
 const wet = cv.items.filter(item => item.category === 'wet');
-assert.strictEqual(dry.length, 3, 'A Fase 1 principal precisa de três resíduos secos');
-assert.strictEqual(wet.length, 3, 'A Fase 1 principal precisa de três resíduos molhados');
-assert.deepStrictEqual(Object.keys(game.casaVivaRooms), ['service'], 'A Fase 1 principal precisa ter apenas um cômodo');
+assert.strictEqual(dry.length, 3, 'A Fase 2 principal precisa de três resíduos secos');
+assert.strictEqual(wet.length, 3, 'A Fase 2 principal precisa de três resíduos molhados');
+assert.deepStrictEqual(Object.keys(game.casaVivaRooms), ['service'], 'A Fase 2 principal precisa ter apenas um cômodo');
 assert.deepStrictEqual(
     [...cv.items].sort((a, b) => a.x - b.x).map(item => item.category),
     ['dry', 'wet', 'dry', 'wet', 'dry', 'wet'],
@@ -108,4 +108,4 @@ assert.strictEqual(completeItems.length, 10, 'A versão com 3 cômodos precisa m
 assert.strictEqual(completeItems.filter(entry => entry.category === 'dry').length, 5);
 assert.strictEqual(completeItems.filter(entry => entry.category === 'wet').length, 5);
 
-console.log('✓ Fase 1: versão principal com 1 cômodo e 3+3; versão preservada com 3 cômodos e 5+5.');
+console.log('✓ Fase 2: versão principal com 1 cômodo e 3+3; versão preservada com 3 cômodos e 5+5.');

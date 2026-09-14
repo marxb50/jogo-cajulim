@@ -2,9 +2,9 @@ const assert = require('assert');
 const { createGame } = require('./test_support.js');
 
 const transitionCases = [
-    ['INTRO', 1],
-    ['PHASE1_CLEAR', 2],
-    ['PHASE2_CLEAR', 3],
+    ['INTRO', 2],
+    ['PHASE2_CLEAR', 1],
+    ['PHASE1_CLEAR', 3],
     ['PHASE3_CLEAR', 4],
     ['PHASE4_CLEAR', 5],
     ['PHASE5_CLEAR', 6],
@@ -18,6 +18,13 @@ for (const [cutscene, destination] of transitionCases) {
     game.skipCutscene();
     assert.strictEqual(game.currentPhase, destination, `${cutscene} deve abrir a fase ${destination}`);
     assert.strictEqual(game.state, 'PLAYING');
+}
+
+{
+    const { game } = createGame(2);
+    assert.strictEqual(game.getDisplayPhaseNumber(), 1, 'A coleta de rua deve aparecer como Fase 1');
+    game.switchPhase(1);
+    assert.strictEqual(game.getDisplayPhaseNumber(), 2, 'A Casa Viva deve aparecer como Fase 2');
 }
 
 {
@@ -49,10 +56,31 @@ for (const [cutscene, destination] of transitionCases) {
     assert.strictEqual(game.state, 'LEVEL_CLEAR', 'A rodovia deve terminar dentro do transbordo');
 }
 
+{
+    const { game } = createGame(7);
+    game.aterroVariant = 'tractor-only';
+    game.phase5Stage = 'PARK';
+    game.phase5Mode = 'TRACTOR';
+    game.phase5Tractor.x = 1390;
+    game.triggerPhase5Action();
+    assert.strictEqual(game.phase5Stage, 'COMPLETE', 'A fase principal do aterro deve terminar ao estacionar o trator');
+    assert.strictEqual(game.phase5Mode, 'WIN');
+}
+
+{
+    const { game } = createGame(7);
+    game.aterroVariant = 'full';
+    game.phase5Stage = 'PARK';
+    game.phase5Mode = 'TRACTOR';
+    game.phase5Tractor.x = 1390;
+    game.triggerPhase5Action();
+    assert.strictEqual(game.phase5Stage, 'TO_BIOGAS', 'A versão completa deve continuar para a usina de biogás');
+}
+
 for (let phase = 5; phase <= 8; phase++) {
     const { game } = createGame(phase);
     game.levelClear();
     assert.strictEqual(game.state, 'LEVEL_CLEAR', `A fase ${phase} deve aceitar sua conclusão`);
 }
 
-console.log('✓ Encadeamento completo: casa → plataforma → coleta → rodovia → transbordo → carreta → aterro → chefão.');
+console.log('✓ Encadeamento completo: coleta na rua → casa → bairros → rodovia → transbordo → carreta → aterro → chefão.');

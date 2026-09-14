@@ -19,11 +19,11 @@ Jogo de plataforma 2D educativo e arcade desenvolvido para a **Prefeitura de Par
 - **Versão PC**: Jogo limpo de arcade com controles no teclado (`Setas / WASD` para mover, `Espaço / Enter` para pular e avançar) e suporte a tela cheia (`F`).
 - **Fluxo Contínuo Sem Pausa**: Ao vencer uma fase, o banner de vitória exibe a pontuação e avança automaticamente em 3 segundos sem travar a experiência.
 - **Jornada em 8 Fases**:
-  1. *Casa Viva*: Cajulim separa cinco resíduos secos e cinco molhados dentro de casa.
-  2. *Pega o Lixo*: Plataforma retrô com coleta de sacos e recicláveis até o caminhão.
+  1. *Pega o Lixo*: A jornada começa com a plataforma retrô de coleta de sacos e recicláveis até o caminhão.
+  2. *Casa Viva*: Cajulim aprende a separar três resíduos secos e três molhados em um cômodo. A versão completa com três cômodos permanece no seletor.
   3. *Rota do Coletor*: O jogador dirige e o Cajulim NPC recolhe dez sacos em cinco bairros.
   4. *Rodovia ao Transbordo*: Direção do caminhão com semáforos, biodiesel e obstáculos.
   5. *Joga na Carreta*: Basculamento de quatro caminhões na carreta de 30 toneladas.
   6. *Carreta ao Aterro*: Travessia das dunas, parada automática na balança e entrega da carga.
-  7. *Aterro & Usina Verde*: Compactação, cobertura, 10 MW de biogás e tratamento de chorume.
+  7. *Trator no Aterro*: Compactação e cobertura dos resíduos com terra. A versão completa com usina de biogás e tratamento de chorume permanece no seletor.
   8. *O Grande Chefão*: Batalha contra o Barão do Entulho e seu Mecha-Trator Poluidor 9000.

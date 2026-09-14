@@ -2,7 +2,8 @@ const assert = require('assert');
 const path = require('path');
 const { setupEnvironment } = require('./test_support.js');
 
-setupEnvironment();
+// A Casa Viva é o conteúdo interno 1 e agora aparece ao jogador como Fase 2.
+setupEnvironment({ search: '?fase=1' });
 
 const requested = [];
 global.Image = class ImmediateImage {
@@ -91,13 +92,23 @@ try {
     delete require.cache[gamePath];
     const { Game: Phase7Game } = require(gamePath);
     const phase7 = new Phase7Game();
-    assert.ok(requested.some(url => url.includes('biogas_plant.png')), 'A usina deve carregar antes de abrir a Fase 7');
-    assert.ok(requested.some(url => url.includes('lagoa_aerador.png')), 'Os aeradores devem carregar antes de abrir a Fase 7');
-    phase7.assets.sc_biogas_plant.complete = false;
-    phase7.assets.sc_biogas_plant.naturalWidth = 0;
+    assert.ok(requested.some(url => url.includes('trator_compactador.png')), 'O trator deve carregar antes de abrir a Fase 7');
+    assert.ok(!requested.some(url => url.includes('biogas_plant.png')), 'A fase principal do aterro não deve esperar a usina');
+    assert.ok(!requested.some(url => url.includes('lagoa_aerador.png')), 'A fase principal do aterro não deve esperar os aeradores');
+
+    global.window.location.search = '?fase=7&aterro=completo';
+    requested.length = 0;
+    deferredTimers.length = 0;
+    delete require.cache[gamePath];
+    const { Game: Phase7FullGame } = require(gamePath);
+    const phase7Full = new Phase7FullGame();
+    assert.ok(requested.some(url => url.includes('biogas_plant.png')), 'A versão completa deve carregar a usina antes de abrir');
+    assert.ok(requested.some(url => url.includes('lagoa_aerador.png')), 'A versão completa deve carregar os aeradores antes de abrir');
+    phase7Full.assets.sc_biogas_plant.complete = false;
+    phase7Full.assets.sc_biogas_plant.naturalWidth = 0;
     const fallbackArcs = [];
-    phase7.ctx.arc = (...args) => fallbackArcs.push(args);
-    phase7.drawPhase5BiogasSector(phase7.ctx);
+    phase7Full.ctx.arc = (...args) => fallbackArcs.push(args);
+    phase7Full.drawPhase5BiogasSector(phase7Full.ctx);
     assert.ok(!fallbackArcs.some(args => args[2] >= 60), 'O fallback da usina não pode desenhar o círculo verde gigante');
 
     // O panorama do Cajueiro de Pirangi precisa estar pronto antes do chefão

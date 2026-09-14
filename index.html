@@ -655,7 +655,7 @@
                 <div class="btn-action-card btn-action-iniciar" id="btnStartGame" onclick="actionStartGame()">
                     <div class="action-icon">🚀</div>
                     <div class="action-title">INICIAR</div>
-                    <div class="action-desc">Começar o jogo do início com a história completa e Fase 1.</div>
+                    <div class="action-desc">Começar pela coleta nas ruas e seguir toda a história.</div>
                 </div>
 
                 <!-- Botão 2: FASES -->
@@ -681,35 +681,35 @@
             <p class="prompt-text">Escolha a fase que deseja jogar:</p>
 
             <div class="phases-grid">
-                <!-- Fase 1 -->
-                <div class="phase-card-btn p-phase1" onclick="launchPhase(1)">
-                    <div class="phase-icon-box">🏠</div>
+                <!-- Fase 1: conteúdo dinâmico que antes ocupava a Fase 2 -->
+                <div class="phase-card-btn p-phase1" onclick="launchPhase(2)">
+                    <div class="phase-icon-box">🏖️</div>
                     <div class="phase-info">
                         <span class="phase-badge-tag" style="color:#22c55e;">FASE 1</span>
+                        <div class="phase-name">Coleta Seletiva na Rua</div>
+                        <div class="phase-sub">Corra, pule e leve os resíduos até o caminhão.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 2: Casa Viva -->
+                <div class="phase-card-btn p-phase2" onclick="launchPhase(1)">
+                    <div class="phase-icon-box">🏠</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#38bdf8;">FASE 2</span>
                         <div class="phase-name">Casa Viva do Cajulim</div>
                         <div class="phase-sub">1 cômodo: 3 secos e 3 molhados.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
 
-                <!-- Fase 1 preservada com os três cômodos originais -->
-                <div class="phase-card-btn p-phase1" onclick="launchPhase(1, '3comodos')">
+                <!-- Fase 2 preservada com os três cômodos originais -->
+                <div class="phase-card-btn p-phase2" onclick="launchPhase(1, '3comodos')">
                     <div class="phase-icon-box">🏡</div>
                     <div class="phase-info">
-                        <span class="phase-badge-tag" style="color:#86efac;">FASE 1 • VERSÃO COMPLETA</span>
-                        <div class="phase-name">Fase 1 com 3 Cômodos</div>
+                        <span class="phase-badge-tag" style="color:#7dd3fc;">FASE 2 • VERSÃO COMPLETA</span>
+                        <div class="phase-name">Casa Viva com 3 Cômodos</div>
                         <div class="phase-sub">Cozinha, sala e área de serviço: 5 secos e 5 molhados.</div>
-                    </div>
-                    <span class="phase-arrow">▶</span>
-                </div>
-
-                <!-- Fase 2 -->
-                <div class="phase-card-btn p-phase2" onclick="launchPhase(2)">
-                    <div class="phase-icon-box">🏖️</div>
-                    <div class="phase-info">
-                        <span class="phase-badge-tag" style="color:#38bdf8;">FASE 2</span>
-                        <div class="phase-name">Coleta Seletiva na Rua</div>
-                        <div class="phase-sub">Praia de Cotovelo e lixeiras coloridas.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
@@ -763,8 +763,19 @@
                     <div class="phase-icon-box">🚜</div>
                     <div class="phase-info">
                         <span class="phase-badge-tag" style="color:#2dd4bf;">FASE 7</span>
-                        <div class="phase-name">Aterro & Usina Verde</div>
-                        <div class="phase-sub">Trator compactador, biogás e laboratório.</div>
+                        <div class="phase-name">Trator no Aterro</div>
+                        <div class="phase-sub">Compacte os resíduos e faça a cobertura com terra.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
+                <!-- Fase 7 preservada com os três setores originais -->
+                <div class="phase-card-btn p-phase7" onclick="launchPhase(7, 'completo')">
+                    <div class="phase-icon-box">🌱</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#5eead4;">FASE 7 • VERSÃO COMPLETA</span>
+                        <div class="phase-name">Aterro — Fase Completa</div>
+                        <div class="phase-sub">Trator, usina de biogás e tratamento do chorume.</div>
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
@@ -829,7 +840,7 @@
         function actionStartGame() {
             playBeep(880, 'triangle', 0.12);
             setTimeout(() => {
-                window.location.href = currentPlatform + '/index.html?fase=1&cutscene=intro&v=9.4';
+                window.location.href = currentPlatform + '/index.html?fase=2&cutscene=intro&v=9.5';
             }, 100);
         }
 
@@ -840,13 +851,13 @@
         }
 
         // Passo 3: Escolhe qualquer fase de 1 a 8 (Entra direto na fase sem cutscenes)
-        function launchPhase(phaseNumber, casaVariant = '') {
+        function launchPhase(phaseNumber, phaseVariant = '') {
             playBeep(920, 'sine', 0.12);
             setTimeout(() => {
-                const variantQuery = phaseNumber === 1 && casaVariant === '3comodos'
-                    ? '&casa=3comodos'
-                    : '';
-                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1' + variantQuery + '&v=9.4';
+                let variantQuery = '';
+                if (phaseNumber === 1 && phaseVariant === '3comodos') variantQuery = '&casa=3comodos';
+                if (phaseNumber === 7 && phaseVariant === 'completo') variantQuery = '&aterro=completo';
+                window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1' + variantQuery + '&v=9.5';
             }, 100);
         }
 

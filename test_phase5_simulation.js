@@ -1,7 +1,7 @@
 const assert = require('assert');
 const { createGame } = require('./test_support.js');
 
-const { game } = createGame(7);
+const { game } = createGame(7, { search: '?fase=7&aterro=completo' });
 assert.strictEqual(game.phase5Stage, 'APPROACH');
 assert.strictEqual(game.phase5Mode, 'PLAYER');
 

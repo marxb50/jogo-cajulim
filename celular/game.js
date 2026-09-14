@@ -1,8 +1,8 @@
 /**
  * TURMA DO CAJULIM - JOGO DE PLATAFORMA 2D RETRÔ
  * Jornada educativa em oito fases:
- * 1. Casa Viva; 2. Pega o Lixo; 3. Rota do Coletor; 4. Rodovia;
- * 5. Transbordo; 6. Carreta ao Aterro; 7. Usina Verde; 8. Chefão.
+ * 1. Pega o Lixo; 2. Casa Viva; 3. Rota do Coletor; 4. Rodovia;
+ * 5. Transbordo; 6. Carreta ao Aterro; 7. Trator no Aterro; 8. Chefão.
  */
 
 const VIRTUAL_WIDTH = 960;
@@ -27,10 +27,15 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.ctx.imageSmoothingEnabled = false;
 
-        let initialPhase = 1;
+        // A coleta de rua abre a jornada por ser a fase mais dinâmica.
+        // Internamente esse conteúdo continua sendo a fase 2 para preservar
+        // toda a física já validada; getDisplayPhaseNumber faz a numeração
+        // apresentada ao jogador (rua = 1, casa = 2).
+        let initialPhase = 2;
         let hasDirectPhase = false;
         let initialCutscene = null;
         let initialCasaVivaVariant = 'single-room';
+        let initialAterroVariant = 'tractor-only';
         if (typeof window !== 'undefined' && window.location) {
             const searchParams = new URLSearchParams(window.location.search || '');
             const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
@@ -54,12 +59,16 @@ class Game {
             if (getParam('casa') === '3comodos') {
                 initialCasaVivaVariant = 'three-rooms';
             }
+            if (getParam('aterro') === 'completo') {
+                initialAterroVariant = 'full';
+            }
         }
 
         this.currentPhase = initialPhase;
         this.hasDirectPhase = hasDirectPhase;
         this.initialCutscene = initialCutscene;
         this.casaVivaVariant = initialCasaVivaVariant;
+        this.aterroVariant = initialAterroVariant;
         this.state = (hasDirectPhase || initialCutscene) ? 'PLAYING' : 'TITLE';
         this.assets = {};
         this.loadedCount = 0;
@@ -164,7 +173,7 @@ class Game {
             'p_collect_1': 'assets/player/collect_1.png',
             'p_win': 'assets/player/win.png',
 
-            // Casa Viva (Fase 1)
+            // Casa Viva (conteúdo interno 1, exibido ao jogador como Fase 2)
             'cv_service': 'assets/casa-viva/rooms/area-servico-pixel.png',
             'cv_kitchen': 'assets/casa-viva/rooms/cozinha-pixel.png',
             'cv_living': 'assets/casa-viva/rooms/sala-pixel.png',
@@ -290,6 +299,9 @@ class Game {
         });
 
         const common = ['ui_parnamirim_logo', 'p_portrait'];
+        const aterroAssets = this.aterroVariant === 'full'
+            ? ['sc_aterro_complex_bg', 'sc_trator_compactador', 'sc_biogas_plant', 'sc_lagoa_aerador', 'p_idle_0', 'p_walk_0']
+            : ['sc_aterro_complex_bg', 'sc_trator_compactador', 'p_idle_0', 'p_walk_0'];
         const byPhase = {
             1: ['cv_service', 'p_idle_0', 'p_idle_1', 'p_walk_0', 'p_collect_0'],
             2: ['sc_parnamirim_centro', 'p_sheet', 'tile_grass', 'tile_dirt', 'block_brick', 'block_question', 'block_recycle', 'item_trash_bag'],
@@ -297,7 +309,7 @@ class Game {
             4: ['sc_phase4_transbordo_bg', 'sc_truck', 'tile_road', 'tile_road_sub'],
             5: ['sc_transbordo_interior', 'sc_carreta', 'p_supervisor'],
             6: ['sc_rota_aterro', 'sc_carreta_magenta', 'p_cajulim_idle'],
-            7: ['sc_aterro_complex_bg', 'sc_trator_compactador', 'sc_biogas_plant', 'sc_lagoa_aerador', 'p_idle_0', 'p_walk_0'],
+            7: aterroAssets,
             8: ['sc_mecha_boss_pixel', 'sc_boss_cajueiro_bg', 'p_sheet']
         };
         const prioritySet = new Set([...common, ...(byPhase[this.currentPhase] || [])]);
@@ -616,7 +628,7 @@ class Game {
             }
 
             if (!targetPhase && !getParam('cutscene') && !creditsRequested) {
-                this.currentPhase = 1;
+                this.currentPhase = 2;
                 this.state = 'TITLE';
                 this.initLevel();
             }
@@ -721,7 +733,7 @@ class Game {
             }
             if (this.state === 'TITLE') {
                 if (e.code === 'Space' || e.code === 'Enter') {
-                    if (this.currentPhase > 1) {
+                    if (this.getDisplayPhaseNumber() > 1) {
                         this.switchPhase(this.currentPhase);
                         this.startGame();
                     } else {
@@ -817,8 +829,9 @@ class Game {
 
             // In-Game Phase Selection via Top Sub-Banner (y between 48 and 72)
             if (this.state === 'PLAYING' && clickY >= 48 && clickY <= 72) {
-                const targetClickedPhase = Math.floor(clickX / (VIRTUAL_WIDTH / 8)) + 1;
-                if (targetClickedPhase >= 1 && targetClickedPhase <= 8 && targetClickedPhase !== this.currentPhase) {
+                const targetDisplayPhase = Math.floor(clickX / (VIRTUAL_WIDTH / 8)) + 1;
+                const targetClickedPhase = this.getInternalPhaseNumber(targetDisplayPhase);
+                if (targetDisplayPhase >= 1 && targetDisplayPhase <= 8 && targetClickedPhase !== this.currentPhase) {
                     this.switchPhase(targetClickedPhase);
                     this.startGame();
                     return;
@@ -826,7 +839,7 @@ class Game {
             }
 
             if (this.state === 'TITLE') {
-                if (this.currentPhase > 1) {
+                if (this.getDisplayPhaseNumber() > 1) {
                     this.switchPhase(this.currentPhase);
                     this.startGame();
                 } else {
@@ -923,6 +936,18 @@ class Game {
         bindTouch('btnJump', 'jump');
     }
 
+    getDisplayPhaseNumber(phaseNum = this.currentPhase) {
+        if (phaseNum === 1) return 2;
+        if (phaseNum === 2) return 1;
+        return phaseNum;
+    }
+
+    getInternalPhaseNumber(displayPhaseNum) {
+        if (displayPhaseNum === 1) return 2;
+        if (displayPhaseNum === 2) return 1;
+        return displayPhaseNum;
+    }
+
     switchPhase(phaseNum) {
         this.currentPhase = phaseNum;
         const p1 = document.getElementById('pillStage1');
@@ -933,8 +958,8 @@ class Game {
         const p6 = document.getElementById('pillStage6');
         const p7 = document.getElementById('pillStage7');
         const p8 = document.getElementById('pillStage8');
-        if (p1) { if (phaseNum === 1) p1.classList.add('active'); else p1.classList.remove('active'); }
-        if (p2) { if (phaseNum === 2) p2.classList.add('active'); else p2.classList.remove('active'); }
+        if (p1) { if (phaseNum === 2) p1.classList.add('active'); else p1.classList.remove('active'); }
+        if (p2) { if (phaseNum === 1) p2.classList.add('active'); else p2.classList.remove('active'); }
         if (p3) { if (phaseNum === 3) p3.classList.add('active'); else p3.classList.remove('active'); }
         if (p4) { if (phaseNum === 4) p4.classList.add('active'); else p4.classList.remove('active'); }
         if (p5) { if (phaseNum === 5) p5.classList.add('active'); else p5.classList.remove('active'); }
@@ -951,7 +976,10 @@ class Game {
             this.lives = 5;
             this.showTip('Fase 8: O Grande Chefão! Suba nos andaimes e derrote o Mecha-Trator do Barão do Entulho!', 5.5);
         } else if (phaseNum === 7) {
-            this.showTip('Fase 7: Aterro Sanitário & Usina Verde! Compacte os resíduos, ligue o biogás e trate o chorume!', 5.0);
+            const aterroTip = this.aterroVariant === 'full'
+                ? 'Fase 7 completa: opere o trator, a usina de biogás e o tratamento do chorume!'
+                : 'Fase 7: Aterro Sanitário! Opere o trator, compacte os resíduos e faça a cobertura com terra!';
+            this.showTip(aterroTip, 5.0);
         } else if (phaseNum === 6) {
             this.showTip('Fase 6: Carreta ao Aterro! Conduza a carreta de 30t pelas dunas e passe na Balança ANTT!', 5.0);
         } else if (phaseNum === 5) {
@@ -961,18 +989,19 @@ class Game {
         } else if (phaseNum === 3) {
             this.showTip('Fase 3: Rota do Caminhão Coletor! Dirija pelos bairros e apoie o Cajulim na coleta dos sacos!', 4.5);
         } else if (phaseNum === 2) {
-            this.showTip('Fase 2: Pega o Lixo! Colete os sacos e recicláveis até o caminhão!', 4.0);
+            this.showTip('Fase 1: Pega o Lixo! Colete os sacos e recicláveis até o caminhão!', 4.0);
         } else {
             const casaTip = this.casaVivaVariant === 'three-rooms'
-                ? 'Fase 1 com 3 cômodos! Explore a cozinha, a sala e a área de serviço para separar os resíduos!'
-                : 'Fase 1: Casa Viva do Cajulim! Separe 3 resíduos secos e 3 molhados neste cômodo!';
+                ? 'Fase 2 com 3 cômodos! Explore a cozinha, a sala e a área de serviço para separar os resíduos!'
+                : 'Fase 2: Casa Viva do Cajulim! Separe 3 resíduos secos e 3 molhados neste cômodo!';
             this.showTip(casaTip, 4.5);
         }
     }
 
     nextPhase() {
-        if (this.currentPhase >= 1 && this.currentPhase <= 7) {
-            this.switchPhase(this.currentPhase + 1);
+        const nextByInternalPhase = { 2: 1, 1: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8 };
+        if (nextByInternalPhase[this.currentPhase]) {
+            this.switchPhase(nextByInternalPhase[this.currentPhase]);
         } else {
             this.restartLevel();
         }
@@ -995,11 +1024,11 @@ class Game {
         }
         if (this.currentPhase === 1) {
             const casaTip = this.casaVivaVariant === 'three-rooms'
-                ? 'Fase 1 com 3 cômodos! Encontre 5 secos e 5 molhados pela casa!'
-                : 'Fase 1: Separe 3 secos no recipiente azul e 3 molhados no marrom!';
+                ? 'Fase 2 com 3 cômodos! Encontre 5 secos e 5 molhados pela casa!'
+                : 'Fase 2: Separe 3 secos no recipiente azul e 3 molhados no marrom!';
             this.showTip(casaTip, 4.5);
         } else if (this.currentPhase === 2) {
-            this.showTip('Fase 2: Pega o Lixo! Colete os sacos e recicláveis nas ruas até o caminhão!', 4.0);
+            this.showTip('Fase 1: Pega o Lixo! Colete os sacos e recicláveis nas ruas até o caminhão!', 4.0);
         } else if (this.currentPhase === 3) {
             this.showTip('Fase 3: Rota do Caminhão Coletor! Dirija pelos bairros e apoie o Cajulim na coleta dos sacos!', 4.5);
         } else if (this.currentPhase === 4) {
@@ -1009,7 +1038,10 @@ class Game {
         } else if (this.currentPhase === 6) {
             this.showTip('Fase 6: Carreta ao Aterro! Conduza a carreta de 30t pelas dunas e passe na Balança ANTT!', 5.0);
         } else if (this.currentPhase === 7) {
-            this.showTip('Fase 7: Aterro Sanitário & Usina Verde! Compacte os resíduos, ligue o biogás e trate o chorume!', 5.0);
+            const aterroTip = this.aterroVariant === 'full'
+                ? 'Fase 7 completa: opere o trator, a usina de biogás e o tratamento do chorume!'
+                : 'Fase 7: Aterro Sanitário! Opere o trator, compacte os resíduos e faça a cobertura com terra!';
+            this.showTip(aterroTip, 5.0);
         } else if (this.currentPhase === 8) {
             this.showTip('Fase 8: O Confronto Final! Suba nos andaimes e derrote o Mecha-Trator do Barão do Entulho!', 5.5);
         }
@@ -2318,7 +2350,7 @@ class Game {
         if (window.soundManager) {
             window.soundManager.startMusic(this.currentPhase === 8 ? 'boss' : 'stage');
         }
-        this.showTip(`Fase ${this.currentPhase} reiniciada! Boa sorte!`, 2.5);
+        this.showTip(`Fase ${this.getDisplayPhaseNumber()} reiniciada! Boa sorte!`, 2.5);
     }
 
     pollGamepad() {
@@ -3158,6 +3190,23 @@ class Game {
         }
 
         if (this.phase5Stage === 'PARK' && Math.abs(focusX - 1500) <= 150) {
+            if (this.aterroVariant !== 'full') {
+                this.phase5Mode = 'WIN';
+                this.phase5Stage = 'COMPLETE';
+                this.phase5State = 'COMPLETE';
+                this.phase5CompletedAt = this.gameTime || 0;
+                this.score += 1200;
+                this.setPhase5Message("Trabalho concluído! Resíduos compactados e cobertos com terra.", 4.0);
+                this.burstPhase5(1500, this.phase5Floor - 55, '#ffe45c', 45);
+                this.playPhase5SuccessSound();
+                setTimeout(() => {
+                    if (this.currentPhase === 7 && this.state === 'PLAYING' && this.aterroVariant !== 'full') {
+                        this.levelClear();
+                    }
+                }, 1600);
+                return;
+            }
+
             this.phase5Mode = 'PLAYER';
             this.phase5Stage = 'TO_BIOGAS';
             this.phase5State = 'TO_BIOGAS';
@@ -4553,7 +4602,7 @@ class Game {
 
         if (this.currentPhase === 1) {
             this.spawnSparkles(this.player.x || 480, this.player.y || 300, 50);
-            this.addFloatingText(this.player.x || 480, (this.player.y || 300) - 30, 'CASA LIMPA! SEPARAÇÃO NOTA 10!', '#00ff88');
+            this.addFloatingText(this.player.x || 480, (this.player.y || 300) - 30, 'FASE 2 COMPLETA! SEPARAÇÃO NOTA 10!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -4563,7 +4612,7 @@ class Game {
             }, 500);
         } else if (this.currentPhase === 2) {
             if (this.truck) this.spawnSparkles(this.truck.x + 160, this.truck.y + 80, 50);
-            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 2 COMPLETA! COLETA CONCLUÍDA!', '#00ff88');
+            this.addFloatingText(this.player.x, this.player.y - 30, 'FASE 1 COMPLETA! COLETA CONCLUÍDA!', '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -4614,7 +4663,10 @@ class Game {
             }, 500);
         } else if (this.currentPhase === 7) {
             this.spawnSparkles(this.player.x, this.player.y - 40, 80);
-            this.addFloatingText(this.player.x, this.player.y - 50, 'FASE 7 COMPLETA! USINA VERDE CERTIFICADA!', '#00ff88');
+            const aterroClearText = this.aterroVariant === 'full'
+                ? 'FASE 7 COMPLETA! USINA VERDE CERTIFICADA!'
+                : 'FASE 7 COMPLETA! COMPACTAÇÃO CONCLUÍDA!';
+            this.addFloatingText(this.player.x, this.player.y - 50, aterroClearText, '#00ff88');
 
             const modal = document.getElementById('victoryModal');
             if (modal) modal.classList.add('hidden');
@@ -8619,7 +8671,8 @@ ctx.restore();
             const info = this.getPhase5StageInfo();
             ctx.fillStyle = '#86efac';
             ctx.font = 'bold 9px "Press Start 2P", monospace, sans-serif';
-            ctx.fillText(`SETOR ${info[0]}/3: ${info[1]}`, 115, 28);
+            const aterroSectorTotal = this.aterroVariant === 'full' ? 3 : 1;
+            ctx.fillText(`SETOR ${info[0]}/${aterroSectorTotal}: ${info[1]}`, 115, 28);
             ctx.fillStyle = '#facc15';
             ctx.fillText(info[3], 340, 28);
             ctx.font = 'bold 10px "Press Start 2P", monospace, sans-serif';
@@ -8660,9 +8713,9 @@ ctx.restore();
         ctx.textAlign = 'center';
         ctx.fillStyle = '#86efac';
         if (this.currentPhase === 2) {
-            ctx.fillText('1. CASA ✓ | FASE 2: PEGA O LIXO ★ | 3. COLETOR | 4. RODOVIA | 5. TRANSBORDO | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
+            ctx.fillText('FASE 1: PEGA O LIXO ★ | 2. CASA | 3. COLETOR | 4. RODOVIA | 5. TRANSBORDO | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
         } else if (this.currentPhase === 3) {
-            ctx.fillText('1. CASA ✓ | 2. LIXO ✓ | FASE 3: ROTA COLETOR 🚛 ★ | 4. RODOVIA | 5. TRANSBORDO | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
+            ctx.fillText('1. LIXO ✓ | 2. CASA ✓ | FASE 3: ROTA COLETOR 🚛 ★ | 4. RODOVIA | 5. TRANSBORDO | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
 
             // Persistent Mission & Controls Guide Banner for Phase 2
             ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
@@ -8680,11 +8733,11 @@ ctx.restore();
             ctx.fillText('🎮 CONTROLES: [A/D ou ◄/►] Pilotar | [ESPAÇO/▼] Frear e Parar na Faixa Amarela', 20, 96);
             ctx.textAlign = 'center';
         } else if (this.currentPhase === 4) {
-            ctx.fillText('1. CASA ✓ | 2. LIXO ✓ | 3. COLETOR ✓ | FASE 4: RODOVIA 🚚 ★ | 5. TRANSBORDO | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
+            ctx.fillText('1. LIXO ✓ | 2. CASA ✓ | 3. COLETOR ✓ | FASE 4: RODOVIA 🚚 ★ | 5. TRANSBORDO | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
         } else if (this.currentPhase === 5) {
-            ctx.fillText('1. CASA ✓ | 2. LIXO ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | FASE 5: TRANSBORDO 🚜 ★ | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
+            ctx.fillText('1. LIXO ✓ | 2. CASA ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | FASE 5: TRANSBORDO 🚜 ★ | 6. CARRETA | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
         } else if (this.currentPhase === 6) {
-            ctx.fillText('1. CASA ✓ | 2. LIXO ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | 5. TRANSBORDO ✓ | FASE 6: CARRETA 🚛 ★ | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
+            ctx.fillText('1. LIXO ✓ | 2. CASA ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | 5. TRANSBORDO ✓ | FASE 6: CARRETA 🚛 ★ | 7. ATERRO | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
 
             // Persistent Mission & Controls Guide Banner for Phase 5
             ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
@@ -8702,7 +8755,7 @@ ctx.restore();
             ctx.fillText('🎮 CONTROLES: [A/D ou ◄/►] Acelerar/Ré | [ESPAÇO/W] Tração 6x4 nas Dunas & Freio no Aterro', 20, 96);
             ctx.textAlign = 'center';
         } else if (this.currentPhase === 7) {
-            ctx.fillText('1. CASA ✓ | 2. LIXO ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | 5. TRANSBORDO ✓ | 6. CARRETA ✓ | FASE 7: ATERRO 🌱 ★ | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
+            ctx.fillText('1. LIXO ✓ | 2. CASA ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | 5. TRANSBORDO ✓ | 6. CARRETA ✓ | FASE 7: ATERRO 🚜 ★ | 8. CHEFÃO', VIRTUAL_WIDTH / 2, 62);
 
             if (this.phase5Mode !== 'PANEL' && this.phase5Mode !== 'ANALYSIS') {
                 const info = this.getPhase5StageInfo();
@@ -8743,7 +8796,7 @@ ctx.restore();
             }
         } else if (this.currentPhase === 8) {
 
-            ctx.fillText('1. CASA ✓ | 2. LIXO ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | 5. TRANSBORDO ✓ | 6. CARRETA ✓ | 7. ATERRO ✓ | FASE 8: CHEFÃO 👾 ★', VIRTUAL_WIDTH / 2, 62);
+            ctx.fillText('1. LIXO ✓ | 2. CASA ✓ | 3. COLETOR ✓ | 4. RODOVIA ✓ | 5. TRANSBORDO ✓ | 6. CARRETA ✓ | 7. ATERRO ✓ | FASE 8: CHEFÃO 👾 ★', VIRTUAL_WIDTH / 2, 62);
 
             // Persistent Mission & Controls Guide Banner
             ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
@@ -8826,7 +8879,7 @@ ctx.restore();
 
         ctx.font = 'bold 12px "Press Start 2P", monospace, sans-serif';
         ctx.fillStyle = '#fde047';
-        ctx.fillText(`CARREGANDO FASE ${this.currentPhase}...`, VIRTUAL_WIDTH / 2, 225);
+        ctx.fillText(`CARREGANDO FASE ${this.getDisplayPhaseNumber()}...`, VIRTUAL_WIDTH / 2, 225);
 
         const pct = Math.min(100, Math.floor((this.loadedCount / Math.max(1, this.totalAssets)) * 100));
         const barW = 340;
@@ -8871,9 +8924,9 @@ ctx.restore();
         ctx.font = 'bold 14px "Press Start 2P", monospace, sans-serif';
         ctx.fillStyle = '#00ff88';
         if (this.currentPhase === 1) {
-            ctx.fillText('FASE 1: CASA VIVA DO CAJULIM 🏠', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 2: CASA VIVA DO CAJULIM 🏠', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 2) {
-            ctx.fillText('FASE 2: COLETA SELETIVA NO CENTRO', VIRTUAL_WIDTH / 2, 370);
+            ctx.fillText('FASE 1: COLETA SELETIVA NO CENTRO', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 3) {
             ctx.fillText('FASE 3: ROTA DO CAMINHÃO COLETOR', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 4) {
@@ -8883,7 +8936,10 @@ ctx.restore();
         } else if (this.currentPhase === 6) {
             ctx.fillText('FASE 6: CARRETA AO ATERRO & BALANÇA', VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 7) {
-            ctx.fillText('FASE 7: ATERRO & USINA VERDE 🌱⚡', VIRTUAL_WIDTH / 2, 370);
+            const aterroTitle = this.aterroVariant === 'full'
+                ? 'FASE 7: ATERRO — FASE COMPLETA 🌱⚡'
+                : 'FASE 7: TRATOR NO ATERRO 🚜';
+            ctx.fillText(aterroTitle, VIRTUAL_WIDTH / 2, 370);
         } else if (this.currentPhase === 8) {
             ctx.fillText('FASE 8: O CONFRONTO FINAL (CHEFÃO) 👾', VIRTUAL_WIDTH / 2, 370);
         }
@@ -8922,7 +8978,7 @@ ctx.restore();
 
     finishCredits() {
         this.credits = null;
-        this.switchPhase(1);
+        this.switchPhase(2);
         this.state = 'TITLE';
     }
 
@@ -9111,7 +9167,7 @@ ctx.restore();
     }
 
     getCutsceneRequiredAsset() {
-        if (this.cutscene.type === 'INTRO') return 'cs_intro_casa';
+        if (this.cutscene.type === 'INTRO') return 'cs_intro_father';
         if (this.cutscene.type === 'PHASE1_CLEAR') return 'cs_intro_father';
         if (this.cutscene.type === 'PHASE2_CLEAR') return 'cs_phase1_clear';
         if (this.cutscene.type === 'PHASE3_CLEAR') return 'cs_phase2_bairros';
@@ -9211,7 +9267,7 @@ ctx.restore();
         }
         const voiceHint = narration.voice && narration.voice.includes('Antonio') ? 'antonio' : 'thalita';
         window.soundManager.playNarration(
-            `assets/audio/${narration.filename}?v=8.5`,
+            `assets/audio/${narration.filename}?v=9.5`,
             narration.speech_text || narration.text,
             voiceHint
         );
@@ -9289,21 +9345,21 @@ ctx.restore();
                 window.soundManager.stopNarration();
             }
             this.cutscene.active = false;
-            this.switchPhase(1);
+            this.switchPhase(2);
             this.startGame();
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
             if (window.soundManager && window.soundManager.stopNarration) {
                 window.soundManager.stopNarration();
             }
             this.cutscene.active = false;
-            this.switchPhase(2);
+            this.switchPhase(3);
             this.startGame();
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
             if (window.soundManager && window.soundManager.stopNarration) {
                 window.soundManager.stopNarration();
             }
             this.cutscene.active = false;
-            this.switchPhase(3);
+            this.switchPhase(1);
             this.startGame();
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
             if (window.soundManager && window.soundManager.stopNarration) {
@@ -9397,15 +9453,15 @@ ctx.restore();
         }
         if (this.cutscene.type === 'INTRO') {
             this.cutscene.active = false;
-            this.switchPhase(1);
+            this.switchPhase(2);
             this.startGame();
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
             this.cutscene.active = false;
-            this.switchPhase(2);
+            this.switchPhase(3);
             this.startGame();
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
             this.cutscene.active = false;
-            this.switchPhase(3);
+            this.switchPhase(1);
             this.startGame();
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
             this.cutscene.active = false;
@@ -9475,11 +9531,11 @@ ctx.restore();
         }
 
         if (this.cutscene.type === 'INTRO') {
-            this.renderCutsceneIntroCasa(ctx);
+            this.renderCutsceneIntroFather(ctx);
         } else if (this.cutscene.type === 'PHASE1_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_intro_father', 'FASE 1 CONCLUÍDA • O CAMINHÃO DA COLETA CHEGOU');
+            this.renderCutscenePhaseClear(ctx, 'cs_intro_father', 'FASE 2 CONCLUÍDA • SEPARAÇÃO CORRETA DENTRO DE CASA');
         } else if (this.cutscene.type === 'PHASE2_CLEAR') {
-            this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'FASE 2 CONCLUÍDA • COLETA SELETIVA RESIDENCIAL');
+            this.renderCutscenePhaseClear(ctx, 'cs_phase1_clear', 'FASE 1 CONCLUÍDA • COLETA SELETIVA NAS RUAS');
         } else if (this.cutscene.type === 'PHASE3_CLEAR') {
             this.renderCutscenePhaseClear(ctx, 'cs_phase2_bairros', 'FASE 3 CONCLUÍDA • ROTA DO CAMINHÃO NOS BAIRROS');
         } else if (this.cutscene.type === 'PHASE4_CLEAR') {
@@ -9589,7 +9645,7 @@ ctx.restore();
 
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
-        this.renderCutsceneDialogBox(ctx, 'CASA DO CAJULIM • SEPARAÇÃO DOMÉSTICA: SECO E MOLHADO', currentText, 'COMEÇAR A FASE 1 🏠 [ESPAÇO P/ PULAR]', 'green');
+        this.renderCutsceneDialogBox(ctx, 'CASA DO CAJULIM • SEPARAÇÃO DOMÉSTICA: SECO E MOLHADO', currentText, 'COMEÇAR A FASE 2 🏠 [ESPAÇO P/ PULAR]', 'green');
     }
 
     renderCutscenePhase7To8(ctx) {
@@ -9652,7 +9708,7 @@ ctx.restore();
         // Dialog Box with automated indicator
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
-        this.renderCutsceneDialogBox(ctx, 'PREFEITURA DE PARNAMIRIM • INÍCIO DA JORNADA', currentText, 'AUTOMÁTICO ⏱ [ESPAÇO P/ PULAR]', 'green');
+        this.renderCutsceneDialogBox(ctx, 'PREFEITURA DE PARNAMIRIM • A COLETA COMEÇA', currentText, 'COMEÇAR A FASE 1 🚀 [ESPAÇO P/ PULAR]', 'green');
     }
 
     renderCutsceneIntroMission(ctx) {
@@ -9843,7 +9899,10 @@ ctx.restore();
         // Dialog Box
         const fullText = this.getCutsceneFullText();
         const currentText = fullText.slice(0, Math.floor(this.cutscene.textProgress));
-        this.renderCutsceneDialogBox(ctx, 'ATERRO SANITARIO & USINA VERDE', currentText, '[ESPACO / ENTER] AVANCAR ▶', 'green');
+        const aterroCutsceneTitle = this.aterroVariant === 'full'
+            ? 'ATERRO SANITARIO & USINA VERDE'
+            : 'ATERRO SANITARIO • COMPACTACAO CONCLUIDA';
+        this.renderCutsceneDialogBox(ctx, aterroCutsceneTitle, currentText, '[ESPACO / ENTER] AVANCAR ▶', 'green');
     }
 
     renderProceduralAerialLandfill(ctx) {
@@ -11051,7 +11110,7 @@ ctx.restore();
         ctx.font = 'bold 20px "Press Start 2P", monospace, sans-serif';
         ctx.fillStyle = '#facc15';
         ctx.textAlign = 'center';
-        ctx.fillText(`🌟 FASE ${this.currentPhase} CONCLUIDA! 🌟`, VIRTUAL_WIDTH / 2, by + 48);
+        ctx.fillText(`🌟 FASE ${this.getDisplayPhaseNumber()} CONCLUIDA! 🌟`, VIRTUAL_WIDTH / 2, by + 48);
 
         let phaseTitle = '';
         let phaseDetail = '';
@@ -11087,8 +11146,12 @@ ctx.restore();
                 phaseDetail = `Peso na Balança: ${finalPBT.toLocaleString('pt-BR')} kg | Perdeu na Estrada: -${finalLost.toLocaleString('pt-BR')} kg`;
             }
         } else if (this.currentPhase === 7) {
-            phaseTitle = 'ATERRO SANITARIO & USINA VERDE';
-            phaseDetail = '10.0 MW de Biogás | ETE com Água pH 7.0';
+            phaseTitle = this.aterroVariant === 'full'
+                ? 'ATERRO SANITARIO — FASE COMPLETA'
+                : 'ATERRO SANITARIO — TRATOR COMPACTADOR';
+            phaseDetail = this.aterroVariant === 'full'
+                ? '10.0 MW de Biogás | ETE com Água pH 7.0'
+                : '4 Trechos Compactados | Cobertura com Terra Concluída';
         } else if (this.currentPhase === 8) {
             phaseTitle = 'BATALHA FINAL: O BARÃO FOI DERROTADO';
             phaseDetail = 'Cidade 100% Sustentável | Serviço Comunitário Cumprido';
@@ -11268,7 +11331,7 @@ ctx.restore();
             if (this.state === 'CREDITS') {
                 this.finishCredits();
             } else if (this.state === 'TITLE') {
-                if (this.currentPhase > 1) {
+                if (this.getDisplayPhaseNumber() > 1) {
                     this.switchPhase(this.currentPhase);
                     this.startGame();
                 } else {
@@ -11317,7 +11380,7 @@ ctx.restore();
 
 
     // =========================================================================
-    // FASE 1: CASA VIVA DO CAJULIM (SEPARAÇÃO DOMÉSTICA: SECO vs MOLHADO)
+    // FASE 2: CASA VIVA DO CAJULIM (SEPARAÇÃO DOMÉSTICA: SECO vs MOLHADO)
     // =========================================================================
 
     roundedRect(context, x, y, width, height, radius) {
@@ -11424,9 +11487,9 @@ ctx.restore();
         };
 
         if (this.casaVivaVariant !== 'three-rooms') {
-            // Fase 1 principal: toda a atividade acontece em um único cômodo.
+            // Fase 2 principal: toda a atividade acontece em um único cômodo.
             // A configuração completa acima continua intacta para a variante
-            // "Fase 1 com 3 cômodos" disponível no seletor de fases.
+            // "Fase 2 com 3 cômodos" disponível no seletor de fases.
             const singleRoomLayout = {
                 can:    { x: 275, y: 590, approachY: 632, labelLift: 0, labelOffsetX: 0 },
                 orange: { x: 365, y: 550, approachY: 615, labelLift: -36, labelOffsetX: -40 },

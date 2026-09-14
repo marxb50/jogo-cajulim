@@ -3,20 +3,21 @@
     "filename": "cutscene_intro_step0.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo seco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então vamos organizar nossa casa antes de ir pra rua!",
-    "speech_text": "Ei, turma! Bom dia! A sustentabilidade começa aqui dentro de casa! Olha só: lixo sêco na lixeira azul — plástico, papelão e latinha limpa! E lixo molhado na lixeira marrom — casca de fruta e resto de comida! Separou certinho? Então vamos organizar nossa casa antes de ir pra rua!"
+    "text": "Atenção, turma! O caminhão da coleta já chegou às ruas de Parnamirim! Corra, pule, recolha os sacos e os materiais recicláveis e leve tudo até o caminhão. A cidade precisa da sua ajuda. Vamos começar!"
   },
   "PHASE1_CLEAR:0": {
     "filename": "cutscene_intro_step1.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Olha o caminhão da coleta chegando! Meu pai já tá no volante da limpeza municipal! Parnamirim não pode parar! Vamos recolher os sacos bem fechados nas calçadas e deixar nosso bairro brilhando! Bora lá!"
+    "text": "Muito bem! Agora você já sabe separar o lixo seco do lixo molhado dentro de casa. Com os resíduos organizados, podemos acompanhar o trabalho da coleta pelos bairros de Parnamirim. Vamos em frente!",
+    "speech_text": "Muito bem! Agora você já sabe separar o lixo sêco do lixo molhado dentro de casa. Com os resíduos organizados, podemos acompanhar o trabalho da coleta pelos bairros de Parnamirim. Vamos em frente!"
   },
   "PHASE2_CLEAR:0": {
     "filename": "cutscene_phase1_clear.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Parabéns! Você completou a coleta residencial em Parnamirim! Todos os sacos de lixo e materiais recicláveis foram recolhidos das ruas com sucesso. A cidade está limpa e o caminhão municipal está pronto para a próxima etapa!"
+    "text": "Excelente! A primeira missão foi concluída e as ruas estão limpas. Mas, antes de seguirmos o caminho do lixo, é importante aprender onde a separação começa: dentro de casa. Vamos separar corretamente o lixo seco e o lixo molhado!",
+    "speech_text": "Excelente! A primeira missão foi concluída e as ruas estão limpas. Mas, antes de seguirmos o caminho do lixo, é importante aprender onde a separação começa: dentro de casa. Vamos separar corretamente o lixo sêco e o lixo molhado!"
   },
   "PHASE3_CLEAR:0": {
     "filename": "cutscene_phase2_bairros.mp3",
@@ -49,7 +50,7 @@
     "filename": "cutscene_phase5_step0.mp3",
     "voice": "pt-BR-ThalitaNeural",
     "rate": "+2%",
-    "text": "Cidade limpa, serviço cumprido! O aterro sanitário e a usina verde funcionam com perfeição. O chorume está cem por cento purificado e a energia limpa ilumina milhares de lares... Mas espera aí... Que barulho horrível é aquele na praça?!"
+    "text": "Compactação concluída! No aterro sanitário, os resíduos foram compactados e cobertos com terra para reduzir os impactos ao meio ambiente. Mas espere... Que barulho horrível é aquele na praça?!"
   },
   "PHASE7_TO_8:1": {
     "filename": "cutscene_phase5_step1.mp3",
