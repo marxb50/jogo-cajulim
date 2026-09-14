@@ -1240,6 +1240,13 @@ class Game {
         this.player.isDead = false;
         this.player.animState = 'idle';
 
+        // O modo retrato mostra os 75% centrais do canvas para manter o visual
+        // de portátil. Desloque a câmera pelo mesmo recorte lateral já na
+        // entrada da fase, deixando o Cajulim inteiro na área visível.
+        if (this.isPortraitMobileLayout()) {
+            this.camera.x = -VIRTUAL_WIDTH * 0.125;
+        }
+
         this.trashCollected = 0;
         this.totalTrash = 6;
         this.recyclablesCollected = 0;
@@ -4833,11 +4840,28 @@ class Game {
             this.camera.y = 0;
             return;
         }
+        const portraitCameraInset = this.currentPhase === 2 && this.isPortraitMobileLayout()
+            ? VIRTUAL_WIDTH * 0.125
+            : 0;
         const targetX = this.player.x - VIRTUAL_WIDTH * 0.35;
         this.camera.x += (targetX - this.camera.x) * 0.12;
-        if (this.camera.x < 0) this.camera.x = 0;
-        const maxCam = this.levelWidth - VIRTUAL_WIDTH;
+        const minCam = -portraitCameraInset;
+        if (this.camera.x < minCam) this.camera.x = minCam;
+        const maxCam = Math.max(minCam, this.levelWidth - VIRTUAL_WIDTH + portraitCameraInset);
         if (this.camera.x > maxCam) this.camera.x = maxCam;
+
+        // Se o jogador voltar até uma borda do mundo, garanta que o sprite
+        // completo continue entre as duas laterais realmente visíveis.
+        if (portraitCameraInset > 0) {
+            const visibleLeft = portraitCameraInset;
+            const visibleRight = VIRTUAL_WIDTH - portraitCameraInset;
+            if (this.player.x - this.camera.x < visibleLeft) {
+                this.camera.x = Math.max(minCam, this.player.x - visibleLeft);
+            }
+            if (this.player.x + this.player.w - this.camera.x > visibleRight) {
+                this.camera.x = Math.min(maxCam, this.player.x + this.player.w - visibleRight);
+            }
+        }
     }
 
     checkAABB(a, b) {
