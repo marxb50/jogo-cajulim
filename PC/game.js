@@ -307,7 +307,7 @@ class Game {
             2: ['sc_parnamirim_centro', 'p_sheet', 'tile_grass', 'tile_dirt', 'block_brick', 'block_question', 'block_recycle', 'item_trash_bag'],
             3: ['sc_phase3_bairros_bg', 'sc_truck', 'item_trash_bag_raw'],
             4: ['sc_phase4_transbordo_bg', 'sc_truck', 'tile_road', 'tile_road_sub'],
-            5: ['sc_transbordo_interior', 'sc_carreta', 'p_supervisor'],
+            5: ['sc_transbordo_interior', 'sc_carreta', 'sc_carreta_magenta', 'p_supervisor'],
             6: ['sc_rota_aterro', 'sc_carreta_magenta', 'p_cajulim_idle'],
             7: aterroAssets,
             8: ['sc_mecha_boss_pixel', 'sc_boss_cajueiro_bg', 'p_sheet']
@@ -5299,68 +5299,82 @@ class Game {
             ctx.fillRect(bx + 8, 427, 8, 7);
         }
 
-        // 4. Trailer Triple Axles and Heavy-Duty Wheels (x = 558, 613, 668, y = 456)
-        [558, 613, 668].forEach(wx => {
-            const wy = 456;
-            // Black Rubber Tire (outer radius 19)
-            ctx.fillStyle = '#090d16';
-            ctx.beginPath();
-            ctx.arc(wx, wy, 19, 0, Math.PI * 2);
-            ctx.fill();
-            // Tire sidewall rim
-            ctx.fillStyle = '#1e293b';
-            ctx.beginPath();
-            ctx.arc(wx, wy, 15, 0, Math.PI * 2);
-            ctx.fill();
-            // Silver Steel Wheel Rim (radius 11)
-            ctx.fillStyle = '#94a3b8';
-            ctx.beginPath();
-            ctx.arc(wx, wy, 11, 0, Math.PI * 2);
-            ctx.fill();
-            // Inner rim dark groove
-            ctx.fillStyle = '#475569';
-            ctx.beginPath();
-            ctx.arc(wx, wy, 8, 0, Math.PI * 2);
-            ctx.fill();
-            // Orange planetary hub (radius 5)
-            ctx.fillStyle = '#f97316';
-            ctx.beginPath();
-            ctx.arc(wx, wy, 5, 0, Math.PI * 2);
-            ctx.fill();
-            // Chrome center nut
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(wx, wy, 2, 0, Math.PI * 2);
-            ctx.fill();
-        });
+        // 4. Chassi, rodas e cabine usam o mesmo acabamento da carreta da fase seguinte.
+        // A parte superior continua aberta aqui para receber o lixo do transbordo.
+        const roadCarretaImg = this.assets['sc_carreta_magenta'];
+        if (roadCarretaImg && roadCarretaImg.complete && roadCarretaImg.naturalWidth > 0) {
+            // Parte inferior da carreta: longarinas, faixas refletivas, pés e três eixos.
+            ctx.drawImage(roadCarretaImg,
+                29, 198, 586, 140,
+                510, 397, 300, 72);
 
-        // 5. Blue Tractor Cab on the right (x = 810..942, y = 310..476)
-        const carretaCabImg = this.assets['sc_carreta_cab'];
-        if (carretaCabImg) {
-            ctx.drawImage(carretaCabImg, 810, 314, 130, 162);
+            // Longarina dianteira e eixos do cavalo mecânico. O recorte começa
+            // abaixo da lona para não fechar a caçamba durante o carregamento.
+            ctx.drawImage(roadCarretaImg,
+                610, 198, 215, 136,
+                742, 392, 102, 84);
+
+            // Tanques, escapamento e cabine. Este recorte começa depois do fim
+            // da caçamba e mantém a mesma escala visual da carreta da estrada.
+            ctx.drawImage(roadCarretaImg,
+                775, 58, 262, 276,
+                818, 306, 124, 170);
         } else {
-            // Draw cab if image unavailable
-            ctx.fillStyle = '#1e3a8a';
-            ctx.fillRect(812, 330, 110, 130);
+            // Fallback leve enquanto o sprite principal termina de carregar.
+            [558, 613, 668].forEach(wx => {
+                const wy = 456;
+                ctx.fillStyle = '#090d16';
+                ctx.beginPath();
+                ctx.arc(wx, wy, 19, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.arc(wx, wy, 11, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#f97316';
+                ctx.beginPath();
+                ctx.arc(wx, wy, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            const carretaCabImg = this.assets['sc_carreta_cab'];
+            if (carretaCabImg) {
+                ctx.drawImage(carretaCabImg, 810, 314, 130, 162);
+            } else {
+                ctx.fillStyle = '#1e3a8a';
+                ctx.fillRect(812, 330, 110, 130);
+            }
         }
 
-        // 6. Security Tarp over the trailer body when compacting/complete
+        // 5. A lona azul da carreta rodoviária avança somente após o carregamento.
         if (this.tarpCoverProgress > 0) {
             const tarpW = Math.min(300, Math.floor((300 * this.tarpCoverProgress) / 100));
-            ctx.fillStyle = '#15803d';
-            ctx.fillRect(510, 336, tarpW, 14);
-            ctx.strokeStyle = '#facc15';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(510, 336, tarpW, 14);
-            // Tie-down cords
-            ctx.strokeStyle = '#eab308';
-            ctx.lineWidth = 1;
-            for (let sx = 525; sx < 510 + tarpW; sx += 32) {
-                ctx.beginPath();
-                ctx.moveTo(sx, 350);
-                ctx.lineTo(sx, 366);
-                ctx.stroke();
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(510, 336, tarpW, 64);
+            ctx.clip();
+            if (roadCarretaImg && roadCarretaImg.complete && roadCarretaImg.naturalWidth > 0) {
+                ctx.drawImage(roadCarretaImg,
+                    29, 61, 760, 166,
+                    510, 336, 300, 66);
+            } else {
+                const tarpGradient = ctx.createLinearGradient(0, 336, 0, 400);
+                tarpGradient.addColorStop(0, '#1662ad');
+                tarpGradient.addColorStop(0.45, '#0d4d91');
+                tarpGradient.addColorStop(1, '#07366b');
+                ctx.fillStyle = tarpGradient;
+                ctx.fillRect(510, 336, 300, 64);
+                ctx.strokeStyle = '#facc15';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(510, 336, 300, 64);
             }
+            ctx.restore();
+
+            // Cabeçote da lona deixa claro o sentido do fechamento.
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(507 + tarpW, 334, 6, 69);
+            ctx.fillStyle = '#713f12';
+            ctx.fillRect(509 + tarpW, 338, 2, 61);
         }
         ctx.restore();
 
