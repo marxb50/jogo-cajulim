@@ -2211,7 +2211,8 @@ class Game {
             w: 220,
             h: 117,
             facing: 1,
-            vx: 0
+            vx: 0,
+            wheelAngle: 0
         };
 
         // 4 distinct waste mounds in Sector 1 (x: 600 to 1500)
@@ -3416,6 +3417,7 @@ class Game {
 
     updatePhase5Tractor(dt) {
         const tractor = this.phase5Tractor;
+        const previousX = tractor.x;
         let direction = 0;
         if (this.keys.left) direction -= 1;
         if (this.keys.right) direction += 1;
@@ -3432,6 +3434,11 @@ class Game {
 
         tractor.x += tractor.vx * dt;
         tractor.x = Math.max(230, Math.min(limit, tractor.x));
+
+        // A rotação acompanha a distância realmente percorrida. Assim as
+        // rodas param nos limites, giram para a frente e invertem ao dar ré.
+        const travelled = tractor.x - previousX;
+        tractor.wheelAngle = ((tractor.wheelAngle || 0) + travelled / 23) % (Math.PI * 2);
 
         // Keep Cajulim synchronized with tractor cabin while driving
         if (this.player) {
@@ -6314,6 +6321,52 @@ ctx.restore();
             ctx.arc(t.w - 40, t.h - 22, 22, 0, Math.PI * 2);
             ctx.fill();
         }
+
+        // Rodas animadas sobre o sprite-base. Os centros correspondem aos dois
+        // pneus do desenho original; os sulcos e raios deixam o giro visível
+        // sem esconder o acabamento pixel-art do trator.
+        const localWheelAngle = -(t.wheelAngle || 0) * t.facing;
+        const drawTurningWheel = (cx, cy, radius, offset = 0) => {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(localWheelAngle + offset);
+
+            // Sulcos externos do pneu.
+            ctx.fillStyle = '#17131b';
+            for (let i = 0; i < 12; i++) {
+                ctx.save();
+                ctx.rotate((Math.PI * 2 * i) / 12);
+                ctx.fillRect(radius - 2, -2, 5, 4);
+                ctx.restore();
+            }
+
+            // Aro metálico, raios e parafusos giram juntos.
+            ctx.strokeStyle = '#b8a58d';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.61, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = '#6f6259';
+            ctx.lineWidth = 2.4;
+            for (let i = 0; i < 6; i++) {
+                ctx.save();
+                ctx.rotate((Math.PI * 2 * i) / 6);
+                ctx.beginPath();
+                ctx.moveTo(radius * 0.2, 0);
+                ctx.lineTo(radius * 0.52, 0);
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.fillStyle = '#493f3a';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.23, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#d6bd87';
+            ctx.fillRect(-2, -2, 4, 4);
+            ctx.restore();
+        };
+        drawTurningWheel(80, 89, 22, 0);
+        drawTurningWheel(168, 89, 22, Math.PI / 12);
 
         // Cajulim sprite inside tractor cabin when driving!
         if (this.phase5Mode === 'TRACTOR') {
