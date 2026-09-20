@@ -8,6 +8,7 @@ Jogo de plataforma 2D educativo e arcade desenvolvido para a **Prefeitura de Par
 - **Portal de Seleção**: [Jogar Turma do Cajulim](https://marxb50.github.io/jogo-cajulim/)
 - **📱 Edição Celular / Mobile**: [Jogar no Celular](https://marxb50.github.io/jogo-cajulim/celular/)
 - **💻 Edição PC / Computador**: [Jogar no PC](https://marxb50.github.io/jogo-cajulim/PC/)
+- **🏃 Fase 9 Bônus — Corrida Limpa**: [Jogar a Corrida](https://marxb50.github.io/jogo-cajulim/corrida/?autostart=1)
 
 ---
 
@@ -18,7 +19,7 @@ Jogo de plataforma 2D educativo e arcade desenvolvido para a **Prefeitura de Par
 - **Versão Celular**: Controles virtuais semi-transparentes na tela (D-Pad no polegar esquerdo, botões de ação A e B no direito), com suporte a multi-touch real.
 - **Versão PC**: Jogo limpo de arcade com controles no teclado (`Setas / WASD` para mover, `Espaço / Enter` para pular e avançar) e suporte a tela cheia (`F`).
 - **Fluxo Contínuo Sem Pausa**: Ao vencer uma fase, o banner de vitória exibe a pontuação e avança automaticamente em 3 segundos sem travar a experiência.
-- **Jornada em 8 Fases**:
+- **Jornada em 8 Fases + Fase Bônus**:
   1. *Pega o Lixo*: A jornada começa com a plataforma retrô de coleta de sacos e recicláveis até o caminhão.
   2. *Casa Viva*: Cajulim aprende a separar três resíduos secos e três molhados em um cômodo. A versão completa com três cômodos permanece no seletor.
   3. *Rota do Coletor*: O jogador dirige e o Cajulim NPC recolhe dez sacos em cinco bairros.
@@ -27,3 +28,4 @@ Jogo de plataforma 2D educativo e arcade desenvolvido para a **Prefeitura de Par
   6. *Carreta ao Aterro*: Travessia das dunas, parada automática na balança e entrega da carga.
   7. *Trator no Aterro*: Compactação e cobertura dos resíduos com terra. A versão completa com usina de biogás e tratamento de chorume permanece no seletor.
   8. *O Grande Chefão*: Batalha contra o Barão do Entulho e seu Mecha-Trator Poluidor 9000.
+  9. *Corrida Limpa (Bônus)*: Corrida infinita pela praia e pelo centro de Parnamirim, com obstáculos, recicláveis e power-ups.

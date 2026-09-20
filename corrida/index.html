@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#06271f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Cajulim — Corrida Limpa</title>
+    <link rel="icon" type="image/png" href="assets/images/sprite_moeda.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas" aria-label="Pista da Corrida Limpa"></canvas>
+        <div class="screen-vignette" aria-hidden="true"></div>
+        <div id="floating-text-container" aria-live="polite"></div>
+
+        <div id="ui-overlay">
+            <header class="hud-top" aria-label="Informações da corrida">
+                <div class="hud-cluster hud-cluster--metrics">
+                    <div class="hud-metric hud-metric--score">
+                        <span class="metric-symbol" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0V4Zm0 2H4v1a4 4 0 0 0 4 4m9-5h3v1a4 4 0 0 1-4 4M12 13v4m-4 3h8M9 17h6"/></svg>
+                        </span>
+                        <span class="metric-copy"><span class="metric-label">PONTOS</span><strong id="hudScore">0</strong></span>
+                    </div>
+                    <div class="hud-metric hud-metric--recycled">
+                        <span class="metric-symbol" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="m9 4 3-2 3 2m-8.5 7-3 1.5 1 3.5m13-5 3 1.5-1 3.5M8 7l4 2 4-2m-8 0v5l4 2 4-2V7m-8 8v3l4 2 4-2v-3"/></svg>
+                        </span>
+                        <span class="metric-copy"><span class="metric-label">COLETADOS</span><strong id="hudRecycled">0</strong></span>
+                    </div>
+                    <div class="multiplier-badge" id="hudMultiplier" aria-label="Multiplicador">x1</div>
+
+                    <div class="powerups-active-container">
+                        <div class="powerup-bar-wrapper" id="magnetBarWrapper">
+                            <span class="powerup-name">ÍMÃ</span>
+                            <div class="powerup-track"><div class="powerup-bar-progress magnet" id="magnetProgress"></div></div>
+                        </div>
+                        <div class="powerup-bar-wrapper" id="turboBarWrapper">
+                            <span class="powerup-name">TURBO</span>
+                            <div class="powerup-track"><div class="powerup-bar-progress turbo" id="turboProgress"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hud-route" aria-live="off">
+                    <span class="route-kicker" id="hudRouteName">ROTA ORLA LIMPA</span>
+                    <strong id="hudDistance">0 m</strong>
+                </div>
+
+                <div class="hud-cluster hud-cluster--actions">
+                    <a class="icon-btn" id="btnPortal" href="../index.html?view=phases" title="Voltar às fases" aria-label="Voltar ao seletor de fases">
+                        <svg viewBox="0 0 24 24"><path d="m10 7-5 5 5 5M5 12h14"/></svg>
+                    </a>
+                    <button class="icon-btn" id="btnGallery" title="Abrir galeria" aria-label="Abrir galeria">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m5 18 4-4 3 3 3-4 4 5"/></svg>
+                    </button>
+                    <button class="icon-btn" id="btnSound" title="Ligar ou desligar som" aria-label="Ligar ou desligar som">
+                        <svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5Zm12 0a5 5 0 0 1 0 6m2-8a8 8 0 0 1 0 10"/></svg>
+                    </button>
+                    <button class="icon-btn icon-btn--pause" id="btnPause" title="Pausar corrida" aria-label="Pausar corrida">
+                        <svg viewBox="0 0 24 24"><path d="M8 6v12M16 6v12"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <div class="desktop-controls" aria-hidden="true">
+                <span><kbd>A</kbd><kbd>D</kbd> mover</span>
+                <span><kbd>W</kbd> pular</span>
+                <span><kbd>S</kbd> deslizar</span>
+                <span><kbd>P</kbd> pausar</span>
+            </div>
+
+            <div id="touch-controls" aria-label="Controles de toque">
+                <div class="touch-group">
+                    <button class="touch-btn" id="btnTouchLeft" aria-label="Mover para esquerda">←</button>
+                    <button class="touch-btn" id="btnTouchRight" aria-label="Mover para direita">→</button>
+                </div>
+                <div class="touch-group">
+                    <button class="touch-btn touch-btn--slide" id="btnTouchSlide" aria-label="Deslizar">↓<span>BAIXAR</span></button>
+                    <button class="touch-btn touch-btn--jump" id="btnTouchJump" aria-label="Pular">↑<span>PULAR</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay active start-screen" id="modalStart">
+            <section class="start-card" aria-labelledby="startTitle">
+                <div class="start-copy">
+                    <div class="brand-lockup">
+                        <span class="brand-mark" aria-hidden="true"><span></span></span>
+                        <span><strong>CAJULIM</strong><small>MISSÃO URBANA</small></span>
+                    </div>
+                    <div class="start-heading">
+                        <span class="eyebrow">PARNAMIRIM • ROTA DA ORLA</span>
+                        <h1 id="startTitle">CORRIDA<br><em>LIMPA</em></h1>
+                        <p>Corra pela cidade, desvie dos obstáculos e transforme cada coleta em um caminho melhor.</p>
+                    </div>
+
+                    <div class="mission-strip" aria-label="Objetivos da missão">
+                        <div><span class="mission-number">01</span><strong>DESVIE</strong><small>Troque de faixa</small></div>
+                        <div><span class="mission-number">02</span><strong>COLETE</strong><small>Separe recicláveis</small></div>
+                        <div><span class="mission-number">03</span><strong>ACELERE</strong><small>Ative o turbo</small></div>
+                    </div>
+
+                    <button class="btn-cta" id="btnStartGame" onclick="window.runnerGame.startGame()">
+                        <span>COMEÇAR MISSÃO</span><span class="btn-arrow" aria-hidden="true">→</span>
+                    </button>
+                    <button class="btn-link" id="btnOpenGalleryStart" onclick="document.getElementById('modalGallery').classList.add('active')">
+                        Ver artes do universo Cajulim <span aria-hidden="true">↗</span>
+                    </button>
+                </div>
+                <div class="start-art" aria-hidden="true">
+                    <img class="start-character" src="assets/images/cajulim_run_a_clean.png" alt="">
+                    <div class="art-caption"><span>FASE 01</span><strong>ORLA DE PARNAMIRIM</strong></div>
+                </div>
+            </section>
+        </div>
+
+        <div class="modal-overlay" id="modalPause">
+            <section class="modal-card compact-card" aria-labelledby="pauseTitle">
+                <span class="modal-kicker">INTERVALO DA MISSÃO</span>
+                <div class="pause-symbol" aria-hidden="true"><i></i><i></i></div>
+                <h2 class="modal-title" id="pauseTitle">Corrida pausada</h2>
+                <p class="modal-subtitle">A cidade espera. Retome quando estiver pronto.</p>
+                <button class="btn-cta" id="btnResume"><span>CONTINUAR</span><span class="btn-arrow">→</span></button>
+                <button class="btn-secondary" onclick="window.runnerGame.restartGame()">Reiniciar corrida</button>
+            </section>
+        </div>
+
+        <div class="modal-overlay" id="modalGameOver">
+            <section class="modal-card gameover-card" aria-labelledby="gameOverTitle">
+                <div class="gameover-visual">
+                    <img class="gameover-character" src="assets/images/cajulim_crash_clean.png" alt="Cajulim após a colisão">
+                    <span>MISSÃO INTERROMPIDA</span>
+                </div>
+                <div class="gameover-copy">
+                    <span class="modal-kicker">TENTE DE NOVO</span>
+                    <h2 class="modal-title" id="gameOverTitle">Fim de corrida</h2>
+                    <p class="modal-subtitle gameover-reason" id="goReason">Você colidiu com um obstáculo.</p>
+                    <div class="modal-stats-grid">
+                        <div class="modal-stat-box"><span>PONTUAÇÃO</span><strong id="goScore">0</strong></div>
+                        <div class="modal-stat-box"><span>RECICLÁVEIS</span><strong id="goRecycled">0</strong></div>
+                    </div>
+                    <div class="record-line"><span>SEU RECORDE</span><strong id="goHighScore">0</strong></div>
+                    <button class="btn-cta" id="btnRestart"><span>CORRER NOVAMENTE</span><span class="btn-arrow">↻</span></button>
+                </div>
+            </section>
+        </div>
+
+        <div class="modal-overlay gallery-overlay" id="modalGallery">
+            <section class="modal-card gallery-modal-card" aria-labelledby="galleryTitle">
+                <header class="gallery-header">
+                    <div><span class="modal-kicker">DIREÇÃO DE ARTE</span><h2 id="galleryTitle">Universo Cajulim</h2><p>Estudos visuais, movimentos e elementos da Corrida Limpa.</p></div>
+                    <button class="icon-btn" id="btnCloseGallery" aria-label="Fechar galeria">×</button>
+                </header>
+                <div class="gallery-grid">
+                    <article class="gallery-card gallery-card--wide"><img class="gallery-img" src="assets/images/runner_panorama.jpg" alt="Panorama estilizado de Parnamirim"><div class="gallery-info"><span>CENÁRIO</span><h3>Parnamirim e Praia de Cotovelo</h3><p>Dunas, mar, vegetação tropical e a avenida que conduz a missão.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_run.jpg" alt="Cajulim correndo"><div class="gallery-info"><span>MOVIMENTO 01</span><h3>Corrida central</h3><p>Passada longa com leitura clara do uniforme.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_step_a.jpg" alt="Cajulim com pé direito à frente"><div class="gallery-info"><span>MOVIMENTO 02</span><h3>Pé direito</h3><p>Primeiro frame do ciclo de corrida.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_step_b.jpg" alt="Cajulim com pé esquerdo à frente"><div class="gallery-info"><span>MOVIMENTO 03</span><h3>Pé esquerdo</h3><p>Segundo frame do ciclo de corrida.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_jump.jpg" alt="Cajulim saltando"><div class="gallery-info"><span>AÇÃO</span><h3>Salto</h3><p>Coleta aérea e desvio de cavaletes.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_slide.jpg" alt="Cajulim deslizando"><div class="gallery-info"><span>AÇÃO</span><h3>Deslize</h3><p>Movimento rápido sob estruturas altas.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_dodge.jpg" alt="Cajulim desviando"><div class="gallery-info"><span>AÇÃO</span><h3>Desvio lateral</h3><p>Troca de faixa com inclinação do corpo.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_turbo.jpg" alt="Cajulim no modo turbo"><div class="gallery-info"><span>POWER-UP</span><h3>Turbo de coleta</h3><p>Velocidade, energia e multiplicador.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_items.jpg" alt="Itens recicláveis"><div class="gallery-info"><span>COLEÇÃO</span><h3>Recicláveis</h3><p>Latinhas, garrafas, caixas e ímã.</p></div></article>
+                    <article class="gallery-card"><img class="gallery-img" src="assets/images/runner_obstacles.jpg" alt="Obstáculos urbanos"><div class="gallery-info"><span>DESAFIOS</span><h3>Obstáculos urbanos</h3><p>Cones, cavaletes, vigas e caçambas.</p></div></article>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="audio.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

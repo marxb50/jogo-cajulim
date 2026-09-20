@@ -297,6 +297,7 @@
         .phase-card-btn.p-phase6:hover { border-color: #a3e635; }
         .phase-card-btn.p-phase7:hover { border-color: #2dd4bf; }
         .phase-card-btn.p-phase8:hover { border-color: #f43f5e; }
+        .phase-card-btn.p-phase9:hover { border-color: #fb923c; }
 
         .phase-icon-box {
             font-size: 26px;
@@ -662,14 +663,14 @@
                 <div class="btn-action-card btn-action-fases" id="btnChoosePhase" onclick="actionOpenPhases()">
                     <div class="action-icon">🎮</div>
                     <div class="action-title">FASES</div>
-                    <div class="action-desc">Abrir menu para escolher e jogar qualquer fase de 1 a 8.</div>
+                    <div class="action-desc">Abrir menu para escolher as 8 fases da história e a fase bônus.</div>
                 </div>
             </div>
 
         </section>
 
         <!-- =========================================================
-             TELA 3: MENU DE FASES (1 A 8)
+             TELA 3: MENU DE FASES (1 A 9)
              ========================================================= -->
         <section class="view-screen" id="viewPhases">
             <!-- Indicador de Plataforma -->
@@ -790,6 +791,17 @@
                     </div>
                     <span class="phase-arrow">▶</span>
                 </div>
+
+                <!-- Fase 9: bônus independente de corrida infinita -->
+                <div class="phase-card-btn p-phase9" onclick="launchBonusPhase()">
+                    <div class="phase-icon-box">🏃</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#fb923c;">FASE 9 • BÔNUS</span>
+                        <div class="phase-name">Corrida Limpa</div>
+                        <div class="phase-sub">Corra pela praia e pela cidade, desvie dos obstáculos e recolha recicláveis.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
             </div>
 
             <!-- Botão Voltar -->
@@ -844,7 +856,7 @@
             }, 100);
         }
 
-        // Botão FASES -> Abre menu com Fases 1 a 8
+        // Botão FASES -> Abre menu com Fases 1 a 8 e a Fase 9 bônus
         function actionOpenPhases() {
             playBeep(740, 'square', 0.08);
             switchView('viewPhases');
@@ -858,6 +870,13 @@
                 if (phaseNumber === 1 && phaseVariant === '3comodos') variantQuery = '&casa=3comodos';
                 if (phaseNumber === 7 && phaseVariant === 'completo') variantQuery = '&aterro=completo';
                 window.location.href = currentPlatform + '/index.html?fase=' + phaseNumber + '&direct=1' + variantQuery + '&v=9.5';
+            }, 100);
+        }
+
+        function launchBonusPhase() {
+            playBeep(1040, 'triangle', 0.14);
+            setTimeout(() => {
+                window.location.href = 'corrida/index.html?autostart=1&from=portal';
             }, 100);
         }
 
