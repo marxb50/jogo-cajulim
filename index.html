@@ -299,6 +299,17 @@
         .phase-card-btn.p-phase8:hover { border-color: #f43f5e; }
         .phase-card-btn.p-phase9:hover { border-color: #fb923c; }
 
+        .phase-card-btn.p-phase9 {
+            border-color: rgba(251, 146, 60, 0.78);
+            background: linear-gradient(135deg, #7c2d12 0%, #431407 100%);
+            box-shadow: 0 8px 24px rgba(249, 115, 22, 0.22), inset 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .phase-card-btn.p-phase9 .phase-icon-box {
+            background: rgba(255, 237, 213, 0.12);
+            border-color: rgba(253, 186, 116, 0.42);
+        }
+
         .phase-icon-box {
             font-size: 26px;
             width: 42px;
@@ -682,6 +693,17 @@
             <p class="prompt-text">Escolha a fase que deseja jogar:</p>
 
             <div class="phases-grid">
+                <!-- Fase bônus fixada no topo para aparecer imediatamente no celular -->
+                <div class="phase-card-btn p-phase9" onclick="launchBonusPhase()">
+                    <div class="phase-icon-box">🏃</div>
+                    <div class="phase-info">
+                        <span class="phase-badge-tag" style="color:#fdba74;">NOVA • FASE 9 BÔNUS</span>
+                        <div class="phase-name">Corrida Limpa</div>
+                        <div class="phase-sub">Corra pela praia e pela cidade, desvie dos obstáculos e recolha recicláveis.</div>
+                    </div>
+                    <span class="phase-arrow">▶</span>
+                </div>
+
                 <!-- Fase 1: conteúdo dinâmico que antes ocupava a Fase 2 -->
                 <div class="phase-card-btn p-phase1" onclick="launchPhase(2)">
                     <div class="phase-icon-box">🏖️</div>
@@ -792,16 +814,6 @@
                     <span class="phase-arrow">▶</span>
                 </div>
 
-                <!-- Fase 9: bônus independente de corrida infinita -->
-                <div class="phase-card-btn p-phase9" onclick="launchBonusPhase()">
-                    <div class="phase-icon-box">🏃</div>
-                    <div class="phase-info">
-                        <span class="phase-badge-tag" style="color:#fb923c;">FASE 9 • BÔNUS</span>
-                        <div class="phase-name">Corrida Limpa</div>
-                        <div class="phase-sub">Corra pela praia e pela cidade, desvie dos obstáculos e recolha recicláveis.</div>
-                    </div>
-                    <span class="phase-arrow">▶</span>
-                </div>
             </div>
 
             <!-- Botão Voltar -->
